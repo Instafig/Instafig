@@ -1,20 +1,33 @@
 #!/bin/bash
 
-
-
 SOURCE_DIRS=("" conf dynval model tests)
 
 which godep &>/dev/null || go get github.com/tools/godep
 
-#godep restore
+[ -n "$TRAVIS_GO_VERSION" ] && { # just use godep restore for TRAVIS
+    echo godep restore
+    godep restore
+    exit 0
+}
 
 while :; do
     OUTPUT=$(godep save "${SOURCE_DIRS[@]/#/github.com/appwilldev/Instafig/}" 2>&1)
     [ "$OUTPUT" = "" ] && break
     OUTPUT=${OUTPUT#*\(}
     OUTPUT=${OUTPUT%\)*}
-    echo go get $OUTPUT
-    go get $OUTPUT
+
+    if [ ${OUTPUT:0:13} = 'golang.org/x/' ] ; then
+        # using github repo for golang.org/x/..., thanks to GFW
+        OUTPUT=${OUTPUT:13}
+        OUTPUT=${OUTPUT%/*}
+        GIT_REPO="https://github.com/golang/${OUTPUT}.git"
+        mkdir -p ../../../golang.org/x/
+        echo git clone $GIT_REPO
+        git clone $GIT_REPO ../../../golang.org/x/$OUTPUT
+    else
+        echo go get $OUTPUT
+        go get $OUTPUT
+    fi
     [ $? = 0 ] || {
         echo "error on `go get $OUTPUT`"
         exit 1

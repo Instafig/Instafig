@@ -44,6 +44,7 @@
 		},
 		{
 			"ImportPath": "github.com/go-xorm/xorm",
+			"Comment": "v0.4.4-32-gfad6102",
 			"Rev": "fad61020e856d1dfe16f44e006d288713feb38fb"
 		},
 		{
@@ -53,6 +54,7 @@
 		},
 		{
 			"ImportPath": "github.com/lib/pq",
+			"Comment": "go1.0-cutoff-69-g2d785ad",
 			"Rev": "2d785ad24be7a038e2fc35424b993645a0025425"
 		},
 		{
@@ -69,6 +71,7 @@
 		},
 		{
 			"ImportPath": "github.com/mattn/go-sqlite3",
+			"Comment": "v1.1.0-30-g5510da3",
 			"Rev": "5510da399572b4962c020184bb291120c0a412e2"
 		},
 		{
