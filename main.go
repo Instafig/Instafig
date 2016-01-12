@@ -1,4 +1,4 @@
-package Instafig
+package main
 
 import (
 
