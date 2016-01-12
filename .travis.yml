@@ -1,4 +1,5 @@
 language: go
+
 sudo: false
 
 os:
@@ -11,10 +12,8 @@ go:
 
 before_install:
   - if [ `uname` = "Linux" ]; then
-      #sudo apt-get update -qq -y;
       sudo apt-get bc -y;
     elif [ `uname` = "Darwin" ]; then
-      #brew update;
       brew install bc;
     fi
 
