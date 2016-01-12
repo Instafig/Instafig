@@ -6,7 +6,7 @@ SOURCE_DIRS=("" conf dynval model tests)
 
 which godep &>/dev/null || go get github.com/tools/godep
 
-godep restore
+#godep restore
 
 while :; do
     OUTPUT=$(godep save "${SOURCE_DIRS[@]/#/github.com/appwilldev/Instafig/}" 2>&1)
@@ -15,6 +15,10 @@ while :; do
     OUTPUT=${OUTPUT%\)*}
     echo go get $OUTPUT
     go get $OUTPUT
+    [ $? = 0 ] || {
+        echo "error on `go get $OUTPUT`"
+        exit 1
+    }
 done
 
 if [ "$1" = update-version ]; then

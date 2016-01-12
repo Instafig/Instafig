@@ -3,13 +3,73 @@
 	"GoVersion": "go1.5",
 	"Packages": [
 		"github.com/appwilldev/Instafig/",
+		"github.com/appwilldev/Instafig/conf",
 		"github.com/appwilldev/Instafig/dynval",
+		"github.com/appwilldev/Instafig/model",
 		"github.com/appwilldev/Instafig/tests"
 	],
 	"Deps": [
 		{
 			"ImportPath": "github.com/davecgh/go-spew/spew",
 			"Rev": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d"
+		},
+		{
+			"ImportPath": "github.com/facebookgo/clock",
+			"Rev": "600d898af40aa09a7a93ecb9265d87b0504b6f03"
+		},
+		{
+			"ImportPath": "github.com/facebookgo/grace/gracehttp",
+			"Rev": "053ab5d25436faedf3fe76fbf3da797c8c27c659"
+		},
+		{
+			"ImportPath": "github.com/facebookgo/grace/gracenet",
+			"Rev": "053ab5d25436faedf3fe76fbf3da797c8c27c659"
+		},
+		{
+			"ImportPath": "github.com/facebookgo/httpdown",
+			"Rev": "1fa03998d20119dfe4ef73f56a638d83048052e2"
+		},
+		{
+			"ImportPath": "github.com/facebookgo/stats",
+			"Rev": "1b76add642e42c6ffba7211ad7b3939ce654526e"
+		},
+		{
+			"ImportPath": "github.com/gin-gonic/gin",
+			"Rev": "52fcc5dbf6e94df33ad313858fb94b713e9d1b4a"
+		},
+		{
+			"ImportPath": "github.com/go-xorm/core",
+			"Comment": "v0.4.4-3-g85579d3",
+			"Rev": "85579d38adea6d9c4e01b339129ba077d98e55e8"
+		},
+		{
+			"ImportPath": "github.com/go-xorm/xorm",
+			"Rev": "fad61020e856d1dfe16f44e006d288713feb38fb"
+		},
+		{
+			"ImportPath": "github.com/gpmgo/gopm/modules/goconfig",
+			"Comment": "0.7.2-56-g679e0bc",
+			"Rev": "679e0bcf99e4653090e530cc8f560116745f69c5"
+		},
+		{
+			"ImportPath": "github.com/lib/pq",
+			"Rev": "2d785ad24be7a038e2fc35424b993645a0025425"
+		},
+		{
+			"ImportPath": "github.com/manucorporat/sse",
+			"Rev": "fe6ea2c8e398672518ef204bf0fbd9af858d0e15"
+		},
+		{
+			"ImportPath": "github.com/mattn/go-colorable",
+			"Rev": "3dac7b4f76f6e17fb39b768b89e3783d16e237fe"
+		},
+		{
+			"ImportPath": "github.com/mattn/go-isatty",
+			"Rev": "56b76bdf51f7708750eac80fa38b952bb9f32639"
+		},
+		{
+			"ImportPath": "github.com/mattn/go-sqlite3",
+			"Rev": "5510da399572b4962c020184bb291120c0a412e2"
 		},
 		{
 			"ImportPath": "github.com/pmezard/go-difflib/difflib",
@@ -26,32 +86,17 @@
 			"Rev": "8347a1b4bcc359a1eb2ebfce977a1b9adbf46ce8"
 		},
 		{
-			"ImportPath": "github.com/Unknwon/goconfig",
-			"Rev": "18bc852dc01720ee9f0e9e0a01a1bdbc8744095c"
+			"ImportPath": "golang.org/x/net/context",
+			"Rev": "4fd4a9fed55e5bdee4a89d6406c2eabe38b60300"
 		},
 		{
-			"ImportPath": "github.com/gin-gonic/gin",
-			"Rev": "52fcc5dbf6e94df33ad313858fb94b713e9d1b4a"
+			"ImportPath": "golang.org/x/sys/unix",
+			"Rev": "833a04a10549a95dc34458c195cbad61bbb6cb4d"
 		},
 		{
-			"ImportPath": "github.com/go-xorm/xorm",
-			"Rev": "fad61020e856d1dfe16f44e006d288713feb38fb"
-		},
-		{
-			"ImportPath": "github.com/go-xorm/xorm",
-			"Rev": "fad61020e856d1dfe16f44e006d288713feb38fb"
-		},
-		{
-			"ImportPath": "github.com/mattn/go-sqlite3",
-			"Rev": "5510da399572b4962c020184bb291120c0a412e2"
-		},
-		{
-			"ImportPath": "github.com/lib/pq",
-			"Rev": "2d785ad24be7a038e2fc35424b993645a0025425"
-		},
-		{
-			"ImportPath": "github.com/facebookgo/grace",
-			"Rev": "053ab5d25436faedf3fe76fbf3da797c8c27c659"
+			"ImportPath": "gopkg.in/bluesuncorp/validator.v5",
+			"Comment": "v5.12",
+			"Rev": "d5acf1dac43705f8bfbb71d878e290e2bed3950b"
 		}
 	]
 }
