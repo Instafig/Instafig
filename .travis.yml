@@ -1,15 +1,32 @@
 language: go
 sudo: false
+
+os:
+    - linux
+    - osx
+
 go:
   - 1.5.2
   #- tip
 
-script:
-  - ./scripts/go-test
+
+before_install:
+    - if [ `uname` = "Linux" ]; then
+        #sudo apt-get update -qq -y;
+        sudo apt-get bc -y;
+      elif [ `uname` = "Darwin" ]; then
+        #brew update;
+        brew install bc;
+      fi
 
 install:
   - ./scripts/godep-update
   - go get -t -v ./
 
+
+script:
+  - ./scripts/go-test
+
 notifications:
   webhooks: https://hooks.pubu.im/services/ezn6mv77env2tnw
+  email: false
