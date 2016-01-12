@@ -47,6 +47,13 @@ func init() {
 	dbEngineDefault.SetMaxIdleConns(50)
 	dbEngineDefault.ShowErr = true
 	dbEngineDefault.ShowSQL = conf.DebugMode
+
+	if conf.IsEasyMode() {
+		if err = dbEngineDefault.Sync2(&User{}, &App{}, &Config{}, &Node{}); err != nil {
+			log.Panicf("Failed to sync db scheme: %s", err.Error())
+		}
+	}
+
 }
 
 func NewModelSession() *ModelSession {

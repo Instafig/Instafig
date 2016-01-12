@@ -96,7 +96,7 @@ func init() {
 }
 
 func IsEasyMode() bool {
-	return Mode == "easy"
+	return Mode == "easy_deploy"
 }
 
 func IsMasterNode() bool {

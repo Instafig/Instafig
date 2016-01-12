@@ -3,7 +3,10 @@ package main
 import (
 	"net/http"
 
+	"encoding/json"
+
 	"github.com/appwilldev/Instafig/conf"
+	"github.com/appwilldev/Instafig/models"
 	"github.com/facebookgo/grace/gracehttp"
 	"github.com/gin-gonic/gin"
 )
@@ -14,6 +17,18 @@ func main() {
 
 	ginIns.GET("/", func(c *gin.Context) {
 		c.String(http.StatusOK, "hello from gin")
+	})
+
+	ginIns.GET("/users", func(c *gin.Context) {
+		users, err := models.GetAllUser(nil)
+		if err != nil {
+			c.String(http.StatusOK, err.Error())
+			return
+		}
+
+		bs, _ := json.Marshal(users)
+
+		c.String(http.StatusOK, string(bs))
 	})
 
 	if conf.DebugMode {
