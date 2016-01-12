@@ -10,7 +10,6 @@ import (
 	"github.com/go-xorm/xorm"
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
-
 )
 
 var (
@@ -40,7 +39,6 @@ func init() {
 		}
 		driver = conf.DatabaseConfig.Driver
 	}
-
 
 	if dbEngineDefault, err = xorm.NewEngine(driver, dsn); err != nil {
 		log.Fatal("Failed to init db engine: " + err.Error())
@@ -102,4 +100,3 @@ func DeleteDBModel(s *ModelSession, m DBModel) (err error) {
 
 	return
 }
-

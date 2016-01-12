@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/appwilldev/Instafig/conf"
-	"github.com/gin-gonic/gin"
 	"github.com/facebookgo/grace/gracehttp"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -23,7 +23,7 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	s := &http.Server{Addr:conf.HttpAddr, Handler: ginIns}
+	s := &http.Server{Addr: conf.HttpAddr, Handler: ginIns}
 
 	ginInsNode := gin.New()
 	ginInsNode.Use(gin.Recovery())
@@ -36,8 +36,7 @@ func main() {
 		ginInsNode.Use(gin.Logger())
 	}
 
-	s2 := &http.Server{Addr:conf.NodeAddr, Handler: ginInsNode}
+	s2 := &http.Server{Addr: conf.NodeAddr, Handler: ginInsNode}
 
 	gracehttp.Serve(s, s2)
 }
-
