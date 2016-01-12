@@ -1,11 +1,22 @@
 #!/bin/bash
 
+
+
+SOURCE_DIRS=("" conf dynval model tests)
+
 which godep &>/dev/null || go get
 
-SOURCE_DIRS=("" dynval tests)
+godep restore
 
-godep save "${SOURCE_DIRS[@]/#/github.com/appwilldev/Instafig/}"
+while :; do
+    OUTPUT=$(godep save "${SOURCE_DIRS[@]/#/github.com/appwilldev/Instafig/}" 2>&1)
+    [ "$OUTPUT" = "" ] && break
+    OUTPUT=${OUTPUT#*\(}
+    OUTPUT=${OUTPUT%\)*}
+    echo go get $OUTPUT
+    go get $OUTPUT
+done
 
-if [ $1 = update-version ]; then
+if [ "$1" = update-version ]; then
     godep update
 fi

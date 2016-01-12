@@ -3,13 +3,35 @@
 	"GoVersion": "go1.5",
 	"Packages": [
 		"github.com/appwilldev/Instafig/",
+		"github.com/appwilldev/Instafig/conf",
 		"github.com/appwilldev/Instafig/dynval",
+		"github.com/appwilldev/Instafig/model",
 		"github.com/appwilldev/Instafig/tests"
 	],
 	"Deps": [
 		{
 			"ImportPath": "github.com/davecgh/go-spew/spew",
 			"Rev": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d"
+		},
+		{
+			"ImportPath": "github.com/go-xorm/core",
+			"Comment": "v0.4.4-3-g85579d3",
+			"Rev": "85579d38adea6d9c4e01b339129ba077d98e55e8"
+		},
+		{
+			"ImportPath": "github.com/go-xorm/xorm",
+			"Comment": "v0.4.4-32-gfad6102",
+			"Rev": "fad61020e856d1dfe16f44e006d288713feb38fb"
+		},
+		{
+			"ImportPath": "github.com/lib/pq",
+			"Comment": "go1.0-cutoff-69-g2d785ad",
+			"Rev": "2d785ad24be7a038e2fc35424b993645a0025425"
+		},
+		{
+			"ImportPath": "github.com/mattn/go-sqlite3",
+			"Comment": "v1.1.0-30-g5510da3",
+			"Rev": "5510da399572b4962c020184bb291120c0a412e2"
 		},
 		{
 			"ImportPath": "github.com/pmezard/go-difflib/difflib",

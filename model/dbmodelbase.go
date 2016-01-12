@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/appwilldev/videosns/conf"
+	"github.com/appwilldev/Instafig/conf"
 	"github.com/go-xorm/xorm"
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
