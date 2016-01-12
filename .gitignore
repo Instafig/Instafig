@@ -10,6 +10,7 @@ Instafig
 # Folders
 _obj
 _test
+Godeps/_workspace/
 .idea
 
 # Architecture specific extensions/prefixes

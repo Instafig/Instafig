@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/appwilldev/Instafig/dynval"
 	"github.com/stretchr/testify/assert"
 	"github.com/zhemao/glisp/interpreter"
+	"github.com/appwilldev/Instafig/dynval"
 	"testing"
 )
 
