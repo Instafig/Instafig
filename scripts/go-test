@@ -1,4 +1,4 @@
 #!/bin/bash
 # -*- mode: sh -*-
 
-go test github.com/appwilldev/Instafig/tests
+go test ./...

@@ -5,10 +5,10 @@ go:
   #- tip
 
 script:
-  - ./scripts/godep-update
   - ./scripts/go-test
 
 install:
+  - ./scripts/godep-update
   - go get -t -v ./
 
 notifications:
