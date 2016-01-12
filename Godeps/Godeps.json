@@ -24,6 +24,34 @@
 			"ImportPath": "github.com/zhemao/glisp/interpreter",
 			"Comment": "0.4.0-18-g8347a1b",
 			"Rev": "8347a1b4bcc359a1eb2ebfce977a1b9adbf46ce8"
+		},
+		{
+			"ImportPath": "github.com/Unknwon/goconfig",
+			"Rev": "18bc852dc01720ee9f0e9e0a01a1bdbc8744095c"
+		},
+		{
+			"ImportPath": "github.com/gin-gonic/gin",
+			"Rev": "52fcc5dbf6e94df33ad313858fb94b713e9d1b4a"
+		},
+		{
+			"ImportPath": "github.com/go-xorm/xorm",
+			"Rev": "fad61020e856d1dfe16f44e006d288713feb38fb"
+		},
+		{
+			"ImportPath": "github.com/go-xorm/xorm",
+			"Rev": "fad61020e856d1dfe16f44e006d288713feb38fb"
+		},
+		{
+			"ImportPath": "github.com/mattn/go-sqlite3",
+			"Rev": "5510da399572b4962c020184bb291120c0a412e2"
+		},
+		{
+			"ImportPath": "github.com/lib/pq",
+			"Rev": "2d785ad24be7a038e2fc35424b993645a0025425"
+		},
+		{
+			"ImportPath": "github.com/facebookgo/grace",
+			"Rev": "053ab5d25436faedf3fe76fbf3da797c8c27c659"
 		}
 	]
 }
