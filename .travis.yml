@@ -9,5 +9,8 @@ script:
   - ./script/go-test
   - go build
 
+install:
+  - go get ./
+
 notifications:
   webhooks: https://hooks.pubu.im/services/ezn6mv77env2tnw
