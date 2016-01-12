@@ -10,7 +10,7 @@ go:
 
 before_install:
   - if [ `uname` = "Linux" ]; then
-      sudo apt-get bc -y;
+      sudo apt-get install bc -y;
     fi
 
 install:
