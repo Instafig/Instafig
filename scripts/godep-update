@@ -4,7 +4,7 @@
 
 SOURCE_DIRS=("" conf dynval model tests)
 
-which godep &>/dev/null || go get
+which godep &>/dev/null || go get github.com/tools/godep
 
 godep restore
 
