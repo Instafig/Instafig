@@ -1,4 +1,26 @@
 #!/bin/bash
 # -*- mode: sh -*-
 
-go test ./...
+TEST_DIRS=(dynval models conf)
+TEST_COVR=(25.0   0     0)
+
+for (( i=0; i<${#TEST_DIRS[*]}; i++)); do
+    DIR=${TEST_DIRS[$i]}
+    echo "Runing tests for [$DIR]"
+    go test -v -covermode=count -coverprofile=./${DIR}/coverage.out ./${DIR} > .test.output
+    [ $? = '0' ] || {
+        cat .test.output
+        exit 1
+    }
+    COVER_MSG=$(grep "coverage: .*% of statements" .test.output)
+    COVER_MSG=${COVER_MSG#*:}
+    COVER_MSG=${COVER_MSG%\%*}
+    COVER_MSG=${COVER_MSG:-0}
+    [ $( bc <<< "$COVER_MSG < ${TEST_COVR[$i]}") = "1" ] && {
+        echo "ERROR: test coverage of [$DIR] (${COVER_MSG}%) is less than ${TEST_COVR[$i]}%"
+        exit 1
+    }
+    echo "INFO: test coverage of [$DIR] (${COVER_MSG}%) is not less than ${TEST_COVR[$i]}%"
+done
+
+rm -fr .test.output

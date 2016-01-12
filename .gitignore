@@ -31,4 +31,5 @@ _testmain.go
 *.prof
 *.iml
 *.pyc
-
+coverage.out
+.test.output
