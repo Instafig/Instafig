@@ -8,3 +8,6 @@ script:
   - ./script/godep-update
   - ./script/go-test
   - go build
+
+notifications:
+  webhooks: https://hooks.pubu.im/services/ezn6mv77env2tnw
