@@ -1,0 +1,7 @@
+{
+	"ImportPath": "github.com/appwilldev/Instafig",
+	"GoVersion": "go1.5",
+	"Deps": [
+
+	]
+}
