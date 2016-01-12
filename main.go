@@ -1,4 +1,4 @@
-package Instafig
+package main
 
 import (
 	"net/http"
@@ -16,7 +16,14 @@ func main() {
 		c.String(http.StatusOK, "hello from gin")
 	})
 
-	s := http.Server{Addr:conf.HttpAddr, Handler: ginIns}
+	if conf.DebugMode {
+		ginIns.Use(gin.Logger())
+		gin.SetMode(gin.DebugMode)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
+	s := &http.Server{Addr:conf.HttpAddr, Handler: ginIns}
 
 	ginInsNode := gin.New()
 	ginInsNode.Use(gin.Recovery())
@@ -25,7 +32,11 @@ func main() {
 		c.String(http.StatusOK, "hello from gin node")
 	})
 
-	s2 := http.Server{Addr:conf.NodeAddr, Handler: ginInsNode}
+	if conf.DebugMode {
+		ginInsNode.Use(gin.Logger())
+	}
+
+	s2 := &http.Server{Addr:conf.NodeAddr, Handler: ginInsNode}
 
 	gracehttp.Serve(s, s2)
 }
