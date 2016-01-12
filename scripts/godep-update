@@ -1,7 +1,5 @@
 #!/bin/bash
 
-SOURCE_DIRS=("" conf dynval model tests)
-
 which godep &>/dev/null || go get github.com/tools/godep
 
 function go-get() {
@@ -27,7 +25,7 @@ function go-get() {
 }
 
 while :; do
-    OUTPUT=$(godep save "${SOURCE_DIRS[@]/#/github.com/appwilldev/Instafig/}" 2>&1)
+    OUTPUT=$(godep save ./... 2>&1)
     [ "$OUTPUT" = "" ] && break
     OUTPUT=${OUTPUT#*\(}
     OUTPUT=${OUTPUT%\)*}

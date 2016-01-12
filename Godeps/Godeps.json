@@ -2,11 +2,7 @@
 	"ImportPath": "github.com/appwilldev/Instafig",
 	"GoVersion": "go1.5",
 	"Packages": [
-		"github.com/appwilldev/Instafig/",
-		"github.com/appwilldev/Instafig/conf",
-		"github.com/appwilldev/Instafig/dynval",
-		"github.com/appwilldev/Instafig/model",
-		"github.com/appwilldev/Instafig/tests"
+		"./..."
 	],
 	"Deps": [
 		{
