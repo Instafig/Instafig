@@ -5,8 +5,8 @@ go:
   - tip
 
 script:
-  - ./script/godep-update
-  - ./script/go-test
+  - ./scripts/godep-update
+  - ./scripts/go-test
   - go build
 
 install:
