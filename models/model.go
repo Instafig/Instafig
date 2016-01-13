@@ -66,10 +66,11 @@ func IsValidAppType(typ string) bool {
 }
 
 const (
-	CONF_V_TYPE_STRING = "string"
-	CONF_V_TYPE_INT    = "int"
-	CONF_V_TYPE_FLOAT  = "float"
-	CONF_V_TYPE_CODE   = "code"
+	CONF_V_TYPE_STRING   = "string"
+	CONF_V_TYPE_INT      = "int"
+	CONF_V_TYPE_FLOAT    = "float"
+	CONF_V_TYPE_CODE     = "code"
+	CONF_V_TYPE_TEMPLATE = "template"
 )
 
 type Config struct {
@@ -102,7 +103,11 @@ func GetAllConfig(s *ModelSession) ([]*Config, error) {
 }
 
 func IsValidConfType(typ string) bool {
-	return typ == CONF_V_TYPE_CODE || typ == CONF_V_TYPE_FLOAT || typ == CONF_V_TYPE_INT || typ == CONF_V_TYPE_STRING
+	return typ == CONF_V_TYPE_CODE ||
+		typ == CONF_V_TYPE_FLOAT ||
+		typ == CONF_V_TYPE_INT ||
+		typ == CONF_V_TYPE_STRING ||
+		typ == CONF_V_TYPE_TEMPLATE
 }
 
 const (

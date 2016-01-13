@@ -27,15 +27,39 @@ type Config struct {
 }
 
 var (
-	memConfUsers      = make(map[string]*models.User)
-	memConfUsersByName      = make(map[string]*models.User)
-	memConfApps       = make(map[string]*models.App)
-	memConfConfigs    = make(map[string]*Config)
-	memConfAppConfigs = make(map[string][]*Config)
-	memConfNodes      = make(map[string]*models.Node)
+	memConfUsers       = make(map[string]*models.User)
+	memConfUsersByName = make(map[string]*models.User)
+	memConfApps        = make(map[string]*models.App)
+	memConfConfigs     = make(map[string]*Config)
+	memConfAppConfigs  = make(map[string][]*Config)
+	memConfNodes       = make(map[string]*models.Node)
 
 	memConfMux = sync.RWMutex{}
 )
+
+func transConfig(m *models.Config) *Config {
+	config := &Config{
+		ConfKey: m.Key,
+		Key:     m.K,
+		ValType: m.VType,
+	}
+
+	switch m.VType {
+	case models.CONF_V_TYPE_FLOAT:
+		config.Val, _ = strconv.ParseFloat(m.V, 64)
+	case models.CONF_V_TYPE_INT:
+		config.Val, _ = strconv.Atoi(m.V)
+	case models.CONF_V_TYPE_STRING:
+		config.Val = m.V
+	case models.CONF_V_TYPE_CODE:
+		// TODO: trans to callable object
+		config.Val = m.V
+	case models.CONF_V_TYPE_TEMPLATE:
+		config.Val = m.V
+	}
+
+	return config
+}
 
 func init() {
 	loadData()
@@ -84,25 +108,9 @@ func fillMemConfData(users []*models.User, apps []*models.App, configs []*models
 	}
 
 	for _, config := range configs {
-		memConfConfigs[config.Key] = &Config{
-			ConfKey: config.Key,
-			Key:     config.K,
-			ValType: config.VType,
-		}
-
-		switch config.VType {
-		case models.CONF_V_TYPE_FLOAT:
-			memConfConfigs[config.Key].Val, _ = strconv.ParseFloat(config.V, 64)
-		case models.CONF_V_TYPE_INT:
-			memConfConfigs[config.Key].Val, _ = strconv.Atoi(config.V)
-		case models.CONF_V_TYPE_STRING:
-			memConfConfigs[config.Key].Val = config.V
-		case models.CONF_V_TYPE_CODE:
-			//TODO: trans to callable object
-			memConfConfigs[config.Key].Val = config.V
-		}
-
-		memConfAppConfigs[config.AppKey] = append(memConfAppConfigs[config.AppKey], memConfConfigs[config.Key])
+		c := transConfig(config)
+		memConfConfigs[config.Key] = c
+		memConfAppConfigs[config.AppKey] = append(memConfAppConfigs[config.AppKey], c)
 	}
 
 	for _, node := range nodes {
@@ -124,7 +132,8 @@ func getMatchConf(matchData *ClientData, configs []*Config) map[string]interface
 		switch config.ValType {
 		case models.CONF_V_TYPE_CODE:
 			res[config.Key] = EvalDynVal(config.Val.(string), matchData)
-			continue
+		case models.CONF_V_TYPE_TEMPLATE:
+			res[config.Key] = getMatchConf(matchData, getAppMemConfig(config.Val.(string)))
 		default:
 			res[config.Key] = config.Val
 		}
