@@ -9,13 +9,14 @@ import (
 	"github.com/appwilldev/Instafig/models"
 )
 
-type ClientMatchData struct {
+type ClientData struct {
 	AppKey     string `json:"app_key" binding:"required"`
 	OSType     string `json:"os_type" binding:"required"`
 	OSVersion  string `json:"os_version" binding:"required"`
 	AppVersion string `json:"app_version" binding:"required"`
 	Ip         string `json:"ip" binding:"required"`
 	Lang       string `json:"lang" binding:"required"`
+	DeviceId   string `json:"device_id"`
 }
 
 type Config struct {
@@ -115,7 +116,7 @@ func getAppMemConfig(appKey string) []*Config {
 	return memConfAppConfigs[appKey]
 }
 
-func getMatchConf(matchData *ClientMatchData, configs []*Config) map[string]interface{} {
+func getMatchConf(matchData *ClientData, configs []*Config) map[string]interface{} {
 	res := make(map[string]interface{}, 0)
 	for _, config := range configs {
 		switch config.ValType {
@@ -130,7 +131,7 @@ func getMatchConf(matchData *ClientMatchData, configs []*Config) map[string]inte
 	return res
 }
 
-func getAppMatchConf(appKey string, matchData *ClientMatchData) map[string]interface{} {
+func getAppMatchConf(appKey string, matchData *ClientData) map[string]interface{} {
 	appConfigs := getAppMemConfig(appKey)
 	if appConfigs == nil {
 		return nil

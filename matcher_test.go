@@ -8,7 +8,7 @@ import (
 )
 
 func TestMatch(t *testing.T) {
-	clientData := &ClientMatchData{
+	clientData := &ClientData{
 		AppKey:     "app1",
 		OSType:     "ios",
 		OSVersion:  "9.3",
