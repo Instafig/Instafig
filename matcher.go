@@ -133,7 +133,7 @@ func getMatchConf(matchData *ClientData, configs []*Config) map[string]interface
 		case models.CONF_V_TYPE_CODE:
 			res[config.Key] = EvalDynVal(config.Val.(string), matchData)
 		case models.CONF_V_TYPE_TEMPLATE:
-			res[config.Key] = getMatchConf(matchData, getAppMemConfig(config.Val.(string)))
+			res[config.Key] = getAppMatchConf(config.Val.(string), matchData)
 		default:
 			res[config.Key] = config.Val
 		}
