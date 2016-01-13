@@ -2,6 +2,7 @@ package main
 
 import (
 	"strings"
+	"encoding/json"
 
 	"github.com/zhemao/glisp/interpreter"
 )
@@ -9,6 +10,10 @@ import (
 type DynVal struct {
 	Sexp     glisp.Sexp
 	Sexp_str string
+}
+
+type ExternalSymbol struct {
+	Symbol string
 }
 
 func NewDynValFromString(str string, env *glisp.Glisp) *DynVal {
@@ -82,4 +87,56 @@ func EvalDynVal(code string, cdata *ClientData) interface{} {
 	default:
 		return nil
 	}
+}
+
+func sexpToSlice(sexp glisp.Sexp) interface{} {
+	if sexp == glisp.SexpNull {
+		return nil
+	}
+	switch sexp.(type){
+	case glisp.SexpPair:
+		return sexpPairToSlice(sexp.(glisp.SexpPair))
+	case glisp.SexpSymbol:
+		return ExternalSymbol{(sexp.(glisp.SexpSymbol)).Name()}
+	case glisp.SexpBool:
+		return bool(sexp.(glisp.SexpBool))
+	case glisp.SexpInt:
+		return int(sexp.(glisp.SexpInt))
+	case glisp.SexpFloat:
+		return float64(sexp.(glisp.SexpFloat))
+	case glisp.SexpStr:
+		return string(sexp.(glisp.SexpStr))
+	default:
+		return sexp.SexpString()
+	}
+}
+
+func sexpPairToSlice(pair glisp.SexpPair) []interface{} {
+	retv := []interface{}{}
+
+	for {
+		switch pair.Tail().(type) {
+		case glisp.SexpPair:
+			retv = append(retv, sexpToSlice(pair.Head()))
+			pair = pair.Tail().(glisp.SexpPair)
+			continue
+		}
+		break
+	}
+
+	retv = append(retv, sexpToSlice(pair.Head()))
+	// TODO fake list when pair.tail is not SexpNull
+	return retv
+}
+
+func (dval *DynVal) ToSlice() []interface{} {
+	return sexpPairToSlice(dval.Sexp.(glisp.SexpPair))
+}
+
+func (dval *DynVal) ToJson() (string, error) {
+	data, err := json.Marshal(dval.ToSlice())
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
 }
