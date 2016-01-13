@@ -71,7 +71,7 @@ func init() {
 
 	Mode, _ = config.GetValue("", "mode")
 	HttpAddr, _ = config.GetValue("", "addr")
-	if IsEasyMode() {
+	if IsEasyDeployMode() {
 		SqliteDir, _ = config.GetValue("sqlite", "dir")
 	} else {
 		DatabaseConfig.Driver, _ = config.GetValue("db", "driver")
@@ -95,7 +95,7 @@ func init() {
 
 }
 
-func IsEasyMode() bool {
+func IsEasyDeployMode() bool {
 	return Mode == "easy_deploy"
 }
 

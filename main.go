@@ -31,15 +31,6 @@ func main() {
 		c.String(http.StatusOK, string(bs))
 	})
 
-	if conf.DebugMode {
-		ginIns.Use(gin.Logger())
-		gin.SetMode(gin.DebugMode)
-	} else {
-		gin.SetMode(gin.ReleaseMode)
-	}
-
-	s := &http.Server{Addr: conf.HttpAddr, Handler: ginIns}
-
 	ginInsNode := gin.New()
 	ginInsNode.Use(gin.Recovery())
 
@@ -48,10 +39,14 @@ func main() {
 	})
 
 	if conf.DebugMode {
+		ginIns.Use(gin.Logger())
 		ginInsNode.Use(gin.Logger())
+		gin.SetMode(gin.DebugMode)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
 	}
 
-	s2 := &http.Server{Addr: conf.NodeAddr, Handler: ginInsNode}
-
-	gracehttp.Serve(s, s2)
+	gracehttp.Serve(
+		&http.Server{Addr: conf.HttpAddr, Handler: ginIns},
+		&http.Server{Addr: conf.NodeAddr, Handler: ginInsNode})
 }

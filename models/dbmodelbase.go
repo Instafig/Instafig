@@ -24,7 +24,7 @@ func init() {
 	var err error
 	var dsn, driver string
 
-	if conf.IsEasyMode() {
+	if conf.IsEasyDeployMode() {
 		dsn = fmt.Sprintf(filepath.Join(conf.SqliteDir, "instafig.db"))
 		driver = "sqlite3"
 	} else {
@@ -48,7 +48,7 @@ func init() {
 	dbEngineDefault.ShowErr = true
 	dbEngineDefault.ShowSQL = conf.DebugMode
 
-	if conf.IsEasyMode() {
+	if conf.IsEasyDeployMode() {
 		if err = dbEngineDefault.Sync2(&User{}, &App{}, &Config{}, &Node{}); err != nil {
 			log.Panicf("Failed to sync db scheme: %s", err.Error())
 		}

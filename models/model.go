@@ -1,5 +1,7 @@
 package models
 
+const SCHEME_VERSION = "0.1"
+
 type User struct {
 	Key  string `xorm:"key TEXT PK NOT NULL" json:"key"`
 	Name string `xorm:"name TEXT NOT NULL" json:"name"`
