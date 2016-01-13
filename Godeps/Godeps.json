@@ -44,6 +44,10 @@
 			"Rev": "fad61020e856d1dfe16f44e006d288713feb38fb"
 		},
 		{
+			"ImportPath": "github.com/gorilla/feeds",
+			"Rev": "a6a27121d834d083d564b296561881acea23fbdd"
+		},
+		{
 			"ImportPath": "github.com/gpmgo/gopm/modules/goconfig",
 			"Comment": "0.7.2-56-g679e0bc",
 			"Rev": "679e0bcf99e4653090e530cc8f560116745f69c5"
