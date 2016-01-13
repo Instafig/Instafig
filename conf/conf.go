@@ -56,7 +56,7 @@ func init() {
 
 	if *configFile == "__unset__" {
 		p, _ := os.Getwd()
-		*configFile = filepath.Join(p, "config.ini")
+		*configFile = filepath.Join(p, "conf/config.ini")
 	}
 
 	confFile, err := filepath.Abs(*configFile)

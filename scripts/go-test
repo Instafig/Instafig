@@ -1,8 +1,8 @@
 #!/bin/bash
 # -*- mode: sh -*-
 
-TEST_DIRS=(dynval models conf)
-TEST_COVR=(25.0   0     0)
+TEST_DIRS=(./ dynval models conf)
+TEST_COVR=(25.0  25.0   0     0)
 
 for (( i=0; i<${#TEST_DIRS[*]}; i++)); do
     DIR=${TEST_DIRS[$i]}

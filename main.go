@@ -27,7 +27,6 @@ func main() {
 		}
 
 		bs, _ := json.Marshal(users)
-
 		c.String(http.StatusOK, string(bs))
 	})
 
