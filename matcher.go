@@ -123,7 +123,7 @@ func getMatchConf(matchData *ClientData, configs []*Config) map[string]interface
 	for _, config := range configs {
 		switch config.ValType {
 		case models.CONF_V_TYPE_CODE:
-			//TODO:
+			res[config.Key] = EvalDynVal(config.Val.(string), matchData)
 			continue
 		default:
 			res[config.Key] = config.Val

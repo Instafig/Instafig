@@ -2,7 +2,6 @@ package main
 
 import (
 	"testing"
-
 	"github.com/appwilldev/Instafig/models"
 	"github.com/stretchr/testify/assert"
 )
@@ -45,9 +44,9 @@ func TestMatch(t *testing.T) {
 			Key:    "conf4",
 			AppKey: "app1",
 			K:      "guaji",
-			V: `(if (= lang "cn")
-			(if (and (>= app_version "1.3.1") (< app_version "1.5")) 1 0)
-			(if (and (>= app_version "1.3.1") (< app_version "1.5")) 2 3))`,
+			V: `(cond (= LANG "zh")
+			(cond (and (>= APP_VERSION "1.3.1") (< APP_VERSION "1.5")) 1 101)
+			(cond (and (>= APP_VERSION "1.3.1") (< APP_VERSION "1.5")) 2 3))`,
 			VType: models.CONF_V_TYPE_CODE,
 		},
 	}
@@ -58,6 +57,6 @@ func TestMatch(t *testing.T) {
 	assert.True(t, res["time_out"].(int) == 1)
 	assert.True(t, res["accuracy"].(float64) == 1.2)
 	assert.True(t, res["dsn"].(string) == "beijing.appdao.com:8080")
-	assert.True(t, res["guaji"] == nil)
+	assert.True(t, res["guaji"] == 101)
 	assert.True(t, res["no-exist-key"] == nil)
 }
