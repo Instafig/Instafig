@@ -28,6 +28,7 @@ type Config struct {
 
 var (
 	memConfUsers      = make(map[string]*models.User)
+	memConfUsersByName      = make(map[string]*models.User)
 	memConfApps       = make(map[string]*models.App)
 	memConfConfigs    = make(map[string]*Config)
 	memConfAppConfigs = make(map[string][]*Config)
@@ -74,6 +75,7 @@ func fillMemConfData(users []*models.User, apps []*models.App, configs []*models
 
 	for _, user := range users {
 		memConfUsers[user.Key] = user
+		memConfUsersByName[user.Name] = user
 	}
 
 	for _, app := range apps {
