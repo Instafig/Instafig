@@ -2,7 +2,6 @@ package main
 
 import (
 	"testing"
-	"fmt"
 	"github.com/appwilldev/Instafig/models"
 	"github.com/stretchr/testify/assert"
 )
@@ -58,7 +57,6 @@ func TestMatch(t *testing.T) {
 	assert.True(t, res["time_out"].(int) == 1)
 	assert.True(t, res["accuracy"].(float64) == 1.2)
 	assert.True(t, res["dsn"].(string) == "beijing.appdao.com:8080")
-	fmt.Printf("----V=%v\n", res)
 	assert.True(t, res["guaji"] == 101)
 	assert.True(t, res["no-exist-key"] == nil)
 }
