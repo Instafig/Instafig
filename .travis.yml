@@ -19,7 +19,7 @@ install:
 
 
 script:
-  - ./scripts/go-test
+  - ./scripts/run-test
 
 notifications:
   webhooks: https://hooks.pubu.im/services/ezn6mv77env2tnw

@@ -33,3 +33,4 @@ _testmain.go
 *.pyc
 coverage.out
 .test.output
+instafig.db
