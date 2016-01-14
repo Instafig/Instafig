@@ -116,14 +116,14 @@ func TestDataVersion(t *testing.T) {
 	user, _ := newUser(&newUserData{
 		Name: "rahuahua",
 	})
-	assert.True(t, memConfDataVersion == 1, "init data version must be 1")
+	assert.True(t, memConfDataVersion == 1, "data version must be 1")
 
 	app, _ := newApp(&newAppData{
 		UserKey: user.Key,
 		Name:    "iconfreecn",
 		Type:    models.APP_TYPE_REAL,
 	})
-	assert.True(t, memConfDataVersion == 2, "init data version must be 2")
+	assert.True(t, memConfDataVersion == 2, "data version must be 2")
 
 	newConfig(&newConfigData{
 		AppKey: app.Key,
@@ -131,5 +131,5 @@ func TestDataVersion(t *testing.T) {
 		V:      "1",
 		VType:  models.CONF_V_TYPE_INT,
 	})
-	assert.True(t, memConfDataVersion == 3, "init data version must be 3")
+	assert.True(t, memConfDataVersion == 3, "data version must be 3")
 }
