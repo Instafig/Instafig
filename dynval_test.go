@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/zhemao/glisp/interpreter"
+
 	"testing"
 )
 
@@ -17,9 +18,13 @@ func TestDynValTruncate(t *testing.T) {
 }
 
 func TestDynValExecute(t *testing.T) {
-	code := `(cond (= LANG "zh")
-			(cond (and (>= APP_VERSION "1.3.1") (< APP_VERSION "1.5")) 1 101)
-			(cond (and (>= APP_VERSION "1.3.1") (< APP_VERSION "1.5")) 2 3))`
+	code := `(cond
+                (and (= LANG "zh") (>= APP_VERSION "1.3.1") (< APP_VERSION "1.5")) 1
+                (and (= LANG "zh") (or (< APP_VERSION "1.3.1") (>= APP_VERSION "1.5"))) 2
+                (and (!= LANG "zh") (>= APP_VERSION "1.3.1") (< APP_VERSION "1.5")) 3
+                (and (!= LANG "zh") (or (< APP_VERSION "1.3.1") (>= APP_VERSION "1.5"))) 4
+                5
+             )`
 	clientData := &ClientData{
 		AppKey:     "app1",
 		OSType:     "ios",
@@ -28,15 +33,26 @@ func TestDynValExecute(t *testing.T) {
 		Ip:         "14.32.123.23",
 		Lang:       "zh",
 	}
-	assert.True(t, EvalDynVal(code, clientData) == 101)
+	assert.True(t, EvalDynVal(code, clientData) == 2)
 }
 
 func TestDynValToJson(t *testing.T) {
 	env := glisp.NewGlisp()
-	code := `(cond (= LANG "zh")
-			(cond (and (>= APP_VERSION "1.3.1") (< APP_VERSION "1.5")) 1 101)
-			(cond (and (>= APP_VERSION "1.3.1") (< APP_VERSION "1.5")) 2 3))`
+	code := `(cond
+                (and (= LANG "zh") (>= APP_VERSION "1.3.1") (< APP_VERSION "1.5")) 1
+                (and (= LANG "zh") (or (< APP_VERSION "1.3.1") (>= APP_VERSION "1.5"))) 2
+                (and (!= LANG "zh") (>= APP_VERSION "1.3.1") (< APP_VERSION "1.5")) 3
+                (and (!= LANG "zh") (or (< APP_VERSION "1.3.1") (>= APP_VERSION "1.5"))) 4
+                5
+             )`
 	dval := NewDynValFromString(code, env)
 	data, _ := dval.ToJson()
-	assert.True(t, data == `[{"Symbol":"cond"},[{"Symbol":"="},{"Symbol":"LANG"},"zh"],[{"Symbol":"cond"},[{"Symbol":"and"},[{"Symbol":"\u003e="},{"Symbol":"APP_VERSION"},"1.3.1"],[{"Symbol":"\u003c"},{"Symbol":"APP_VERSION"},"1.5"]],1,101],[{"Symbol":"cond"},[{"Symbol":"and"},[{"Symbol":"\u003e="},{"Symbol":"APP_VERSION"},"1.3.1"],[{"Symbol":"\u003c"},{"Symbol":"APP_VERSION"},"1.5"]],2,3]]`)
+	assert.True(t, data == `[{"Symbol":"cond"},[{"Symbol":"and"},[{"Symbol":"="},{"Symbol":"LANG"},"zh"],[{"Symbol":"\u003e="},{"Symbol":"APP_VERSION"},"1.3.1"],[{"Symbol":"\u003c"},{"Symbol":"APP_VERSION"},"1.5"]],1,[{"Symbol":"and"},[{"Symbol":"="},{"Symbol":"LANG"},"zh"],[{"Symbol":"or"},[{"Symbol":"\u003c"},{"Symbol":"APP_VERSION"},"1.3.1"],[{"Symbol":"\u003e="},{"Symbol":"APP_VERSION"},"1.5"]]],2,[{"Symbol":"and"},[{"Symbol":"!="},{"Symbol":"LANG"},"zh"],[{"Symbol":"\u003e="},{"Symbol":"APP_VERSION"},"1.3.1"],[{"Symbol":"\u003c"},{"Symbol":"APP_VERSION"},"1.5"]],3,[{"Symbol":"and"},[{"Symbol":"!="},{"Symbol":"LANG"},"zh"],[{"Symbol":"or"},[{"Symbol":"\u003c"},{"Symbol":"APP_VERSION"},"1.3.1"],[{"Symbol":"\u003e="},{"Symbol":"APP_VERSION"},"1.5"]]],4,5]`)
+}
+
+func TestJsonToSexpString(t *testing.T) {
+	excepted_code := `(cond (and (= LANG "zh") (>= APP_VERSION "1.3.1") (< APP_VERSION "1.5")) 1 (and (= LANG "zh") (or (< APP_VERSION "1.3.1") (>= APP_VERSION "1.5"))) 2 (and (!= LANG "zh") (>= APP_VERSION "1.3.1") (< APP_VERSION "1.5")) 3 (and (!= LANG "zh") (or (< APP_VERSION "1.3.1") (>= APP_VERSION "1.5"))) 4 5)`
+	json := `[{"Symbol":"cond"},[{"Symbol":"and"},[{"Symbol":"="},{"Symbol":"LANG"},"zh"],[{"Symbol":"\u003e="},{"Symbol":"APP_VERSION"},"1.3.1"],[{"Symbol":"\u003c"},{"Symbol":"APP_VERSION"},"1.5"]],1,[{"Symbol":"and"},[{"Symbol":"="},{"Symbol":"LANG"},"zh"],[{"Symbol":"or"},[{"Symbol":"\u003c"},{"Symbol":"APP_VERSION"},"1.3.1"],[{"Symbol":"\u003e="},{"Symbol":"APP_VERSION"},"1.5"]]],2,[{"Symbol":"and"},[{"Symbol":"!="},{"Symbol":"LANG"},"zh"],[{"Symbol":"\u003e="},{"Symbol":"APP_VERSION"},"1.3.1"],[{"Symbol":"\u003c"},{"Symbol":"APP_VERSION"},"1.5"]],3,[{"Symbol":"and"},[{"Symbol":"!="},{"Symbol":"LANG"},"zh"],[{"Symbol":"or"},[{"Symbol":"\u003c"},{"Symbol":"APP_VERSION"},"1.3.1"],[{"Symbol":"\u003e="},{"Symbol":"APP_VERSION"},"1.5"]]],4,5]`
+	code, _ := JsonToSexpString(json)
+	assert.True(t, code == excepted_code)
 }

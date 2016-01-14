@@ -1,10 +1,10 @@
 package main
 
 import (
-	"strings"
 	"encoding/json"
-
 	"github.com/zhemao/glisp/interpreter"
+	"strconv"
+	"strings"
 )
 
 type DynVal struct {
@@ -50,7 +50,6 @@ func ClearClientData(env *glisp.Glisp) error {
 	return nil
 }
 
-
 func (dval *DynVal) Execute(env *glisp.Glisp) (glisp.Sexp, error) {
 	env.LoadExpressions([]glisp.Sexp{dval.Sexp})
 	sexp, err := env.Run()
@@ -93,7 +92,7 @@ func sexpToSlice(sexp glisp.Sexp) interface{} {
 	if sexp == glisp.SexpNull {
 		return nil
 	}
-	switch sexp.(type){
+	switch sexp.(type) {
 	case glisp.SexpPair:
 		return sexpPairToSlice(sexp.(glisp.SexpPair))
 	case glisp.SexpSymbol:
@@ -139,4 +138,46 @@ func (dval *DynVal) ToJson() (string, error) {
 		return "", err
 	}
 	return string(data), nil
+}
+
+func sliceToSexpString(data []interface{}) string {
+	ret := "("
+	for idx, item := range data {
+		switch val := item.(type) {
+		case bool:
+			ret += " "
+			ret += strconv.FormatBool(val)
+		case int:
+			ret += " "
+			ret += string(val)
+		case float64:
+			ret += " "
+			ret += strconv.FormatFloat(val, 'f', -1, 64)
+		case string:
+			ret += " "
+			ret += `"`
+			ret += string(val)
+			ret += `"`
+		case map[string]interface{}: // Symbol
+			if idx != 0 {
+				ret += " "
+			}
+			ret += string(val["Symbol"].(string))
+		case []interface{}: // Sub sexp
+			ret += " "
+			ret += sliceToSexpString(val)
+		}
+	}
+	ret += ")"
+	return ret
+}
+
+func JsonToSexpString(json_str string) (string, error) {
+	var f []interface{}
+	err := json.Unmarshal([]byte(json_str), &f)
+	if err != nil {
+		return "", err
+	}
+	data := sliceToSexpString(f)
+	return data, nil
 }
