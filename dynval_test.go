@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/stretchr/testify/assert"
-
 	"testing"
 )
 
@@ -42,12 +41,27 @@ func TestDynValToJson(t *testing.T) {
              )`
 	dval := NewDynValFromString(code, env)
 	data, _ := dval.ToJson()
-	assert.True(t, data == `[{"Symbol":"cond"},[{"Symbol":"and"},[{"Symbol":"="},{"Symbol":"LANG"},"zh"],[{"Symbol":"\u003e="},{"Symbol":"APP_VERSION"},"1.3.1"],[{"Symbol":"\u003c"},{"Symbol":"APP_VERSION"},"1.5"]],1,[{"Symbol":"and"},[{"Symbol":"="},{"Symbol":"LANG"},"zh"],[{"Symbol":"or"},[{"Symbol":"\u003c"},{"Symbol":"APP_VERSION"},"1.3.1"],[{"Symbol":"\u003e="},{"Symbol":"APP_VERSION"},"1.5"]]],2,[{"Symbol":"and"},[{"Symbol":"!="},{"Symbol":"LANG"},"zh"],[{"Symbol":"\u003e="},{"Symbol":"APP_VERSION"},"1.3.1"],[{"Symbol":"\u003c"},{"Symbol":"APP_VERSION"},"1.5"]],3,[{"Symbol":"and"},[{"Symbol":"!="},{"Symbol":"LANG"},"zh"],[{"Symbol":"or"},[{"Symbol":"\u003c"},{"Symbol":"APP_VERSION"},"1.3.1"],[{"Symbol":"\u003e="},{"Symbol":"APP_VERSION"},"1.5"]]],4,5]`)
+	assert.True(t, data == `[{"symbol":"cond"},[{"symbol":"and"},[{"symbol":"="},{"symbol":"LANG"},"zh"],[{"symbol":"\u003e="},{"symbol":"APP_VERSION"},"1.3.1"],[{"symbol":"\u003c"},{"symbol":"APP_VERSION"},"1.5"]],1,[{"symbol":"and"},[{"symbol":"="},{"symbol":"LANG"},"zh"],[{"symbol":"or"},[{"symbol":"\u003c"},{"symbol":"APP_VERSION"},"1.3.1"],[{"symbol":"\u003e="},{"symbol":"APP_VERSION"},"1.5"]]],2,[{"symbol":"and"},[{"symbol":"!="},{"symbol":"LANG"},"zh"],[{"symbol":"\u003e="},{"symbol":"APP_VERSION"},"1.3.1"],[{"symbol":"\u003c"},{"symbol":"APP_VERSION"},"1.5"]],3,[{"symbol":"and"},[{"symbol":"!="},{"symbol":"LANG"},"zh"],[{"symbol":"or"},[{"symbol":"\u003c"},{"symbol":"APP_VERSION"},"1.3.1"],[{"symbol":"\u003e="},{"symbol":"APP_VERSION"},"1.5"]]],4,5]`)
 }
 
 func TestJsonToSexpString(t *testing.T) {
 	excepted_code := `(cond (and (= LANG "zh") (>= APP_VERSION "1.3.1") (< APP_VERSION "1.5")) 1 (and (= LANG "zh") (or (< APP_VERSION "1.3.1") (>= APP_VERSION "1.5"))) 2 (and (!= LANG "zh") (>= APP_VERSION "1.3.1") (< APP_VERSION "1.5")) 3 (and (!= LANG "zh") (or (< APP_VERSION "1.3.1") (>= APP_VERSION "1.5"))) 4 5)`
-	json := `[{"Symbol":"cond"},[{"Symbol":"and"},[{"Symbol":"="},{"Symbol":"LANG"},"zh"],[{"Symbol":"\u003e="},{"Symbol":"APP_VERSION"},"1.3.1"],[{"Symbol":"\u003c"},{"Symbol":"APP_VERSION"},"1.5"]],1,[{"Symbol":"and"},[{"Symbol":"="},{"Symbol":"LANG"},"zh"],[{"Symbol":"or"},[{"Symbol":"\u003c"},{"Symbol":"APP_VERSION"},"1.3.1"],[{"Symbol":"\u003e="},{"Symbol":"APP_VERSION"},"1.5"]]],2,[{"Symbol":"and"},[{"Symbol":"!="},{"Symbol":"LANG"},"zh"],[{"Symbol":"\u003e="},{"Symbol":"APP_VERSION"},"1.3.1"],[{"Symbol":"\u003c"},{"Symbol":"APP_VERSION"},"1.5"]],3,[{"Symbol":"and"},[{"Symbol":"!="},{"Symbol":"LANG"},"zh"],[{"Symbol":"or"},[{"Symbol":"\u003c"},{"Symbol":"APP_VERSION"},"1.3.1"],[{"Symbol":"\u003e="},{"Symbol":"APP_VERSION"},"1.5"]]],4,5]`
+	json := `[{"symbol":"cond"},[{"symbol":"and"},[{"symbol":"="},{"symbol":"LANG"},"zh"],[{"symbol":"\u003e="},{"symbol":"APP_VERSION"},"1.3.1"],[{"symbol":"\u003c"},{"symbol":"APP_VERSION"},"1.5"]],1,[{"symbol":"and"},[{"symbol":"="},{"symbol":"LANG"},"zh"],[{"symbol":"or"},[{"symbol":"\u003c"},{"symbol":"APP_VERSION"},"1.3.1"],[{"symbol":"\u003e="},{"symbol":"APP_VERSION"},"1.5"]]],2,[{"symbol":"and"},[{"symbol":"!="},{"symbol":"LANG"},"zh"],[{"symbol":"\u003e="},{"symbol":"APP_VERSION"},"1.3.1"],[{"symbol":"\u003c"},{"symbol":"APP_VERSION"},"1.5"]],3,[{"symbol":"and"},[{"symbol":"!="},{"symbol":"LANG"},"zh"],[{"symbol":"or"},[{"symbol":"\u003c"},{"symbol":"APP_VERSION"},"1.3.1"],[{"symbol":"\u003e="},{"symbol":"APP_VERSION"},"1.5"]]],4,5]`
 	code, _ := JsonToSexpString(json)
 	assert.True(t, code == excepted_code)
+}
+
+func TestCondValuesToJson(t *testing.T) {
+	env := NewGlisp()
+	code := `(cond-values
+                (and (= LANG "zh") (>= APP_VERSION "1.3.1") (< APP_VERSION "1.5")) 1
+                (and (= LANG "zh") (or (< APP_VERSION "1.3.1") (>= APP_VERSION "1.5"))) 2
+                (and (!= LANG "zh") (>= APP_VERSION "1.3.1") (< APP_VERSION "1.5")) 3
+                (and (!= LANG "zh") (or (< APP_VERSION "1.3.1") (>= APP_VERSION "1.5"))) 4
+                5
+             )`
+	dval := NewDynValFromString(code, env)
+	data, _ := dval.ToJson()
+	expected_json := `{"cond-values":[{"condition":{"arguments":[{"arguments":[{"symbol":"LANG"},"zh"],"func":"="},{"arguments":[{"symbol":"APP_VERSION"},"1.3.1"],"func":"\u003e="},{"arguments":[{"symbol":"APP_VERSION"},"1.5"],"func":"\u003c"}],"func":"and"},"value":1},{"condition":{"arguments":[{"arguments":[{"symbol":"LANG"},"zh"],"func":"="},{"arguments":[{"arguments":[{"symbol":"APP_VERSION"},"1.3.1"],"func":"\u003c"},{"arguments":[{"symbol":"APP_VERSION"},"1.5"],"func":"\u003e="}],"func":"or"}],"func":"and"},"value":2},{"condition":{"arguments":[{"arguments":[{"symbol":"LANG"},"zh"],"func":"!="},{"arguments":[{"symbol":"APP_VERSION"},"1.3.1"],"func":"\u003e="},{"arguments":[{"symbol":"APP_VERSION"},"1.5"],"func":"\u003c"}],"func":"and"},"value":3},{"condition":{"arguments":[{"arguments":[{"symbol":"LANG"},"zh"],"func":"!="},{"arguments":[{"arguments":[{"symbol":"APP_VERSION"},"1.3.1"],"func":"\u003c"},{"arguments":[{"symbol":"APP_VERSION"},"1.5"],"func":"\u003e="}],"func":"or"}],"func":"and"},"value":4}],"default-value":5}`
+	assert.True(t, data == expected_json)
 }

@@ -12,10 +12,6 @@ type DynVal struct {
 	Sexp_str string
 }
 
-type ExternalSymbol struct {
-	Symbol string
-}
-
 func NewDynValFromString(str string, env *glisp.Glisp) *DynVal {
 	sexp, err := env.ParseStream(strings.NewReader(str))
 	if err != nil {
@@ -50,6 +46,7 @@ func ClearClientData(env *glisp.Glisp) error {
 	return nil
 }
 
+// Eval
 func (dval *DynVal) Execute(env *glisp.Glisp) (glisp.Sexp, error) {
 	env.LoadExpressions([]glisp.Sexp{dval.Sexp})
 	sexp, err := env.Run()
@@ -85,15 +82,20 @@ func EvalDynVal(code string, cdata *ClientData) interface{} {
 	}
 }
 
-func sexpToSlice(sexp glisp.Sexp) interface{} {
+// Serialize to JSON
+
+// 1. for normal style
+func sexpToPlainData(sexp glisp.Sexp) interface{} {
 	if sexp == glisp.SexpNull {
 		return nil
 	}
 	switch val := sexp.(type) {
 	case glisp.SexpPair:
-		return sexpPairToSlice(val)
+		return sexpPairToPlainData(val)
 	case glisp.SexpSymbol:
-		return ExternalSymbol{val.Name()}
+		ret := make(map[string]string)
+		ret["symbol"] = val.Name()
+		return ret
 	case glisp.SexpBool:
 		return bool(val)
 	case glisp.SexpInt:
@@ -107,36 +109,127 @@ func sexpToSlice(sexp glisp.Sexp) interface{} {
 	}
 }
 
-func sexpPairToSlice(pair glisp.SexpPair) []interface{} {
+func sexpPairToPlainData(pair glisp.SexpPair) interface{} {
 	retv := []interface{}{}
+
+	if h, ok := pair.Head().(glisp.SexpSymbol); ok {
+		if h.Name() == "cond-values" {
+			return condValuesToPlainData(pair, false)
+		}
+	}
 
 	for {
 		switch tail := pair.Tail().(type) {
 		case glisp.SexpPair:
-			retv = append(retv, sexpToSlice(pair.Head()))
+			retv = append(retv, sexpToPlainData(pair.Head()))
 			pair = tail
 			continue
 		}
 		break
 	}
 
-	retv = append(retv, sexpToSlice(pair.Head()))
+	retv = append(retv, sexpToPlainData(pair.Head()))
 	// TODO fake list when pair.tail is not SexpNull
 	return retv
 }
 
-func (dval *DynVal) ToSlice() []interface{} {
-	return sexpPairToSlice(dval.Sexp.(glisp.SexpPair))
+// 2. for cond-values style
+
+func condValuesBodyToPlainData(body glisp.SexpPair) ([]interface{}, interface{}) {
+	var default_value interface{}
+	var conds []interface{}
+	for {
+		cond := body.Head()
+		if tail, ok := body.Tail().(glisp.SexpPair); ok {
+			body = tail
+		} else {
+			default_value = condValuesToPlainData(cond, false)
+			break
+		}
+		value := body.Head()
+		cond_item := make(map[string]interface{})
+		cond_item["condition"] = condValuesToPlainData(cond, false)
+		cond_item["value"] = condValuesToPlainData(value, false)
+		conds = append(conds, cond_item)
+		if tail, ok := body.Tail().(glisp.SexpPair); ok {
+			body = tail
+		} else {
+			default_value = nil
+			break
+		}
+	}
+	return conds, default_value
+}
+
+func condValuesToPlainData(sexp glisp.Sexp, issub bool) interface{} {
+	switch expv := sexp.(type) {
+	case glisp.SexpPair:
+		switch val := expv.Head().(type) {
+		case glisp.SexpSymbol:
+			if issub {
+				retv := []interface{}{}
+				retv = append(retv, sexpToPlainData(val))
+				if rest, ok := (expv.Tail()).(glisp.SexpPair); ok {
+					for {
+						switch tail := rest.Tail().(type) {
+						case glisp.SexpPair:
+							retv = append(retv, condValuesToPlainData(rest.Head(), false))
+							rest = tail
+							continue
+						}
+						break
+					}
+					retv = append(retv, condValuesToPlainData(rest.Head(), false))
+				}
+				return retv
+			}
+			if val.Name() == "cond-values" {
+				ret := make(map[string]interface{})
+				if tail, ok := expv.Tail().(glisp.SexpPair); ok {
+					ret["cond-values"], ret["default-value"] = condValuesBodyToPlainData(tail)
+				} else {
+					ret["cond-values"], ret["default-value"] = []interface{}{}, condValuesToPlainData(tail, false)
+				}
+				return ret
+			} else {
+				ret := make(map[string]interface{})
+				ret["func"] = val.Name()
+				ret["arguments"] = condValuesToPlainData(expv.Tail(), true)
+				return ret
+			}
+		default:
+			retv := []interface{}{}
+			for {
+				switch tail := expv.Tail().(type) {
+				case glisp.SexpPair:
+					retv = append(retv, condValuesToPlainData(expv.Head(), false))
+					expv = tail
+					continue
+				}
+				break
+			}
+			retv = append(retv, condValuesToPlainData(expv.Head(), false))
+			return retv
+		}
+	default:
+		return sexpToPlainData(sexp)
+	}
+}
+
+// 3. API
+func (dval *DynVal) ToPlainData() interface{} {
+	return sexpToPlainData(dval.Sexp)
 }
 
 func (dval *DynVal) ToJson() (string, error) {
-	data, err := json.Marshal(dval.ToSlice())
+	data, err := json.Marshal(dval.ToPlainData())
 	if err != nil {
 		return "", err
 	}
 	return string(data), nil
 }
 
+// Unserialize from JSON to Sexp
 func sliceToSexpString(data []interface{}) string {
 	ret := "("
 	for idx, item := range data {
@@ -159,7 +252,7 @@ func sliceToSexpString(data []interface{}) string {
 			if idx != 0 {
 				ret += " "
 			}
-			ret += string(val["Symbol"].(string))
+			ret += string(val["symbol"].(string))
 		case []interface{}: // Sub sexp
 			ret += " "
 			ret += sliceToSexpString(val)
