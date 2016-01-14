@@ -37,6 +37,7 @@ var (
 	memConfRawConfigs  = make(map[string]*models.Config)
 	memConfAppConfigs  = make(map[string][]*Config)
 	memConfNodes       = make(map[string]*models.Node)
+	memConfDataVersion = 0
 
 	memConfMux = sync.RWMutex{}
 )
@@ -97,10 +98,15 @@ func loadAllData() {
 		log.Panicf("Failed to load node info: %s", err.Error())
 	}
 
-	fillMemConfData(users, apps, configs, nodes)
+	dataVersion, err := models.GetDataVersion(nil)
+	if err != nil {
+		log.Panicf("Failed to load data version info: %s", err.Error())
+	}
+
+	fillMemConfData(users, apps, configs, nodes, dataVersion)
 }
 
-func fillMemConfData(users []*models.User, apps []*models.App, configs []*models.Config, nodes []*models.Node) {
+func fillMemConfData(users []*models.User, apps []*models.App, configs []*models.Config, nodes []*models.Node, dataVersion int) {
 	memConfMux.Lock()
 	defer memConfMux.Unlock()
 
@@ -112,6 +118,7 @@ func fillMemConfData(users []*models.User, apps []*models.App, configs []*models
 	memConfRawConfigs = make(map[string]*models.Config)
 	memConfAppConfigs = make(map[string][]*Config)
 	memConfNodes = make(map[string]*models.Node)
+	memConfDataVersion = dataVersion
 
 	for _, user := range users {
 		memConfUsers[user.Key] = user

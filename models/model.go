@@ -1,6 +1,12 @@
 package models
 
+import "fmt"
+
 const SCHEME_VERSION = "0.1"
+
+var (
+	NoDataVerError = fmt.Errorf("no data version")
+)
 
 type User struct {
 	Key  string `xorm:"key TEXT PK NOT NULL" json:"key"`
@@ -188,10 +194,38 @@ func IsValidNodeType(typ string) bool {
 	return typ == NODE_TYPE_MASTER || typ == NODE_TYPE_SLAVE
 }
 
+type DataVersion struct {
+	Ver int `xorm:"ver INT NOT NULL"`
+}
 
-// !!!! only for unit test
-func ClearData() error {
-	sql := "delete from config; delete from app; delete from user;"
-	_, err := dbEngineDefault.Exec(sql)
+func (*DataVersion) TableName() string {
+	return "data_version"
+}
+
+func UpdateDataVersion(s *ModelSession, ver int) error {
+	if s == nil {
+		s = newAutoCloseModelsSession()
+	}
+
+	sql := fmt.Sprintf("update data_version set ver=%d", ver)
+	_, err := s.Exec(sql)
 	return err
+}
+
+func GetDataVersion(s *ModelSession) (int, error) {
+	if s == nil {
+		s = newAutoCloseModelsSession()
+	}
+
+	res := make([]*DataVersion, 0)
+	err := s.Find(&res)
+	if err != nil {
+		return 0, err
+	}
+
+	if len(res) == 0 {
+		return 0, NoDataVerError
+	}
+
+	return res[0].Ver, nil
 }

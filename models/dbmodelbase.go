@@ -49,8 +49,20 @@ func init() {
 	dbEngineDefault.ShowSQL = conf.DebugMode
 
 	if conf.IsEasyDeployMode() {
-		if err = dbEngineDefault.Sync2(&User{}, &App{}, &Config{}, &Node{}); err != nil {
+		if err = dbEngineDefault.Sync2(&User{}, &App{}, &Config{}, &Node{}, &DataVersion{}); err != nil {
 			log.Panicf("Failed to sync db scheme: %s", err.Error())
+		}
+
+		_, err := GetDataVersion(nil)
+		if err != nil {
+			if err != NoDataVerError {
+				log.Panicf("failed to get data version: %s", err.Error())
+			} else {
+				_, err = dbEngineDefault.Exec("INSERT INTO data_version(ver) VALUES(1)")
+				if err != nil {
+					log.Panicf("failed to init data version: %s", err.Error())
+				}
+			}
 		}
 	}
 

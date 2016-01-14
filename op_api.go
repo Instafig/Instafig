@@ -56,13 +56,35 @@ func NewUser(c *gin.Context) {
 }
 
 func newUser(newData *newUserData) (*models.User, error) {
-	user := &models.User{
-		Name: newData.Name,
-		Key:  utils.GenerateKey()}
-	if err := models.InsertDBModel(nil, user); err != nil {
+	s := models.NewModelSession()
+	defer s.Close()
+	if err := s.Begin(); err != nil {
+		s.Rollback()
 		return nil, err
 	}
 
+	if err := models.UpdateDataVersion(s, memConfDataVersion+1); err != nil {
+		s.Rollback()
+		return nil, err
+	}
+
+	user := &models.User{
+		Name: newData.Name,
+		Key:  utils.GenerateKey()}
+	if err := models.InsertDBModel(s, user); err != nil {
+		s.Rollback()
+		return nil, err
+	}
+
+	if err := s.Commit(); err != nil {
+		s.Rollback()
+		return nil, err
+	}
+
+	memConfMux.Lock()
+	defer memConfMux.Unlock()
+
+	memConfDataVersion++
 	memConfUsers[user.Key] = user
 	memConfUsersByName[user.Name] = user
 
@@ -129,16 +151,36 @@ func NewApp(c *gin.Context) {
 }
 
 func newApp(newData *newAppData) (*models.App, error) {
+	s := models.NewModelSession()
+	defer s.Close()
+	if err := s.Begin(); err != nil {
+		s.Rollback()
+		return nil, err
+	}
+
+	if err := models.UpdateDataVersion(s, memConfDataVersion+1); err != nil {
+		s.Rollback()
+		return nil, err
+	}
+
 	app := &models.App{
 		Key:     utils.GenerateKey(),
 		Name:    newData.Name,
 		UserKey: newData.UserKey,
 		Type:    newData.Type,
 	}
-	if err := models.InsertDBModel(nil, app); err != nil {
+	if err := models.InsertDBModel(s, app); err != nil {
+		return nil, err
+	}
+	if err := s.Commit(); err != nil {
+		s.Rollback()
 		return nil, err
 	}
 
+	memConfMux.Lock()
+	defer memConfMux.Unlock()
+
+	memConfDataVersion++
 	memConfApps[app.Key] = app
 	memConfAppsByName[app.Name] = append(memConfAppsByName[app.Name], app)
 
@@ -217,6 +259,18 @@ func NewConfig(c *gin.Context) {
 }
 
 func newConfig(newData *newConfigData) (*models.Config, error) {
+	s := models.NewModelSession()
+	defer s.Close()
+	if err := s.Begin(); err != nil {
+		s.Rollback()
+		return nil, err
+	}
+
+	if err := models.UpdateDataVersion(s, memConfDataVersion+1); err != nil {
+		s.Rollback()
+		return nil, err
+	}
+
 	config := &models.Config{
 		Key:    utils.GenerateKey(),
 		AppKey: newData.AppKey,
@@ -224,10 +278,19 @@ func newConfig(newData *newConfigData) (*models.Config, error) {
 		V:      newData.V,
 		VType:  newData.VType,
 	}
-	if err := models.InsertDBModel(nil, config); err != nil {
+	if err := models.InsertDBModel(s, config); err != nil {
+		s.Rollback()
+		return nil, err
+	}
+	if err := s.Commit(); err != nil {
+		s.Rollback()
 		return nil, err
 	}
 
+	memConfMux.Lock()
+	defer memConfMux.Unlock()
+
+	memConfDataVersion++
 	memConfRawConfigs[config.Key] = config
 	memConfConfigs[config.Key] = transConfig(config)
 	memConfAppConfigs[config.AppKey] = append(memConfAppConfigs[config.AppKey], transConfig(config))

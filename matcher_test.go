@@ -53,7 +53,7 @@ func TestMatch(t *testing.T) {
 		},
 	}
 
-	fillMemConfData(users, apps, configs, nil)
+	fillMemConfData(users, apps, configs, nil, 0)
 
 	res := getAppMatchConf("app1", clientData)
 	assert.True(t, res["time_out"].(int) == 1)
@@ -116,7 +116,7 @@ func TestTemplateConf(t *testing.T) {
 		},
 	}
 
-	fillMemConfData(users, apps, configs, nil)
+	fillMemConfData(users, apps, configs, nil, 0)
 
 	res := getAppMatchConf("app1", clientData)
 	mapConf := res["template_conf"]
