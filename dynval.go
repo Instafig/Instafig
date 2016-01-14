@@ -67,24 +67,21 @@ func EvalDynValToSexp(code string, cdata *ClientData) (glisp.Sexp, error) {
 }
 
 func EvalDynVal(code string, cdata *ClientData) interface{} {
-	env := glisp.NewGlisp()
-	SetClientData(env, cdata)
-	dval := NewDynValFromString(code, env)
-	data, err := dval.Execute(env)
+	data, err := EvalDynValToSexp(code, cdata)
 	if err != nil {
 		return nil
 	}
-	switch data.(type) {
+	switch val := data.(type) {
 	case glisp.SexpBool:
-		return bool(data.(glisp.SexpBool))
+		return bool(val)
 	case glisp.SexpInt:
-		return int(data.(glisp.SexpInt))
+		return int(val)
 	case glisp.SexpFloat:
-		return float64(data.(glisp.SexpFloat))
+		return float64(val)
 	case glisp.SexpStr:
-		return string(data.(glisp.SexpStr))
+		return string(val)
 	default:
-		return nil
+		return data.SexpString()
 	}
 }
 
