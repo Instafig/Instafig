@@ -92,19 +92,19 @@ func sexpToSlice(sexp glisp.Sexp) interface{} {
 	if sexp == glisp.SexpNull {
 		return nil
 	}
-	switch sexp.(type) {
+	switch val := sexp.(type) {
 	case glisp.SexpPair:
-		return sexpPairToSlice(sexp.(glisp.SexpPair))
+		return sexpPairToSlice(val)
 	case glisp.SexpSymbol:
-		return ExternalSymbol{(sexp.(glisp.SexpSymbol)).Name()}
+		return ExternalSymbol{val.Name()}
 	case glisp.SexpBool:
-		return bool(sexp.(glisp.SexpBool))
+		return bool(val)
 	case glisp.SexpInt:
-		return int(sexp.(glisp.SexpInt))
+		return int(val)
 	case glisp.SexpFloat:
-		return float64(sexp.(glisp.SexpFloat))
+		return float64(val)
 	case glisp.SexpStr:
-		return string(sexp.(glisp.SexpStr))
+		return string(val)
 	default:
 		return sexp.SexpString()
 	}
@@ -114,10 +114,10 @@ func sexpPairToSlice(pair glisp.SexpPair) []interface{} {
 	retv := []interface{}{}
 
 	for {
-		switch pair.Tail().(type) {
+		switch tail := pair.Tail().(type) {
 		case glisp.SexpPair:
 			retv = append(retv, sexpToSlice(pair.Head()))
-			pair = pair.Tail().(glisp.SexpPair)
+			pair = tail
 			continue
 		}
 		break
