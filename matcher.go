@@ -21,10 +21,11 @@ type ClientData struct {
 }
 
 type Config struct {
-	Key   string
-	K     string
-	V     interface{}
-	VType string
+	Key    string
+	AppKey string
+	K      string
+	V      interface{}
+	VType  string
 }
 
 var (
@@ -42,10 +43,10 @@ var (
 
 func transConfig(m *models.Config) *Config {
 	config := &Config{
-		Key:   m.Key,
-		K:     m.K,
-		V:     m.V,
-		VType: m.VType,
+		Key:    m.Key,
+		AppKey: m.AppKey,
+		K:      m.K,
+		VType:  m.VType,
 	}
 
 	switch m.VType {
