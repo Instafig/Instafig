@@ -1,10 +1,10 @@
 package main
 
 import (
-	"strings"
 	"encoding/json"
-
 	"github.com/zhemao/glisp/interpreter"
+	"strconv"
+	"strings"
 )
 
 type DynVal struct {
@@ -50,7 +50,6 @@ func ClearClientData(env *glisp.Glisp) error {
 	return nil
 }
 
-
 func (dval *DynVal) Execute(env *glisp.Glisp) (glisp.Sexp, error) {
 	env.LoadExpressions([]glisp.Sexp{dval.Sexp})
 	sexp, err := env.Run()
@@ -68,24 +67,21 @@ func EvalDynValToSexp(code string, cdata *ClientData) (glisp.Sexp, error) {
 }
 
 func EvalDynVal(code string, cdata *ClientData) interface{} {
-	env := glisp.NewGlisp()
-	SetClientData(env, cdata)
-	dval := NewDynValFromString(code, env)
-	data, err := dval.Execute(env)
+	data, err := EvalDynValToSexp(code, cdata)
 	if err != nil {
 		return nil
 	}
-	switch data.(type) {
+	switch val := data.(type) {
 	case glisp.SexpBool:
-		return bool(data.(glisp.SexpBool))
+		return bool(val)
 	case glisp.SexpInt:
-		return int(data.(glisp.SexpInt))
+		return int(val)
 	case glisp.SexpFloat:
-		return float64(data.(glisp.SexpFloat))
+		return float64(val)
 	case glisp.SexpStr:
-		return string(data.(glisp.SexpStr))
+		return string(val)
 	default:
-		return nil
+		return data.SexpString()
 	}
 }
 
@@ -93,19 +89,19 @@ func sexpToSlice(sexp glisp.Sexp) interface{} {
 	if sexp == glisp.SexpNull {
 		return nil
 	}
-	switch sexp.(type){
+	switch val := sexp.(type) {
 	case glisp.SexpPair:
-		return sexpPairToSlice(sexp.(glisp.SexpPair))
+		return sexpPairToSlice(val)
 	case glisp.SexpSymbol:
-		return ExternalSymbol{(sexp.(glisp.SexpSymbol)).Name()}
+		return ExternalSymbol{val.Name()}
 	case glisp.SexpBool:
-		return bool(sexp.(glisp.SexpBool))
+		return bool(val)
 	case glisp.SexpInt:
-		return int(sexp.(glisp.SexpInt))
+		return int(val)
 	case glisp.SexpFloat:
-		return float64(sexp.(glisp.SexpFloat))
+		return float64(val)
 	case glisp.SexpStr:
-		return string(sexp.(glisp.SexpStr))
+		return string(val)
 	default:
 		return sexp.SexpString()
 	}
@@ -115,10 +111,10 @@ func sexpPairToSlice(pair glisp.SexpPair) []interface{} {
 	retv := []interface{}{}
 
 	for {
-		switch pair.Tail().(type) {
+		switch tail := pair.Tail().(type) {
 		case glisp.SexpPair:
 			retv = append(retv, sexpToSlice(pair.Head()))
-			pair = pair.Tail().(glisp.SexpPair)
+			pair = tail
 			continue
 		}
 		break
@@ -139,4 +135,46 @@ func (dval *DynVal) ToJson() (string, error) {
 		return "", err
 	}
 	return string(data), nil
+}
+
+func sliceToSexpString(data []interface{}) string {
+	ret := "("
+	for idx, item := range data {
+		switch val := item.(type) {
+		case bool:
+			ret += " "
+			ret += strconv.FormatBool(val)
+		case int:
+			ret += " "
+			ret += string(val)
+		case float64:
+			ret += " "
+			ret += strconv.FormatFloat(val, 'f', -1, 64)
+		case string:
+			ret += " "
+			ret += `"`
+			ret += string(val)
+			ret += `"`
+		case map[string]interface{}: // Symbol
+			if idx != 0 {
+				ret += " "
+			}
+			ret += string(val["Symbol"].(string))
+		case []interface{}: // Sub sexp
+			ret += " "
+			ret += sliceToSexpString(val)
+		}
+	}
+	ret += ")"
+	return ret
+}
+
+func JsonToSexpString(json_str string) (string, error) {
+	var f []interface{}
+	err := json.Unmarshal([]byte(json_str), &f)
+	if err != nil {
+		return "", err
+	}
+	data := sliceToSexpString(f)
+	return data, nil
 }

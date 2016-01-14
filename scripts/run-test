@@ -4,6 +4,7 @@
 TEST_DIRS=(./    models conf utils)
 TEST_COVR=(30    0      0    90)
 
+
 for (( i=0; i<${#TEST_DIRS[*]}; i++)); do
     DIR=${TEST_DIRS[$i]}
     echo "Runing tests for [$DIR]"
