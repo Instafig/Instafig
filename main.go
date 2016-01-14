@@ -3,10 +3,7 @@ package main
 import (
 	"net/http"
 
-	"encoding/json"
-
 	"github.com/appwilldev/Instafig/conf"
-	"github.com/appwilldev/Instafig/models"
 	"github.com/facebookgo/grace/gracehttp"
 	"github.com/gin-gonic/gin"
 )
@@ -14,21 +11,6 @@ import (
 func main() {
 	ginIns := gin.New()
 	ginIns.Use(gin.Recovery())
-
-	ginIns.GET("/", func(c *gin.Context) {
-		c.String(http.StatusOK, "hello from gin")
-	})
-
-	ginIns.GET("/users", func(c *gin.Context) {
-		users, err := models.GetAllUser(nil)
-		if err != nil {
-			c.String(http.StatusOK, err.Error())
-			return
-		}
-
-		bs, _ := json.Marshal(users)
-		c.String(http.StatusOK, string(bs))
-	})
 
 	ginInsNode := gin.New()
 	ginInsNode.Use(gin.Recovery())
@@ -43,6 +25,25 @@ func main() {
 		gin.SetMode(gin.DebugMode)
 	} else {
 		gin.SetMode(gin.ReleaseMode)
+	}
+
+	// client api
+	clientAPIGroup := ginIns.Group("/client")
+	{
+		clientAPIGroup.GET("/conf", ClientReqData)
+	}
+
+	// op api
+	opAPIGroup := ginIns.Group("/op")
+	{
+		opAPIGroup.GET("/users/:page", GetUsers)
+		opAPIGroup.POST("/user", confWriteCheck, NewUser)
+
+		opAPIGroup.GET("/apps/:user_key", GetApps)
+		opAPIGroup.POST("/app", confWriteCheck, NewApp)
+
+		opAPIGroup.GET("/configs/:app_key", GetConfigs)
+		opAPIGroup.POST("/config", confWriteCheck, NewConfig)
 	}
 
 	gracehttp.Serve(

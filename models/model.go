@@ -28,6 +28,19 @@ func GetAllUser(s *ModelSession) ([]*User, error) {
 	return res, nil
 }
 
+func GetUsers(s *ModelSession, page, count int) ([]*User, error) {
+	if s == nil {
+		s = newAutoCloseModelsSession()
+	}
+
+	res := make([]*User, 0)
+	if err := s.OrderBy("name desc").Limit(count, (page-1)*count).Find(&res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
 const (
 	APP_TYPE_TEMPLATE = "template"
 	APP_TYPE_REAL     = "real"
@@ -55,6 +68,19 @@ func GetAllApp(s *ModelSession) ([]*App, error) {
 
 	res := make([]*App, 0)
 	if err := s.Find(&res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func GetAppsByUserKey(s *ModelSession, userKey string) ([]*App, error) {
+	if s == nil {
+		s = newAutoCloseModelsSession()
+	}
+
+	res := make([]*App, 0)
+	if err := s.Where("user_key=?", userKey).Find(&res); err != nil {
 		return nil, err
 	}
 
@@ -96,6 +122,19 @@ func GetAllConfig(s *ModelSession) ([]*Config, error) {
 
 	res := make([]*Config, 0)
 	if err := s.Find(&res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func GetConfigsByAppKey(s *ModelSession, appKey string) ([]*Config, error) {
+	if s == nil {
+		s = newAutoCloseModelsSession()
+	}
+
+	res := make([]*Config, 0)
+	if err := s.Where("app_key=?", appKey).Find(&res); err != nil {
 		return nil, err
 	}
 
@@ -147,4 +186,12 @@ func GetAllNode(s *ModelSession) ([]*Node, error) {
 
 func IsValidNodeType(typ string) bool {
 	return typ == NODE_TYPE_MASTER || typ == NODE_TYPE_SLAVE
+}
+
+
+// !!!! only for unit test
+func ClearData() error {
+	sql := "delete from config; delete from app; delete from user;"
+	_, err := dbEngineDefault.Exec(sql)
+	return err
 }

@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/appwilldev/Instafig/conf"
 	"github.com/appwilldev/Instafig/models"
 )
 
@@ -20,17 +21,19 @@ type ClientData struct {
 }
 
 type Config struct {
-	ConfKey string
-	Key     string
-	Val     interface{}
-	ValType string
+	Key   string
+	K     string
+	V     interface{}
+	VType string
 }
 
 var (
 	memConfUsers       = make(map[string]*models.User)
 	memConfUsersByName = make(map[string]*models.User)
 	memConfApps        = make(map[string]*models.App)
+	memConfAppsByName  = make(map[string][]*models.App)
 	memConfConfigs     = make(map[string]*Config)
+	memConfRawConfigs  = make(map[string]*models.Config)
 	memConfAppConfigs  = make(map[string][]*Config)
 	memConfNodes       = make(map[string]*models.Node)
 
@@ -39,37 +42,40 @@ var (
 
 func transConfig(m *models.Config) *Config {
 	config := &Config{
-		ConfKey: m.Key,
-		Key:     m.K,
-		ValType: m.VType,
+		Key:   m.Key,
+		K:     m.K,
+		V:     m.V,
+		VType: m.VType,
 	}
 
 	switch m.VType {
 	case models.CONF_V_TYPE_FLOAT:
-		config.Val, _ = strconv.ParseFloat(m.V, 64)
+		config.V, _ = strconv.ParseFloat(m.V, 64)
 	case models.CONF_V_TYPE_INT:
-		config.Val, _ = strconv.Atoi(m.V)
+		config.V, _ = strconv.Atoi(m.V)
 	case models.CONF_V_TYPE_STRING:
-		config.Val = m.V
+		config.V = m.V
 	case models.CONF_V_TYPE_CODE:
 		// TODO: trans to callable object
-		config.Val = m.V
+		config.V = m.V
 	case models.CONF_V_TYPE_TEMPLATE:
-		config.Val = m.V
+		config.V = m.V
 	}
 
 	return config
 }
 
 func init() {
-	loadData()
+	if conf.IsEasyDeployMode() {
+		loadAllData()
+	}
 }
 
 func getNodeKey(node *models.Node) string {
 	return fmt.Sprintf("%s:%d", node.Host, node.Port)
 }
 
-func loadData() {
+func loadAllData() {
 	users, err := models.GetAllUser(nil)
 	if err != nil {
 		log.Panicf("Failed to load user info: %s", err.Error())
@@ -97,6 +103,15 @@ func fillMemConfData(users []*models.User, apps []*models.App, configs []*models
 	memConfMux.Lock()
 	defer memConfMux.Unlock()
 
+	memConfUsers = make(map[string]*models.User)
+	memConfUsersByName = make(map[string]*models.User)
+	memConfApps = make(map[string]*models.App)
+	memConfAppsByName = make(map[string][]*models.App)
+	memConfConfigs = make(map[string]*Config)
+	memConfRawConfigs = make(map[string]*models.Config)
+	memConfAppConfigs = make(map[string][]*Config)
+	memConfNodes = make(map[string]*models.Node)
+
 	for _, user := range users {
 		memConfUsers[user.Key] = user
 		memConfUsersByName[user.Name] = user
@@ -104,12 +119,14 @@ func fillMemConfData(users []*models.User, apps []*models.App, configs []*models
 
 	for _, app := range apps {
 		memConfApps[app.Key] = app
+		memConfAppsByName[app.Name] = append(memConfAppsByName[app.Name], app)
 		memConfAppConfigs[app.Key] = make([]*Config, 0)
 	}
 
 	for _, config := range configs {
 		c := transConfig(config)
 		memConfConfigs[config.Key] = c
+		memConfRawConfigs[config.Key] = config
 		memConfAppConfigs[config.AppKey] = append(memConfAppConfigs[config.AppKey], c)
 	}
 
@@ -129,24 +146,24 @@ func getAppMemConfig(appKey string) []*Config {
 func getMatchConf(matchData *ClientData, configs []*Config) map[string]interface{} {
 	res := make(map[string]interface{}, 0)
 	for _, config := range configs {
-		switch config.ValType {
+		switch config.VType {
 		case models.CONF_V_TYPE_CODE:
-			res[config.Key] = EvalDynVal(config.Val.(string), matchData)
+			res[config.K] = EvalDynVal(config.V.(string), matchData)
 		case models.CONF_V_TYPE_TEMPLATE:
-			res[config.Key] = getAppMatchConf(config.Val.(string), matchData)
+			res[config.K] = getAppMatchConf(config.V.(string), matchData)
 		default:
-			res[config.Key] = config.Val
+			res[config.K] = config.V
 		}
 	}
 
 	return res
 }
 
-func getAppMatchConf(appKey string, matchData *ClientData) map[string]interface{} {
+func getAppMatchConf(appKey string, clientData *ClientData) map[string]interface{} {
 	appConfigs := getAppMemConfig(appKey)
 	if appConfigs == nil {
 		return nil
 	}
 
-	return getMatchConf(matchData, appConfigs)
+	return getMatchConf(clientData, appConfigs)
 }
