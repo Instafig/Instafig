@@ -60,7 +60,7 @@ func (dval *DynVal) Execute(env *glisp.Glisp) (glisp.Sexp, error) {
 }
 
 func EvalDynValToSexp(code string, cdata *ClientData) (glisp.Sexp, error) {
-	env := glisp.NewGlisp()
+	env := NewGlisp()
 	SetClientData(env, cdata)
 	dval := NewDynValFromString(code, env)
 	return dval.Execute(env)
