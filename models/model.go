@@ -167,6 +167,8 @@ type Node struct {
 	DBVersion    int    `xorm:"db_version INT NOT NULL" json:"db_version"`
 	CreatedUTC   int    `xorm:"created_utc UTC NOT NULL" json:"created_utc"`
 	LastCheckUTC string `xorm:"last_check_utc INT NOT NULL" json:"last_check_utc"`
+
+	DataVersion int `xorm:"-"`
 }
 
 func (*Node) TableName() string {

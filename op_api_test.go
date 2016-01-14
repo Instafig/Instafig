@@ -7,7 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func clearModelData() error {
+// !!!!NOTE!!!! only used in UT
+func _clearModelData() error {
 	sql := "delete from config; delete from app; delete from user;update data_version set ver=0;"
 	s := models.NewModelSession()
 	defer s.Close()
@@ -30,7 +31,7 @@ func clearModelData() error {
 }
 
 func TestNewUser(t *testing.T) {
-	err := clearModelData()
+	err := _clearModelData()
 	assert.True(t, err == nil, "must correctly clear data")
 
 	user, err := newUser(&newUserData{
@@ -48,7 +49,7 @@ func TestNewUser(t *testing.T) {
 }
 
 func TestNewApp(t *testing.T) {
-	err := clearModelData()
+	err := _clearModelData()
 	assert.True(t, err == nil, "must correctly clear data")
 
 	user, err := newUser(&newUserData{
@@ -74,7 +75,7 @@ func TestNewApp(t *testing.T) {
 }
 
 func TestNewConfig(t *testing.T) {
-	err := clearModelData()
+	err := _clearModelData()
 	assert.True(t, err == nil, "must correctly clear data")
 
 	user, err := newUser(&newUserData{
@@ -108,7 +109,7 @@ func TestNewConfig(t *testing.T) {
 }
 
 func TestDataVersion(t *testing.T) {
-	err := clearModelData()
+	err := _clearModelData()
 	assert.True(t, err == nil, "must correctly clear data")
 
 	assert.True(t, memConfDataVersion == 0, "init data version must be 0")
