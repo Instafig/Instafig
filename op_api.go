@@ -270,7 +270,7 @@ func NewConfig(c *gin.Context) {
 	}
 
 	memConfMux.RLock()
-	app := memConfApps[data.V]
+	app := memConfApps[data.AppKey]
 	configs := getAppMemConfig(data.AppKey)
 	memConfMux.RUnlock()
 

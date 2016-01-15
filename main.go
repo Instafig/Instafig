@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 
@@ -14,6 +15,12 @@ func main() {
 	if conf.VersionInfo {
 		fmt.Printf("%s\n", VersionString())
 		os.Exit(0)
+	}
+
+	if conf.IsEasyDeployMode() && !conf.IsMasterNode() {
+		if err := slaveCheckMaster(); err != nil {
+			log.Panicf("slave node failed to check master: %s", err.Error())
+		}
 	}
 
 	ginIns := gin.New()

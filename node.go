@@ -13,6 +13,7 @@ import (
 
 	"github.com/appwilldev/Instafig/conf"
 	"github.com/appwilldev/Instafig/models"
+	"github.com/appwilldev/Instafig/utils"
 	"github.com/bitly/go-simplejson"
 	"github.com/gin-gonic/gin"
 )
@@ -21,8 +22,8 @@ func init() {
 	if conf.IsEasyDeployMode() && !conf.IsMasterNode() {
 		go func() {
 			for {
-				slaveCheckMaster()
 				time.Sleep(60 * time.Second)
+				slaveCheckMaster()
 			}
 		}()
 	}
@@ -48,6 +49,36 @@ func checkNodeValidity() {
 				log.Panicf("failed to remove old master node: ", err.Error())
 			}
 			break
+		}
+	}
+}
+
+func initLocalNodeData() {
+	confWriteMux.Lock()
+	defer confWriteMux.Unlock()
+
+	memConfMux.Lock()
+	defer memConfMux.Unlock()
+
+	if memConfNodes[conf.ClientAddr] == nil {
+		node := &models.Node{
+			URL:         conf.ClientAddr,
+			NodeURL:     conf.NodeAddr,
+			Type:        conf.NodeType,
+			DataVersion: memConfDataVersion,
+			CreatedUTC:  utils.GetNowSecond(),
+		}
+		if err := models.InsertDBModel(nil, node); err != nil {
+			log.Panicf("Failed to init node data: %s", err.Error())
+		}
+		memConfNodes[conf.ClientAddr] = node
+	}
+
+	node := memConfNodes[conf.ClientAddr]
+	if node.Type != conf.NodeType {
+		node.Type = conf.NodeType
+		if err := models.UpdateDBModel(nil, node); err != nil {
+			log.Panicf("Failed to update node data: %s", err.Error())
 		}
 	}
 }
@@ -153,18 +184,106 @@ func syncData2Slave(node *models.Node, data interface{}, dataVer int) error {
 	return err
 }
 
-func slaveCheckMaster() (err error) {
+func slaveCheckMaster() error {
+	confWriteMux.Lock()
+	defer confWriteMux.Unlock()
+
 	memConfMux.RLock()
 	node := memConfNodes[conf.ClientAddr]
+	ver := memConfDataVersion
 	memConfMux.RUnlock()
 
-	_, err = nodeRequest(conf.MasterAddr, NODE_REQUEST_TYPE_SLAVECHECKMASTER, node)
-	return
+	data, err := nodeRequest(conf.MasterAddr, NODE_REQUEST_TYPE_SLAVECHECKMASTER, node)
+	if err != nil {
+		return err
+	}
+
+	masterVer := int(data.(float64))
+	if masterVer == ver {
+		return nil
+	}
+
+	data, err = nodeRequest(conf.MasterAddr, NODE_REQUEST_TYPE_SYNCMASTER, nil)
+	if err != nil {
+		return err
+	}
+
+	resData := &syncDataT{}
+	if err = json.Unmarshal([]byte(data.(string)), resData); err != nil {
+		return fmt.Errorf("bad response data format: %s < %s >", err.Error(), data.(string))
+	}
+
+	users := make([]*models.User, 0)
+	apps := make([]*models.App, 0)
+	configs := make([]*models.Config, 0)
+	nodes := make([]*models.Node, 0)
+
+	s := models.NewSession()
+	defer s.Close()
+	if err = s.Begin(); err != nil {
+		s.Rollback()
+		return err
+	}
+
+	sql := "delete from user; delete from app; delete from config; delete from node;"
+	if _, err = s.Exec(sql); err != nil {
+		s.Rollback()
+		return err
+	}
+
+	for _, user := range resData.Users {
+		if err = models.InsertDBModel(s, user); err != nil {
+			s.Rollback()
+			return err
+		}
+		users = append(users, user)
+	}
+	for _, app := range resData.Apps {
+		if err = models.InsertDBModel(s, app); err != nil {
+			s.Rollback()
+			return err
+		}
+		apps = append(apps, app)
+	}
+	for _, config := range resData.Configs {
+		if err = models.InsertDBModel(s, config); err != nil {
+			s.Rollback()
+			return err
+		}
+		configs = append(configs, config)
+	}
+
+	for _, node := range resData.Nodes {
+		if node.URL == conf.ClientAddr {
+			node.DataVersion = resData.DataVer
+			node.NodeURL = conf.NodeAddr
+		}
+		if err := models.InsertDBModel(s, node); err != nil {
+			s.Rollback()
+			return err
+		}
+		nodes = append(nodes, node)
+	}
+
+	if err = models.UpdateDataVersion(s, resData.DataVer); err != nil {
+		s.Rollback()
+		return err
+	}
+
+	if err = s.Commit(); err != nil {
+		s.Rollback()
+		return err
+	}
+
+	fillMemConfData(users, apps, configs, nodes, resData.DataVer)
+
+	return nil
 }
 
 const (
 	NODE_REQUEST_TYPE_SYNC2SLAVE       = "SYNC2SLAVE"
 	NODE_REQUEST_TYPE_SLAVECHECKMASTER = "SLAVECHECKMASTER"
+	NODE_REQUEST_TYPE_SYNCMASTER       = "SYNCMASTER"
 
 	NODE_REQUEST_DATA_SYNC_KIND_USER   = "USER"
 	NODE_REQUEST_DATA_SYNC_KIND_APP    = "APP"
@@ -175,15 +294,18 @@ func nodeRequest(targetNodeUrl string, reqType string, data interface{}) (interf
 	url := fmt.Sprintf("http://%s/node/req/%s", targetNodeUrl, reqType)
 	var transData []byte
 	var err error
-	switch data.(type) {
-	case string:
-		transData = []byte(data.(string))
-	case []byte:
-		transData = data.([]byte)
-	default:
-		transData, err = json.Marshal(data)
-		if err != nil {
-			return nil, fmt.Errorf("bad data format: ", err.Error())
+
+	if data != nil {
+		switch data.(type) {
+		case string:
+			transData = []byte(data.(string))
+		case []byte:
+			transData = data.([]byte)
+		default:
+			transData, err = json.Marshal(data)
+			if err != nil {
+				return nil, fmt.Errorf("bad data format: ", err.Error())
+			}
 		}
 	}
 
@@ -201,16 +323,22 @@ func nodeRequest(targetNodeUrl string, reqType string, data interface{}) (interf
 		return nil, fmt.Errorf("failed to read reponse body data: %s", err.Error())
 	}
 
-	j, err := simplejson.NewJson(resBody)
+	var resData struct {
+		Status bool        `json:"status"`
+		Data   interface{} `json:"data"`
+		Code   string      `json:"code"`
+	}
+
+	err = json.Unmarshal(resBody, &resData)
 	if err != nil {
 		return nil, fmt.Errorf("bad reponse body format: %s", err.Error())
 	}
 
-	if !j.Get("status").MustBool() {
-		return nil, fmt.Errorf(j.Get("code").MustString())
+	if !resData.Status {
+		return nil, fmt.Errorf(resData.Code)
 	}
 
-	return j.Get("data").Interface(), nil
+	return resData.Data, nil
 }
 
 func NodeRequestHandler(c *gin.Context) {
@@ -219,6 +347,8 @@ func NodeRequestHandler(c *gin.Context) {
 		handleSlaveSyncUpdateData(c)
 	case NODE_REQUEST_TYPE_SLAVECHECKMASTER:
 		handleSlaveCheckMaster(c)
+	case NODE_REQUEST_TYPE_SYNCMASTER:
+		handleSyncMaster(c)
 	default:
 		Error(c, BAD_REQUEST, "unkown node request type")
 	}
@@ -249,6 +379,7 @@ func handleSlaveSyncUpdateData(c *gin.Context) {
 	//TODO: get lock to
 	confWriteMux.Lock()
 	defer confWriteMux.Unlock()
+
 	if memConfDataVersion+1 != ver {
 		Error(c, BAD_REQUEST, "slave node data version [%d] error for master data version [%d]", memConfDataVersion, ver)
 	}
@@ -337,7 +468,44 @@ func handleSlaveCheckMaster(c *gin.Context) {
 
 	memConfMux.Lock()
 	memConfNodes[node.URL] = node
+	ver := memConfDataVersion
 	memConfMux.Unlock()
 
-	Success(c, nil)
+	Success(c, ver)
+}
+
+type syncDataT struct {
+	Nodes   map[string]*models.Node   `json:"nodes"`
+	Users   map[string]*models.User   `json:"users"`
+	Apps    map[string]*models.App    `json:"apps"`
+	Configs map[string]*models.Config `json:"configs"`
+	DataVer int                       `json:"data_ver"`
+}
+
+func handleSyncMaster(c *gin.Context) {
+	if !conf.IsMasterNode() {
+		Error(c, BAD_REQUEST, "invalid req type for slave node: "+NODE_REQUEST_TYPE_SYNCMASTER)
+		return
+	}
+
+	confWriteMux.Lock()
+	defer confWriteMux.Unlock()
+
+	memConfMux.RLock()
+	nodes := memConfNodes
+	users := memConfUsers
+	apps := memConfApps
+	configs := memConfRawConfigs
+	ver := memConfDataVersion
+	memConfMux.RUnlock()
+
+	resData, _ := json.Marshal(syncDataT{
+		Nodes:   nodes,
+		Users:   users,
+		Apps:    apps,
+		Configs: configs,
+		DataVer: ver,
+	})
+
+	Success(c, string(resData))
 }

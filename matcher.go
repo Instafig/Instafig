@@ -7,7 +7,6 @@ import (
 
 	"github.com/appwilldev/Instafig/conf"
 	"github.com/appwilldev/Instafig/models"
-	"github.com/appwilldev/Instafig/utils"
 )
 
 type ClientData struct {
@@ -74,6 +73,7 @@ func init() {
 	if conf.IsEasyDeployMode() {
 		checkNodeValidity()
 		loadAllData()
+		initLocalNodeData()
 	}
 }
 
@@ -107,9 +107,6 @@ func loadAllData() {
 }
 
 func fillMemConfData(users []*models.User, apps []*models.App, configs []*models.Config, nodes []*models.Node, dataVersion int) {
-	confWriteMux.Lock()
-	defer confWriteMux.Unlock()
-
 	memConfMux.Lock()
 	defer memConfMux.Unlock()
 
@@ -143,28 +140,6 @@ func fillMemConfData(users []*models.User, apps []*models.App, configs []*models
 
 	for _, node := range nodes {
 		memConfNodes[node.URL] = node
-	}
-
-	if memConfNodes[conf.ClientAddr] == nil {
-		node := &models.Node{
-			URL:         conf.ClientAddr,
-			NodeURL:     conf.NodeAddr,
-			Type:        conf.NodeType,
-			DataVersion: memConfDataVersion,
-			CreatedUTC:  utils.GetNowSecond(),
-		}
-		if err := models.InsertDBModel(nil, node); err != nil {
-			log.Panicf("Failed to init node data: %s", err.Error())
-		}
-		memConfNodes[conf.ClientAddr] = node
-	}
-
-	node := memConfNodes[conf.ClientAddr]
-	if node.Type != conf.NodeType {
-		node.Type = conf.NodeType
-		if err := models.UpdateDBModel(nil, node); err != nil {
-			log.Panicf("Failed to update node data: %s", err.Error())
-		}
 	}
 }
 
