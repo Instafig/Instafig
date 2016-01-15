@@ -21,7 +21,7 @@ func (m *User) UniqueCond() (string, []interface{}) {
 	return "key=?", []interface{}{m.Key}
 }
 
-func GetAllUser(s *ModelSession) ([]*User, error) {
+func GetAllUser(s *Session) ([]*User, error) {
 	if s == nil {
 		s = newAutoCloseModelsSession()
 	}
@@ -34,7 +34,7 @@ func GetAllUser(s *ModelSession) ([]*User, error) {
 	return res, nil
 }
 
-func GetUsers(s *ModelSession, page, count int) ([]*User, error) {
+func GetUsers(s *Session, page, count int) ([]*User, error) {
 	if s == nil {
 		s = newAutoCloseModelsSession()
 	}
@@ -67,7 +67,7 @@ func (m *App) UniqueCond() (string, []interface{}) {
 	return "key=?", []interface{}{m.Key}
 }
 
-func GetAllApp(s *ModelSession) ([]*App, error) {
+func GetAllApp(s *Session) ([]*App, error) {
 	if s == nil {
 		s = newAutoCloseModelsSession()
 	}
@@ -80,7 +80,7 @@ func GetAllApp(s *ModelSession) ([]*App, error) {
 	return res, nil
 }
 
-func GetAppsByUserKey(s *ModelSession, userKey string) ([]*App, error) {
+func GetAppsByUserKey(s *Session, userKey string) ([]*App, error) {
 	if s == nil {
 		s = newAutoCloseModelsSession()
 	}
@@ -121,7 +121,7 @@ func (m *Config) UniqueCond() (string, []interface{}) {
 	return "key=?", []interface{}{m.Key}
 }
 
-func GetAllConfig(s *ModelSession) ([]*Config, error) {
+func GetAllConfig(s *Session) ([]*Config, error) {
 	if s == nil {
 		s = newAutoCloseModelsSession()
 	}
@@ -134,7 +134,7 @@ func GetAllConfig(s *ModelSession) ([]*Config, error) {
 	return res, nil
 }
 
-func GetConfigsByAppKey(s *ModelSession, appKey string) ([]*Config, error) {
+func GetConfigsByAppKey(s *Session, appKey string) ([]*Config, error) {
 	if s == nil {
 		s = newAutoCloseModelsSession()
 	}
@@ -161,14 +161,13 @@ const (
 )
 
 type Node struct {
-	Host         string `xorm:"Host TEXT NOT NULL UNIQUE(node_key)" json:"host"`
-	Port         int    `xorm:"port INT NOT NULL UNIQUE(node_key)" json:"port"`
+	URL          string `xorm:"url TEXT PK NOT NULL" json:"url"`
 	Type         string `xorm:"type TEXT NOT NULL" json:"type"`
-	DBVersion    int    `xorm:"db_version INT NOT NULL" json:"db_version"`
+	DataVersion  int    `xorm:"data_version INT NOT NULL" json:"data_version"`
 	CreatedUTC   int    `xorm:"created_utc UTC NOT NULL" json:"created_utc"`
 	LastCheckUTC string `xorm:"last_check_utc INT NOT NULL" json:"last_check_utc"`
 
-	DataVersion int `xorm:"-"`
+	SchemeVersion string `xorm:"-"`
 }
 
 func (*Node) TableName() string {
@@ -176,10 +175,10 @@ func (*Node) TableName() string {
 }
 
 func (m *Node) UniqueCond() (string, []interface{}) {
-	return "host=? and port=?", []interface{}{m.Host, m.Port}
+	return "url=?", []interface{}{m.URL}
 }
 
-func GetAllNode(s *ModelSession) ([]*Node, error) {
+func GetAllNode(s *Session) ([]*Node, error) {
 	if s == nil {
 		s = newAutoCloseModelsSession()
 	}
@@ -204,7 +203,7 @@ func (*DataVersion) TableName() string {
 	return "data_version"
 }
 
-func UpdateDataVersion(s *ModelSession, ver int) error {
+func UpdateDataVersion(s *Session, ver int) error {
 	if s == nil {
 		s = newAutoCloseModelsSession()
 	}
@@ -214,7 +213,7 @@ func UpdateDataVersion(s *ModelSession, ver int) error {
 	return err
 }
 
-func GetDataVersion(s *ModelSession) (int, error) {
+func GetDataVersion(s *Session) (int, error) {
 	if s == nil {
 		s = newAutoCloseModelsSession()
 	}

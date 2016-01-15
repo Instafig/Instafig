@@ -8,7 +8,13 @@ TEST_COVR=(50    0      0    90)
 for (( i=0; i<${#TEST_DIRS[*]}; i++)); do
     DIR=${TEST_DIRS[$i]}
     echo "Runing tests for [$DIR]"
-    go test -v -covermode=count -coverprofile=./${DIR}/coverage.out ./${DIR} > .test.output
+
+    if [ $DIR != "utils" ]; then
+        go test -v -covermode=count -coverprofile=./${DIR}/coverage.out ./${DIR}  --config=./conf/config_test.ini> .test.output
+    else
+        go test -v -covermode=count -coverprofile=./${DIR}/coverage.out ./${DIR} > .test.output
+    fi
+
     [ $? = '0' ] || {
         cat .test.output
         exit 1

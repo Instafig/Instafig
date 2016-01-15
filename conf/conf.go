@@ -25,19 +25,23 @@ var (
 	Mode           string
 	HttpAddr       string
 	SqliteDir      string
+	SqliteFileName string
 	DatabaseConfig = &DBConfig{}
 	NodeType       string
 	NodeAddr       string
+	ClientAddr     string
 	MasterAuth     string
 	MasterAddr     string
+	ReplaceMaster  bool
 
 	DebugMode bool
 	LogLevel  string
 
-	configFile   = flag.String("config", "__unset__", "service config file")
-	maxThreadNum = flag.Int("max-thread", 0, "max threads of service")
-	debugMode    = flag.Bool("debug", false, "debug mode")
-	logLevel     = flag.String("log-level", "INFO", "DEBUG | INFO | WARN | ERROR | FATAL | PANIC")
+	configFile    = flag.String("config", "__unset__", "service config file")
+	replaceMaster = flag.Bool("replace-master", false, "service config file")
+	maxThreadNum  = flag.Int("max-thread", 0, "max threads of service")
+	debugMode     = flag.Bool("debug", false, "debug mode")
+	logLevel      = flag.String("log-level", "INFO", "DEBUG | INFO | WARN | ERROR | FATAL | PANIC")
 )
 
 func init() {
@@ -73,6 +77,7 @@ func init() {
 	HttpAddr, _ = config.GetValue("", "addr")
 	if IsEasyDeployMode() {
 		SqliteDir, _ = config.GetValue("sqlite", "dir")
+		SqliteFileName, _ = config.GetValue("sqlite", "filename")
 	} else {
 		DatabaseConfig.Driver, _ = config.GetValue("db", "driver")
 		DatabaseConfig.DBName, _ = config.GetValue("db", "db_name")
@@ -87,12 +92,14 @@ func init() {
 	}
 
 	NodeType, _ = config.GetValue("node", "type")
-	NodeAddr, _ = config.GetValue("node", "addr")
+	NodeAddr, _ = config.GetValue("node", "node_addr")
+	ClientAddr, _ = config.GetValue("node", "client_addr")
 	MasterAuth, _ = config.GetValue("node", "master_auth")
 	if !IsMasterNode() {
 		MasterAddr, _ = config.GetValue("node", "master_addr")
 	}
 
+	ReplaceMaster = *replaceMaster
 }
 
 func IsEasyDeployMode() bool {

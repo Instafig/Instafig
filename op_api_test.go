@@ -9,8 +9,8 @@ import (
 
 // !!!!NOTE!!!! only used in UT
 func _clearModelData() error {
-	sql := "delete from config; delete from app; delete from user;update data_version set ver=0;"
-	s := models.NewModelSession()
+	sql := "delete from config; delete from app; delete from user;delete from node;update data_version set ver=0;"
+	s := models.NewSession()
 	defer s.Close()
 	if err := s.Begin(); err != nil {
 		s.Rollback()
@@ -25,14 +25,13 @@ func _clearModelData() error {
 		return err
 	}
 
-	loadAllData()
-
 	return nil
 }
 
 func TestNewUser(t *testing.T) {
 	err := _clearModelData()
 	assert.True(t, err == nil, "must correctly clear data")
+	loadAllData()
 
 	user, err := newUser(&newUserData{
 		Name: "rahuahua",
@@ -51,6 +50,7 @@ func TestNewUser(t *testing.T) {
 func TestNewApp(t *testing.T) {
 	err := _clearModelData()
 	assert.True(t, err == nil, "must correctly clear data")
+	loadAllData()
 
 	user, err := newUser(&newUserData{
 		Name: "rahuahua",
@@ -77,6 +77,7 @@ func TestNewApp(t *testing.T) {
 func TestNewConfig(t *testing.T) {
 	err := _clearModelData()
 	assert.True(t, err == nil, "must correctly clear data")
+	loadAllData()
 
 	user, err := newUser(&newUserData{
 		Name: "rahuahua",
@@ -111,6 +112,7 @@ func TestNewConfig(t *testing.T) {
 func TestDataVersion(t *testing.T) {
 	err := _clearModelData()
 	assert.True(t, err == nil, "must correctly clear data")
+	loadAllData()
 
 	assert.True(t, memConfDataVersion == 0, "init data version must be 0")
 

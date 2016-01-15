@@ -14,7 +14,7 @@ var (
 	confWriteMux = sync.Mutex{}
 )
 
-func confWriteCheck(c *gin.Context) {
+func ConfWriteCheck(c *gin.Context) {
 	if conf.IsEasyDeployMode() && !conf.IsMasterNode() {
 		Error(c, NOT_PERMITTED, "You can not update config data as you connecting to slave node,")
 		c.Abort()
@@ -56,14 +56,18 @@ func NewUser(c *gin.Context) {
 }
 
 func newUser(newData *newUserData) (*models.User, error) {
-	s := models.NewModelSession()
+	s := models.NewSession()
 	defer s.Close()
 	if err := s.Begin(); err != nil {
 		s.Rollback()
 		return nil, err
 	}
 
-	if err := models.UpdateDataVersion(s, memConfDataVersion+1); err != nil {
+	memConfMux.RLock()
+	node := memConfNodes[conf.ClientAddr]
+	memConfMux.RUnlock()
+
+	if err := updateNodeDataVersion(s, node, memConfDataVersion+1); err != nil {
 		s.Rollback()
 		return nil, err
 	}
@@ -151,14 +155,18 @@ func NewApp(c *gin.Context) {
 }
 
 func newApp(newData *newAppData) (*models.App, error) {
-	s := models.NewModelSession()
+	s := models.NewSession()
 	defer s.Close()
 	if err := s.Begin(); err != nil {
 		s.Rollback()
 		return nil, err
 	}
 
-	if err := models.UpdateDataVersion(s, memConfDataVersion+1); err != nil {
+	memConfMux.RLock()
+	node := memConfNodes[conf.ClientAddr]
+	memConfMux.RUnlock()
+
+	if err := updateNodeDataVersion(s, node, memConfDataVersion+1); err != nil {
 		s.Rollback()
 		return nil, err
 	}
@@ -234,8 +242,12 @@ func NewConfig(c *gin.Context) {
 		}
 	}
 
+	memConfMux.RLock()
+	app := memConfApps[data.V]
 	configs := getAppMemConfig(data.AppKey)
-	if configs == nil {
+	memConfMux.RUnlock()
+
+	if app == nil {
 		Error(c, BAD_REQUEST, "app key not exists: "+data.AppKey)
 		return
 	}
@@ -259,14 +271,18 @@ func NewConfig(c *gin.Context) {
 }
 
 func newConfig(newData *newConfigData) (*models.Config, error) {
-	s := models.NewModelSession()
+	s := models.NewSession()
 	defer s.Close()
 	if err := s.Begin(); err != nil {
 		s.Rollback()
 		return nil, err
 	}
 
-	if err := models.UpdateDataVersion(s, memConfDataVersion+1); err != nil {
+	memConfMux.RLock()
+	node := memConfNodes[conf.ClientAddr]
+	memConfMux.RUnlock()
+
+	if err := updateNodeDataVersion(s, node, memConfDataVersion+1); err != nil {
 		s.Rollback()
 		return nil, err
 	}

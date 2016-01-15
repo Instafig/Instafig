@@ -16,7 +16,7 @@ var (
 	dbEngineDefault *xorm.Engine
 )
 
-type ModelSession struct {
+type Session struct {
 	*xorm.Session
 }
 
@@ -25,7 +25,7 @@ func init() {
 	var dsn, driver string
 
 	if conf.IsEasyDeployMode() {
-		dsn = fmt.Sprintf(filepath.Join(conf.SqliteDir, "instafig.db"))
+		dsn = fmt.Sprintf(filepath.Join(conf.SqliteDir, conf.SqliteFileName))
 		driver = "sqlite3"
 	} else {
 		dsn = fmt.Sprintf(
@@ -68,15 +68,15 @@ func init() {
 
 }
 
-func NewModelSession() *ModelSession {
-	ms := new(ModelSession)
+func NewSession() *Session {
+	ms := new(Session)
 	ms.Session = dbEngineDefault.NewSession()
 
 	return ms
 }
 
-func newAutoCloseModelsSession() *ModelSession {
-	ms := new(ModelSession)
+func newAutoCloseModelsSession() *Session {
+	ms := new(Session)
 	ms.Session = dbEngineDefault.NewSession()
 	ms.IsAutoClose = true
 
@@ -88,7 +88,7 @@ type DBModel interface {
 	UniqueCond() (string, []interface{})
 }
 
-func InsertDBModel(s *ModelSession, m DBModel) (err error) {
+func InsertDBModel(s *Session, m DBModel) (err error) {
 	if s == nil {
 		s = newAutoCloseModelsSession()
 	}
@@ -97,7 +97,7 @@ func InsertDBModel(s *ModelSession, m DBModel) (err error) {
 	return
 }
 
-func UpdateDBModel(s *ModelSession, m DBModel) (err error) {
+func UpdateDBModel(s *Session, m DBModel) (err error) {
 	whereStr, whereArgs := m.UniqueCond()
 	if s == nil {
 		s = newAutoCloseModelsSession()
@@ -108,7 +108,7 @@ func UpdateDBModel(s *ModelSession, m DBModel) (err error) {
 	return
 }
 
-func DeleteDBModel(s *ModelSession, m DBModel) (err error) {
+func DeleteDBModel(s *Session, m DBModel) (err error) {
 	whereStr, whereArgs := m.UniqueCond()
 
 	if s == nil {

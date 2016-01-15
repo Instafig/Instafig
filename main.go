@@ -37,13 +37,13 @@ func main() {
 	opAPIGroup := ginIns.Group("/op")
 	{
 		opAPIGroup.GET("/users/:page", GetUsers)
-		opAPIGroup.POST("/user", confWriteCheck, NewUser)
+		opAPIGroup.POST("/user", ConfWriteCheck, NewUser)
 
 		opAPIGroup.GET("/apps/:user_key", GetApps)
-		opAPIGroup.POST("/app", confWriteCheck, NewApp)
+		opAPIGroup.POST("/app", ConfWriteCheck, NewApp)
 
 		opAPIGroup.GET("/configs/:app_key", GetConfigs)
-		opAPIGroup.POST("/config", confWriteCheck, NewConfig)
+		opAPIGroup.POST("/config", ConfWriteCheck, NewConfig)
 	}
 
 	gracehttp.Serve(

@@ -19,14 +19,14 @@ const (
 
 var (
 	errorStr = map[int][2]string{
-		SERVER_ERROR:  [2]string{"server_error", "服务器错误"},
-		BAD_REQUEST:   [2]string{"bad_request", "客户端请求错误"},
-		BAD_POST_DATA: [2]string{"bad_post_data", "客户端请求体错误"},
-		LOGIN_NEEDED:  [2]string{"login_needed", "未登录"},
-		LOGIN_FAILED:  [2]string{"login_failed", "登录失败"},
-		NOT_PERMITTED: [2]string{"not_permitted", "无权进行此次操作"},
-		DATA_EXPIRED:  [2]string{"data_expired", "该节点数据可能已过期"},
-		DATA_SYNCING:  [2]string{"data_expired", "该节点正在同步数据"},
+		SERVER_ERROR:  [2]string{"server_error", "server error"},
+		BAD_REQUEST:   [2]string{"bad_request", "bad requeset"},
+		BAD_POST_DATA: [2]string{"bad_post_data", "bad request body"},
+		LOGIN_NEEDED:  [2]string{"login_needed", "need login"},
+		LOGIN_FAILED:  [2]string{"login_failed", "failed to login"},
+		NOT_PERMITTED: [2]string{"not_permitted", "not permitted"},
+		DATA_EXPIRED:  [2]string{"data_expired", "conf data expired, try from anthor node"},
+		DATA_SYNCING:  [2]string{"data_syncing", "conf data syncing, try from anthor node"},
 	}
 )
 

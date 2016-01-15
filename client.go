@@ -25,8 +25,16 @@ func ClientReqData(c *gin.Context) {
 		memConfMux.RLock()
 		nodes := memConfNodes
 		memConfMux.RUnlock()
+
+		nodeRes := make([]string, len(nodes))
+		ix := 0
+		for _, node := range nodes {
+			nodeRes[ix] = node.URL
+			ix++
+		}
+
 		Success(c, map[string]interface{}{
-			"nodes": nodes,
+			"nodes": nodeRes,
 			"confs": confData,
 		})
 		return

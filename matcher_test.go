@@ -53,6 +53,7 @@ func TestMatch(t *testing.T) {
 		},
 	}
 
+	_clearModelData()
 	fillMemConfData(users, apps, configs, nil, 0)
 
 	res := getAppMatchConf("app1", clientData)
@@ -116,6 +117,7 @@ func TestTemplateConf(t *testing.T) {
 		},
 	}
 
+	_clearModelData()
 	fillMemConfData(users, apps, configs, nil, 0)
 
 	res := getAppMatchConf("app1", clientData)
