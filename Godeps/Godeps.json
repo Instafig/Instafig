@@ -53,6 +53,10 @@
 			"Rev": "679e0bcf99e4653090e530cc8f560116745f69c5"
 		},
 		{
+			"ImportPath": "github.com/hashicorp/go-version",
+			"Rev": "2b9865f60ce11e527bd1255ba82036d465570aa3"
+		},
+		{
 			"ImportPath": "github.com/lib/pq",
 			"Comment": "go1.0-cutoff-69-g2d785ad",
 			"Rev": "2d785ad24be7a038e2fc35424b993645a0025425"
