@@ -178,6 +178,7 @@ func slaveCheckMaster() error {
 	memConfMux.RLock()
 	node := memConfNodes[conf.ClientAddr]
 	ver := memConfDataVersion
+	localNode := memConfNodes[conf.ClientAddr]
 	memConfMux.RUnlock()
 
 	data, err := nodeRequest(conf.MasterAddr, NODE_REQUEST_TYPE_SLAVECHECKMASTER, node)
@@ -187,7 +188,8 @@ func slaveCheckMaster() error {
 
 	masterVer := int(data.(float64))
 	if masterVer == ver {
-		return nil
+		localNode.LastCheckUTC = utils.GetNowSecond()
+		return models.UpdateDBModel(nil, localNode)
 	}
 
 	data, err = nodeRequest(conf.MasterAddr, NODE_REQUEST_TYPE_SYNCMASTER, nil)
@@ -242,8 +244,9 @@ func slaveCheckMaster() error {
 
 	for _, node := range resData.Nodes {
 		if node.URL == conf.ClientAddr {
-			node.DataVersion = resData.DataVer
-			node.NodeURL = conf.NodeAddr
+			node = localNode
+			localNode.DataVersion = resData.DataVer
+			node.LastCheckUTC = utils.GetNowSecond()
 		}
 		if err := models.InsertDBModel(s, node); err != nil {
 			s.Rollback()
@@ -441,6 +444,7 @@ func handleSlaveCheckMaster(c *gin.Context) {
 	oldNode := memConfNodes[node.URL]
 	memConfMux.RUnlock()
 
+	node.LastCheckUTC = utils.GetNowSecond()
 	if oldNode == nil {
 		if err := models.InsertDBModel(nil, node); err != nil {
 			Error(c, SERVER_ERROR, err.Error())

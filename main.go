@@ -25,13 +25,16 @@ func main() {
 		}()
 	}
 
+	if conf.DebugMode {
+		gin.SetMode(gin.DebugMode)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
 	ginIns := gin.New()
 	ginIns.Use(gin.Recovery())
 	if conf.DebugMode {
 		ginIns.Use(gin.Logger())
-		gin.SetMode(gin.DebugMode)
-	} else {
-		gin.SetMode(gin.ReleaseMode)
 	}
 
 	// client api

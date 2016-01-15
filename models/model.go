@@ -166,7 +166,7 @@ type Node struct {
 	Type         string `xorm:"type TEXT NOT NULL" json:"type"`
 	DataVersion  int    `xorm:"data_version INT NOT NULL" json:"data_version"`
 	CreatedUTC   int    `xorm:"created_utc UTC NOT NULL" json:"created_utc"`
-	LastCheckUTC string `xorm:"last_check_utc INT NOT NULL" json:"last_check_utc"`
+	LastCheckUTC int    `xorm:"last_check_utc INT NOT NULL" json:"last_check_utc"`
 
 	SchemeVersion string `xorm:"-"`
 }
