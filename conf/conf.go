@@ -2,6 +2,7 @@ package conf
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -34,9 +35,8 @@ var (
 	MasterAddr     string
 	ReplaceMaster  bool
 
-	DebugMode   bool
-	LogLevel    string
-	VersionInfo bool
+	DebugMode bool
+	LogLevel  string
 
 	configFile    = flag.String("config", "__unset__", "service config file")
 	replaceMaster = flag.Bool("replace-master", false, "service config file")
@@ -51,7 +51,11 @@ func init() {
 
 	DebugMode = *debugMode
 	LogLevel = *logLevel
-	VersionInfo = *versionInfo
+
+	if *versionInfo {
+		fmt.Printf("%s\n", VersionString())
+		os.Exit(0)
+	}
 
 	if DebugMode {
 		LogLevel = "DEBUG"

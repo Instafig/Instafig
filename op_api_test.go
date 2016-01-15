@@ -33,6 +33,10 @@ func TestNewUser(t *testing.T) {
 	err := _clearModelData()
 	assert.True(t, err == nil, "must correctly clear data")
 	loadAllData()
+	initLocalNodeData()
+
+	confWriteMux.Lock()
+	defer confWriteMux.Unlock()
 
 	user, err := updateUser(&models.User{
 		Name: "rahuahua",
@@ -54,6 +58,10 @@ func TestNewApp(t *testing.T) {
 	err := _clearModelData()
 	assert.True(t, err == nil, "must correctly clear data")
 	loadAllData()
+	initLocalNodeData()
+
+	confWriteMux.Lock()
+	defer confWriteMux.Unlock()
 
 	user, err := updateUser(&models.User{
 		Name: "rahuahua",
@@ -84,6 +92,10 @@ func TestNewConfig(t *testing.T) {
 	err := _clearModelData()
 	assert.True(t, err == nil, "must correctly clear data")
 	loadAllData()
+	initLocalNodeData()
+
+	confWriteMux.Lock()
+	defer confWriteMux.Unlock()
 
 	user, err := updateUser(&models.User{
 		Name: "rahuahua",
@@ -123,6 +135,10 @@ func TestDataVersion(t *testing.T) {
 	err := _clearModelData()
 	assert.True(t, err == nil, "must correctly clear data")
 	loadAllData()
+	initLocalNodeData()
+
+	confWriteMux.Lock()
+	defer confWriteMux.Unlock()
 
 	assert.True(t, memConfDataVersion == 0, "init data version must be 0")
 

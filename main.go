@@ -1,10 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
-	"os"
+
+	"time"
 
 	"github.com/appwilldev/Instafig/conf"
 	"github.com/facebookgo/grace/gracehttp"
@@ -12,15 +12,17 @@ import (
 )
 
 func main() {
-	if conf.VersionInfo {
-		fmt.Printf("%s\n", VersionString())
-		os.Exit(0)
-	}
-
 	if conf.IsEasyDeployMode() && !conf.IsMasterNode() {
 		if err := slaveCheckMaster(); err != nil {
 			log.Panicf("slave node failed to check master: %s", err.Error())
 		}
+
+		go func() {
+			for {
+				time.Sleep(60 * time.Second)
+				slaveCheckMaster()
+			}
+		}()
 	}
 
 	ginIns := gin.New()

@@ -1,15 +1,13 @@
 package main
 
 import (
-	"log"
-
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"reflect"
-	"time"
 
 	"github.com/appwilldev/Instafig/conf"
 	"github.com/appwilldev/Instafig/models"
@@ -17,17 +15,6 @@ import (
 	"github.com/bitly/go-simplejson"
 	"github.com/gin-gonic/gin"
 )
-
-func init() {
-	if conf.IsEasyDeployMode() && !conf.IsMasterNode() {
-		go func() {
-			for {
-				time.Sleep(60 * time.Second)
-				slaveCheckMaster()
-			}
-		}()
-	}
-}
 
 func checkNodeValidity() {
 	if !conf.IsMasterNode() {

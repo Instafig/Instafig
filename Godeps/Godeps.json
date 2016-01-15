@@ -6,6 +6,11 @@
 	],
 	"Deps": [
 		{
+			"ImportPath": "github.com/bitly/go-simplejson",
+			"Comment": "v0.5.0",
+			"Rev": "aabad6e819789e569bd6aabf444c935aa9ba1e44"
+		},
+		{
 			"ImportPath": "github.com/davecgh/go-spew/spew",
 			"Rev": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d"
 		},
