@@ -230,44 +230,67 @@ func (dval *DynVal) ToJson() (string, error) {
 }
 
 // Unserialize from JSON to Sexp
-func sliceToSexpString(data []interface{}) string {
-	ret := "("
-	for idx, item := range data {
-		switch val := item.(type) {
-		case bool:
-			ret += " "
-			ret += strconv.FormatBool(val)
-		case int:
-			ret += " "
-			ret += string(val)
-		case float64:
-			ret += " "
-			ret += strconv.FormatFloat(val, 'f', -1, 64)
-		case string:
-			ret += " "
-			ret += `"`
-			ret += string(val)
-			ret += `"`
-		case map[string]interface{}: // Symbol
+func plainDataToSexpString(data interface{}) string {
+	switch data := data.(type) {
+	case bool:
+		return strconv.FormatBool(data)
+	case int:
+		return string(data)
+	case float64:
+		return strconv.FormatFloat(data, 'f', -1, 64)
+	case string:
+		return `"` + data + `"` // TODO escape double quote
+	case map[string]interface{}:
+		if val, ok := data["symbol"]; ok { // Symbol
+			return string(val.(string))
+		}
+		if val, ok := data["func"]; ok { // cond-values style function call
+			ret := "(" + val.(string)
+			args := data["arguments"].([]interface{})
+			for _, argval := range args {
+				ret += " "
+				ret += plainDataToSexpString(argval)
+			}
+			ret += ")"
+			return ret
+		}
+		if val, ok := data["cond-values"]; ok { // cond-values exp
+			ret := "(cond-values"
+			conds := val.([]interface{})
+			for _, cond := range conds {
+				ret += " "
+				ret += plainDataToSexpString(cond.(map[string]interface{})["condition"])
+				ret += " "
+				ret += plainDataToSexpString(cond.(map[string]interface{})["value"])
+			}
+			if dft, ok := data["default-value"]; ok {
+				ret += " "
+				ret += plainDataToSexpString(dft)
+			}
+			ret += ")"
+			return ret
+		}
+
+	case []interface{}: // Sub sexp
+		ret := "("
+		for idx, val := range data {
 			if idx != 0 {
 				ret += " "
 			}
-			ret += string(val["symbol"].(string))
-		case []interface{}: // Sub sexp
-			ret += " "
-			ret += sliceToSexpString(val)
+			ret += plainDataToSexpString(val)
 		}
+		ret += ")"
+		return ret
 	}
-	ret += ")"
-	return ret
+	return "()"
 }
 
 func JsonToSexpString(json_str string) (string, error) {
-	var f []interface{}
+	var f interface{}
 	err := json.Unmarshal([]byte(json_str), &f)
 	if err != nil {
 		return "", err
 	}
-	data := sliceToSexpString(f)
+	data := plainDataToSexpString(f)
 	return data, nil
 }
