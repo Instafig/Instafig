@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/appwilldev/Instafig/models"
+	"github.com/appwilldev/Instafig/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,15 +34,17 @@ func TestNewUser(t *testing.T) {
 	assert.True(t, err == nil, "must correctly clear data")
 	loadAllData()
 
-	user, err := newUser(&newUserData{
+	user, err := updateUser(&models.User{
 		Name: "rahuahua",
+		Key:  utils.GenerateKey(),
 	})
 	assert.True(t, err == nil, "must correctly add new user")
 	assert.True(t, len(memConfUsers) == 1, "must only one user")
 	assert.True(t, user.Key == memConfUsersByName["rahuahua"].Key, "must the same user")
 
-	_, err = newUser(&newUserData{
+	_, err = updateUser(&models.User{
 		Name: "rahuahua2",
+		Key:  utils.GenerateKey(),
 	})
 	assert.True(t, err == nil, "must correctly add new user")
 	assert.True(t, len(memConfUsers) == 2, "must two users")
@@ -52,11 +55,13 @@ func TestNewApp(t *testing.T) {
 	assert.True(t, err == nil, "must correctly clear data")
 	loadAllData()
 
-	user, err := newUser(&newUserData{
+	user, err := updateUser(&models.User{
 		Name: "rahuahua",
+		Key:  utils.GenerateKey(),
 	})
 
-	app, err := newApp(&newAppData{
+	app, err := updateApp(&models.App{
+		Key:     utils.GenerateKey(),
 		UserKey: user.Key,
 		Name:    "iconfreecn",
 		Type:    models.APP_TYPE_REAL,
@@ -65,7 +70,8 @@ func TestNewApp(t *testing.T) {
 	assert.True(t, len(memConfApps) == 1, "must only one app")
 	assert.True(t, app.Key == memConfAppsByName["iconfreecn"][0].Key, "must the same app")
 
-	_, err = newApp(&newAppData{
+	_, err = updateApp(&models.App{
+		Key:     utils.GenerateKey(),
 		UserKey: user.Key,
 		Name:    "hdfreecn",
 		Type:    models.APP_TYPE_REAL,
@@ -79,17 +85,20 @@ func TestNewConfig(t *testing.T) {
 	assert.True(t, err == nil, "must correctly clear data")
 	loadAllData()
 
-	user, err := newUser(&newUserData{
+	user, err := updateUser(&models.User{
 		Name: "rahuahua",
+		Key:  utils.GenerateKey(),
 	})
 
-	app, err := newApp(&newAppData{
+	app, err := updateApp(&models.App{
+		Key:     utils.GenerateKey(),
 		UserKey: user.Key,
 		Name:    "iconfreecn",
 		Type:    models.APP_TYPE_REAL,
 	})
 
-	config, err := newConfig(&newConfigData{
+	config, err := updateConfig(&models.Config{
+		Key:    utils.GenerateKey(),
 		AppKey: app.Key,
 		K:      "int_conf",
 		V:      "1",
@@ -99,7 +108,8 @@ func TestNewConfig(t *testing.T) {
 	assert.True(t, memConfAppConfigs[app.Key][0].Key == config.Key, "must the same config")
 	assert.True(t, len(memConfAppConfigs[app.Key]) == 1, "must one config for app")
 
-	_, err = newConfig(&newConfigData{
+	_, err = updateConfig(&models.Config{
+		Key:    utils.GenerateKey(),
 		AppKey: app.Key,
 		K:      "float_conf",
 		V:      "1.2",
@@ -116,19 +126,22 @@ func TestDataVersion(t *testing.T) {
 
 	assert.True(t, memConfDataVersion == 0, "init data version must be 0")
 
-	user, _ := newUser(&newUserData{
+	user, err := updateUser(&models.User{
 		Name: "rahuahua",
+		Key:  utils.GenerateKey(),
 	})
 	assert.True(t, memConfDataVersion == 1, "data version must be 1")
 
-	app, _ := newApp(&newAppData{
+	app, _ := updateApp(&models.App{
+		Key:     utils.GenerateKey(),
 		UserKey: user.Key,
 		Name:    "iconfreecn",
 		Type:    models.APP_TYPE_REAL,
 	})
 	assert.True(t, memConfDataVersion == 2, "data version must be 2")
 
-	newConfig(&newConfigData{
+	updateConfig(&models.Config{
+		Key:    utils.GenerateKey(),
 		AppKey: app.Key,
 		K:      "int_conf",
 		V:      "1",

@@ -145,6 +145,7 @@ func fillMemConfData(users []*models.User, apps []*models.App, configs []*models
 	if memConfNodes[conf.ClientAddr] == nil {
 		node := &models.Node{
 			URL:         conf.ClientAddr,
+			NodeURL:     conf.NodeAddr,
 			Type:        conf.NodeType,
 			DataVersion: memConfDataVersion,
 			CreatedUTC:  utils.GetNowSecond(),

@@ -11,17 +11,8 @@ import (
 func main() {
 	ginIns := gin.New()
 	ginIns.Use(gin.Recovery())
-
-	ginInsNode := gin.New()
-	ginInsNode.Use(gin.Recovery())
-
-	ginInsNode.GET("/", func(c *gin.Context) {
-		c.String(http.StatusOK, "hello from gin node")
-	})
-
 	if conf.DebugMode {
 		ginIns.Use(gin.Logger())
-		ginInsNode.Use(gin.Logger())
 		gin.SetMode(gin.DebugMode)
 	} else {
 		gin.SetMode(gin.ReleaseMode)
@@ -46,7 +37,18 @@ func main() {
 		opAPIGroup.POST("/config", ConfWriteCheck, NewConfig)
 	}
 
-	gracehttp.Serve(
-		&http.Server{Addr: conf.HttpAddr, Handler: ginIns},
-		&http.Server{Addr: conf.NodeAddr, Handler: ginInsNode})
+	if conf.IsEasyDeployMode() {
+		ginInsNode := gin.New()
+		if conf.DebugMode {
+			ginInsNode.Use(gin.Logger())
+		}
+		ginInsNode.Use(gin.Recovery())
+		ginInsNode.POST("/node/req/:req_type", NodeRequestHandler)
+
+		gracehttp.Serve(
+			&http.Server{Addr: conf.HttpAddr, Handler: ginIns},
+			&http.Server{Addr: conf.NodeAddr, Handler: ginInsNode})
+	} else {
+		gracehttp.Serve(&http.Server{Addr: conf.HttpAddr, Handler: ginIns})
+	}
 }

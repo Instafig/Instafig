@@ -162,6 +162,7 @@ const (
 
 type Node struct {
 	URL          string `xorm:"url TEXT PK NOT NULL" json:"url"`
+	NodeURL      string `xorm:"node_url TEXT PK NOT NULL" json:"node_url"`
 	Type         string `xorm:"type TEXT NOT NULL" json:"type"`
 	DataVersion  int    `xorm:"data_version INT NOT NULL" json:"data_version"`
 	CreatedUTC   int    `xorm:"created_utc UTC NOT NULL" json:"created_utc"`

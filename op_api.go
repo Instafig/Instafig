@@ -43,19 +43,21 @@ func NewUser(c *gin.Context) {
 	}
 	memConfMux.RUnlock()
 
-	if _, err := newUser(data); err != nil {
+	user := &models.User{
+		Name: data.Name,
+		Key:  utils.GenerateKey()}
+
+	if _, err := updateUser(user); err != nil {
 		Error(c, SERVER_ERROR, err.Error())
 		return
 	}
 
-	if conf.IsEasyDeployMode() {
-		//TODO: sync to slave
-	}
+	failedNodes := syncData2SlaveIfNeed(user)
 
-	Success(c, nil)
+	Success(c, map[string]interface{}{"failed_nodes": failedNodes})
 }
 
-func newUser(newData *newUserData) (*models.User, error) {
+func updateUser(user *models.User) (*models.User, error) {
 	s := models.NewSession()
 	defer s.Close()
 	if err := s.Begin(); err != nil {
@@ -65,6 +67,7 @@ func newUser(newData *newUserData) (*models.User, error) {
 
 	memConfMux.RLock()
 	node := memConfNodes[conf.ClientAddr]
+	oldUser := memConfUsers[user.Key]
 	memConfMux.RUnlock()
 
 	if err := updateNodeDataVersion(s, node, memConfDataVersion+1); err != nil {
@@ -72,12 +75,16 @@ func newUser(newData *newUserData) (*models.User, error) {
 		return nil, err
 	}
 
-	user := &models.User{
-		Name: newData.Name,
-		Key:  utils.GenerateKey()}
-	if err := models.InsertDBModel(s, user); err != nil {
-		s.Rollback()
-		return nil, err
+	if oldUser == nil {
+		if err := models.InsertDBModel(s, user); err != nil {
+			s.Rollback()
+			return nil, err
+		}
+	} else {
+		if err := models.UpdateDBModel(s, user); err != nil {
+			s.Rollback()
+			return nil, err
+		}
 	}
 
 	if err := s.Commit(); err != nil {
@@ -89,6 +96,9 @@ func newUser(newData *newUserData) (*models.User, error) {
 	defer memConfMux.Unlock()
 
 	memConfDataVersion++
+	if oldUser != nil {
+		memConfUsersByName[oldUser.Name] = nil
+	}
 	memConfUsers[user.Key] = user
 	memConfUsersByName[user.Name] = user
 
@@ -142,19 +152,23 @@ func NewApp(c *gin.Context) {
 	}
 	memConfMux.RUnlock()
 
-	if _, err := newApp(data); err != nil {
+	app := &models.App{
+		Key:     utils.GenerateKey(),
+		Name:    data.Name,
+		UserKey: data.UserKey,
+		Type:    data.Type,
+	}
+	if _, err := updateApp(app); err != nil {
 		Error(c, SERVER_ERROR, err.Error())
 		return
 	}
 
-	if conf.IsEasyDeployMode() {
-		//TODO: sync to slave
-	}
+	failedNodes := syncData2SlaveIfNeed(app)
 
-	Success(c, nil)
+	Success(c, map[string]interface{}{"failed_nodes": failedNodes})
 }
 
-func newApp(newData *newAppData) (*models.App, error) {
+func updateApp(app *models.App) (*models.App, error) {
 	s := models.NewSession()
 	defer s.Close()
 	if err := s.Begin(); err != nil {
@@ -164,6 +178,7 @@ func newApp(newData *newAppData) (*models.App, error) {
 
 	memConfMux.RLock()
 	node := memConfNodes[conf.ClientAddr]
+	oldApp := memConfApps[app.Key]
 	memConfMux.RUnlock()
 
 	if err := updateNodeDataVersion(s, node, memConfDataVersion+1); err != nil {
@@ -171,15 +186,18 @@ func newApp(newData *newAppData) (*models.App, error) {
 		return nil, err
 	}
 
-	app := &models.App{
-		Key:     utils.GenerateKey(),
-		Name:    newData.Name,
-		UserKey: newData.UserKey,
-		Type:    newData.Type,
+	if oldApp == nil {
+		if err := models.InsertDBModel(s, app); err != nil {
+			s.Rollback()
+			return nil, err
+		}
+	} else {
+		if err := models.UpdateDBModel(s, app); err != nil {
+			s.Rollback()
+			return nil, err
+		}
 	}
-	if err := models.InsertDBModel(s, app); err != nil {
-		return nil, err
-	}
+
 	if err := s.Commit(); err != nil {
 		s.Rollback()
 		return nil, err
@@ -189,6 +207,15 @@ func newApp(newData *newAppData) (*models.App, error) {
 	defer memConfMux.Unlock()
 
 	memConfDataVersion++
+	if oldApp != nil {
+		apps := memConfAppsByName[oldApp.Name]
+		memConfAppsByName[oldApp.Name] = make([]*models.App, 0)
+		for _, app := range apps {
+			if app.Key != oldApp.Key {
+				memConfAppsByName[oldApp.Name] = append(memConfAppsByName[oldApp.Name], app)
+			}
+		}
+	}
 	memConfApps[app.Key] = app
 	memConfAppsByName[app.Name] = append(memConfAppsByName[app.Name], app)
 
@@ -258,19 +285,26 @@ func NewConfig(c *gin.Context) {
 		}
 	}
 
-	if _, err := newConfig(data); err != nil {
+	config := &models.Config{
+		Key:    utils.GenerateKey(),
+		AppKey: data.AppKey,
+		K:      data.K,
+		V:      data.V,
+		VType:  data.VType,
+	}
+
+	config, err := updateConfig(config)
+	if err != nil {
 		Error(c, SERVER_ERROR, err.Error())
 		return
 	}
 
-	if conf.IsEasyDeployMode() {
-		//TODO: sync to slave
-	}
+	failedNodes := syncData2SlaveIfNeed(config)
 
-	Success(c, nil)
+	Success(c, map[string]interface{}{"failed_nodes": failedNodes})
 }
 
-func newConfig(newData *newConfigData) (*models.Config, error) {
+func updateConfig(config *models.Config) (*models.Config, error) {
 	s := models.NewSession()
 	defer s.Close()
 	if err := s.Begin(); err != nil {
@@ -280,6 +314,7 @@ func newConfig(newData *newConfigData) (*models.Config, error) {
 
 	memConfMux.RLock()
 	node := memConfNodes[conf.ClientAddr]
+	oldConfig := memConfConfigs[config.Key]
 	memConfMux.RUnlock()
 
 	if err := updateNodeDataVersion(s, node, memConfDataVersion+1); err != nil {
@@ -287,17 +322,18 @@ func newConfig(newData *newConfigData) (*models.Config, error) {
 		return nil, err
 	}
 
-	config := &models.Config{
-		Key:    utils.GenerateKey(),
-		AppKey: newData.AppKey,
-		K:      newData.K,
-		V:      newData.V,
-		VType:  newData.VType,
+	if oldConfig == nil {
+		if err := models.InsertDBModel(s, config); err != nil {
+			s.Rollback()
+			return nil, err
+		}
+	} else {
+		if err := models.UpdateDBModel(s, config); err != nil {
+			s.Rollback()
+			return nil, err
+		}
 	}
-	if err := models.InsertDBModel(s, config); err != nil {
-		s.Rollback()
-		return nil, err
-	}
+
 	if err := s.Commit(); err != nil {
 		s.Rollback()
 		return nil, err
@@ -309,7 +345,9 @@ func newConfig(newData *newConfigData) (*models.Config, error) {
 	memConfDataVersion++
 	memConfRawConfigs[config.Key] = config
 	memConfConfigs[config.Key] = transConfig(config)
-	memConfAppConfigs[config.AppKey] = append(memConfAppConfigs[config.AppKey], transConfig(config))
+	if oldConfig == nil {
+		memConfAppConfigs[config.AppKey] = append(memConfAppConfigs[config.AppKey], transConfig(config))
+	}
 
 	return config, nil
 }
