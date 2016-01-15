@@ -34,14 +34,16 @@ var (
 	MasterAddr     string
 	ReplaceMaster  bool
 
-	DebugMode bool
-	LogLevel  string
+	DebugMode   bool
+	LogLevel    string
+	VersionInfo bool
 
 	configFile    = flag.String("config", "__unset__", "service config file")
 	replaceMaster = flag.Bool("replace-master", false, "service config file")
 	maxThreadNum  = flag.Int("max-thread", 0, "max threads of service")
 	debugMode     = flag.Bool("debug", false, "debug mode")
 	logLevel      = flag.String("log-level", "INFO", "DEBUG | INFO | WARN | ERROR | FATAL | PANIC")
+	versionInfo   = flag.Bool("version", false, "show version info")
 )
 
 func init() {
@@ -49,6 +51,8 @@ func init() {
 
 	DebugMode = *debugMode
 	LogLevel = *logLevel
+	VersionInfo = *versionInfo
+
 	if DebugMode {
 		LogLevel = "DEBUG"
 	}

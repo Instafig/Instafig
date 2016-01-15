@@ -1,0 +1,18 @@
+#!/bin/bash
+# -*- mode: sh -*-
+
+#TRAVIS_PULL_REQUEST is "false" if is a PR
+
+KERNEL=$(tr [:upper:] [:lower:] <<< $(uname -s))
+
+if [ -n "$TRAVIS" ]; then
+    BUILD_INFO="build.${TRAVIS_BUILD_NUMBER}-${TRAVIS_COMMIT:0:8}-${KERNEL}-$(uname -m)"
+else
+    BUILD_INFO="build.dev-${KERNEL}-$(uname -m)"
+fi
+
+cat > build_info.go <<EOF
+package main
+
+const VERSION_BUILD_INFO = "$BUILD_INFO"
+EOF
