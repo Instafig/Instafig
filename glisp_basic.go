@@ -54,6 +54,7 @@ func defVersionCompareFunctions(env *glisp.Glisp) {
          (defn ver< [v1 v2] (< (version-cmp v1 v2) 0))
          (defn ver>= [v1 v2] (>= (version-cmp v1 v2) 0))
          (defn ver<= [v1 v2] (<= (version-cmp v1 v2) 0))
+         (defn ver!= [v1 v2] (not (= (version-cmp v1 v2) 0)))
     `
 	env.EvalString(shortcuts)
 }
