@@ -15,6 +15,7 @@ before_install:
 
 install:
   - ./scripts/godep-update
+  - go generate ./...
   - go get -t -v ./
 
 

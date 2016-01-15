@@ -24,6 +24,10 @@ func init() {
 	var err error
 	var dsn, driver string
 
+	if conf.VersionInfo {
+		return
+	}
+
 	if conf.IsEasyDeployMode() {
 		dsn = fmt.Sprintf(filepath.Join(conf.SqliteDir, conf.SqliteFileName))
 		driver = "sqlite3"
