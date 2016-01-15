@@ -1,9 +1,7 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/appwilldev/Instafig/conf"
 	"github.com/facebookgo/grace/gracehttp"
@@ -11,11 +9,6 @@ import (
 )
 
 func main() {
-	if conf.VersionInfo {
-		fmt.Printf("%s\n", VersionString())
-		os.Exit(0)
-	}
-
 	ginIns := gin.New()
 	ginIns.Use(gin.Recovery())
 	if conf.DebugMode {

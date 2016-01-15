@@ -68,9 +68,6 @@ func transConfig(m *models.Config) *Config {
 }
 
 func init() {
-	if conf.VersionInfo {
-		return
-	}
 	if conf.IsEasyDeployMode() {
 		checkNodeValidity()
 		loadAllData()

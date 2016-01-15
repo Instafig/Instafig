@@ -12,7 +12,7 @@ else
 fi
 
 cat > build_info.go <<EOF
-package main
+package conf
 
 const VERSION_BUILD_INFO = "$BUILD_INFO"
 EOF
