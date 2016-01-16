@@ -10,23 +10,7 @@ import (
 
 // !!!!NOTE!!!! only used in UT
 func _clearModelData() error {
-	sql := "delete from config; delete from app; delete from user;delete from node;update data_version set ver=0;"
-	s := models.NewSession()
-	defer s.Close()
-	if err := s.Begin(); err != nil {
-		s.Rollback()
-		return err
-	}
-	if _, err := s.Exec(sql); err != nil {
-		s.Rollback()
-		return err
-	}
-	if err := s.Commit(); err != nil {
-		s.Rollback()
-		return err
-	}
-
-	return nil
+	return models.ClearModeData(nil)
 }
 
 func TestNewUser(t *testing.T) {

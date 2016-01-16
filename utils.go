@@ -15,18 +15,20 @@ const (
 	NOT_PERMITTED
 	DATA_EXPIRED
 	DATA_SYNCING
+	DATA_VERSION_ERROR
 )
 
 var (
 	errorStr = map[int][2]string{
-		SERVER_ERROR:  [2]string{"server_error", "server error"},
-		BAD_REQUEST:   [2]string{"bad_request", "bad requeset"},
-		BAD_POST_DATA: [2]string{"bad_post_data", "bad request body"},
-		LOGIN_NEEDED:  [2]string{"login_needed", "need login"},
-		LOGIN_FAILED:  [2]string{"login_failed", "failed to login"},
-		NOT_PERMITTED: [2]string{"not_permitted", "not permitted"},
-		DATA_EXPIRED:  [2]string{"data_expired", "conf data expired, try from anthor node"},
-		DATA_SYNCING:  [2]string{"data_syncing", "conf data syncing, try from anthor node"},
+		SERVER_ERROR:       [2]string{"server_error", "server error"},
+		BAD_REQUEST:        [2]string{"bad_request", "bad requeset"},
+		BAD_POST_DATA:      [2]string{"bad_post_data", "bad request body"},
+		LOGIN_NEEDED:       [2]string{"login_needed", "need login"},
+		LOGIN_FAILED:       [2]string{"login_failed", "failed to login"},
+		NOT_PERMITTED:      [2]string{"not_permitted", "not permitted"},
+		DATA_EXPIRED:       [2]string{"data_expired", "conf data expired, try from anthor node"},
+		DATA_SYNCING:       [2]string{"data_syncing", "conf data syncing, try from anthor node"},
+		DATA_VERSION_ERROR: [2]string{"data_verison_error", "data version error"},
 	}
 )
 

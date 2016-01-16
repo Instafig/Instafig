@@ -12,9 +12,33 @@ import (
 	"github.com/appwilldev/Instafig/conf"
 	"github.com/appwilldev/Instafig/models"
 	"github.com/appwilldev/Instafig/utils"
-	"github.com/bitly/go-simplejson"
 	"github.com/gin-gonic/gin"
 )
+
+const (
+	NODE_REQUEST_TYPE_SYNCSLAVE   = "SYNCSLAVE"
+	NODE_REQUEST_TYPE_CHECKMASTER = "CHECKMASTER"
+	NODE_REQUEST_TYPE_SYNCMASTER  = "SYNCMASTER"
+
+	NODE_REQUEST_SYNC_TYPE_USER   = "USER"
+	NODE_REQUEST_SYNC_TYPE_APP    = "APP"
+	NODE_REQUEST_SYNC_TYPE_CONFIG = "CONFIG"
+)
+
+
+type syncDataT struct {
+	DataVersion int    `json:"data_version"`
+	Kind        string `json:"kind"`
+	Data        string `json:"data"` // json string
+}
+
+type syncAllDataT struct {
+	Nodes       map[string]*models.Node   `json:"nodes"`
+	Users       map[string]*models.User   `json:"users"`
+	Apps        map[string]*models.App    `json:"apps"`
+	Configs     map[string]*models.Config `json:"configs"`
+	DataVersion int                       `json:"data_version"`
+}
 
 func checkNodeValidity() {
 	if !conf.IsMasterNode() {
@@ -41,12 +65,6 @@ func checkNodeValidity() {
 }
 
 func initLocalNodeData() {
-	confWriteMux.Lock()
-	defer confWriteMux.Unlock()
-
-	memConfMux.Lock()
-	defer memConfMux.Unlock()
-
 	if memConfNodes[conf.ClientAddr] == nil {
 		node := &models.Node{
 			URL:         conf.ClientAddr,
@@ -151,22 +169,23 @@ func syncData2Slave(node *models.Node, data interface{}, dataVer int) error {
 	kind := ""
 	switch data.(type) {
 	case *models.User:
-		kind = NODE_REQUEST_DATA_SYNC_KIND_USER
+		kind = NODE_REQUEST_SYNC_TYPE_USER
 	case *models.App:
-		kind = NODE_REQUEST_DATA_SYNC_KIND_APP
+		kind = NODE_REQUEST_SYNC_TYPE_APP
 	case *models.Config:
-		kind = NODE_REQUEST_DATA_SYNC_KIND_CONFIG
+		kind = NODE_REQUEST_SYNC_TYPE_CONFIG
 	default:
 		log.Panicln("unkown node data sync type: ", reflect.TypeOf(data))
 	}
 
-	reqData := map[string]interface{}{
-		"data_ver": dataVer,
-		"kind":     kind,
-		"data":     data,
+	bs, _ := json.Marshal(data)
+	reqData := syncDataT{
+		DataVersion: dataVer,
+		Kind:        kind,
+		Data:        string(bs),
 	}
 
-	_, err := nodeRequest(node.NodeURL, NODE_REQUEST_TYPE_SYNC2SLAVE, reqData)
+	_, err := nodeRequest(node.NodeURL, NODE_REQUEST_TYPE_SYNCSLAVE, reqData)
 
 	return err
 }
@@ -181,7 +200,7 @@ func slaveCheckMaster() error {
 	localNode := memConfNodes[conf.ClientAddr]
 	memConfMux.RUnlock()
 
-	data, err := nodeRequest(conf.MasterAddr, NODE_REQUEST_TYPE_SLAVECHECKMASTER, node)
+	data, err := nodeRequest(conf.MasterAddr, NODE_REQUEST_TYPE_CHECKMASTER, node)
 	if err != nil {
 		return err
 	}
@@ -192,12 +211,13 @@ func slaveCheckMaster() error {
 		return models.UpdateDBModel(nil, localNode)
 	}
 
+	// slave's data_version not equals master's data_version, slave sync all data from master
 	data, err = nodeRequest(conf.MasterAddr, NODE_REQUEST_TYPE_SYNCMASTER, nil)
 	if err != nil {
 		return err
 	}
 
-	resData := &syncDataT{}
+	resData := &syncAllDataT{}
 	if err = json.Unmarshal([]byte(data.(string)), resData); err != nil {
 		return fmt.Errorf("bad response data format: %s < %s >", err.Error(), data.(string))
 	}
@@ -214,8 +234,7 @@ func slaveCheckMaster() error {
 		return err
 	}
 
-	sql := "delete from user; delete from app; delete from config; delete from node;"
-	if _, err = s.Exec(sql); err != nil {
+	if err = models.ClearModeData(s); err != nil {
 		s.Rollback()
 		return err
 	}
@@ -245,7 +264,7 @@ func slaveCheckMaster() error {
 	for _, node := range resData.Nodes {
 		if node.URL == conf.ClientAddr {
 			node = localNode
-			localNode.DataVersion = resData.DataVer
+			localNode.DataVersion = resData.DataVersion
 			node.LastCheckUTC = utils.GetNowSecond()
 		}
 		if err := models.InsertDBModel(s, node); err != nil {
@@ -255,7 +274,7 @@ func slaveCheckMaster() error {
 		nodes = append(nodes, node)
 	}
 
-	if err = models.UpdateDataVersion(s, resData.DataVer); err != nil {
+	if err = models.UpdateDataVersion(s, resData.DataVersion); err != nil {
 		s.Rollback()
 		return err
 	}
@@ -265,20 +284,10 @@ func slaveCheckMaster() error {
 		return err
 	}
 
-	fillMemConfData(users, apps, configs, nodes, resData.DataVer)
+	fillMemConfData(users, apps, configs, nodes, resData.DataVersion)
 
 	return nil
 }
-
-const (
-	NODE_REQUEST_TYPE_SYNC2SLAVE       = "SYNC2SLAVE"
-	NODE_REQUEST_TYPE_SLAVECHECKMASTER = "SLAVECHECKMASTER"
-	NODE_REQUEST_TYPE_SYNCMASTER       = "SYNCMASTER"
-
-	NODE_REQUEST_DATA_SYNC_KIND_USER   = "USER"
-	NODE_REQUEST_DATA_SYNC_KIND_APP    = "APP"
-	NODE_REQUEST_DATA_SYNC_KIND_CONFIG = "CONFIG"
-)
 
 func nodeRequest(targetNodeUrl string, reqType string, data interface{}) (interface{}, error) {
 	url := fmt.Sprintf("http://%s/node/req/%s", targetNodeUrl, reqType)
@@ -333,9 +342,9 @@ func nodeRequest(targetNodeUrl string, reqType string, data interface{}) (interf
 
 func NodeRequestHandler(c *gin.Context) {
 	switch c.Param("req_type") {
-	case NODE_REQUEST_TYPE_SYNC2SLAVE:
+	case NODE_REQUEST_TYPE_SYNCSLAVE:
 		handleSlaveSyncUpdateData(c)
-	case NODE_REQUEST_TYPE_SLAVECHECKMASTER:
+	case NODE_REQUEST_TYPE_CHECKMASTER:
 		handleSlaveCheckMaster(c)
 	case NODE_REQUEST_TYPE_SYNCMASTER:
 		handleSyncMaster(c)
@@ -346,7 +355,7 @@ func NodeRequestHandler(c *gin.Context) {
 
 func handleSlaveSyncUpdateData(c *gin.Context) {
 	if conf.IsMasterNode() {
-		Error(c, BAD_REQUEST, "invalid req type for master node: "+NODE_REQUEST_TYPE_SYNC2SLAVE)
+		Error(c, BAD_REQUEST, "invalid req type for master node: "+NODE_REQUEST_TYPE_SYNCSLAVE)
 		return
 	}
 
@@ -356,29 +365,27 @@ func handleSlaveSyncUpdateData(c *gin.Context) {
 		return
 	}
 
-	j, err := simplejson.NewJson(reqBody)
-	if err != nil {
+	reqData := &syncDataT{}
+	if err = json.Unmarshal(reqBody, reqData); err != nil {
 		Error(c, BAD_REQUEST, "bad req body format")
 		return
 	}
-
-	kind := j.Get("kind").MustString()
-	data := j.Get("data").MustMap()
-	ver := j.Get("data_ver").MustInt()
 
 	//TODO: get lock to
 	confWriteMux.Lock()
 	defer confWriteMux.Unlock()
 
-	if memConfDataVersion+1 != ver {
-		Error(c, BAD_REQUEST, "slave node data version [%d] error for master data version [%d]", memConfDataVersion, ver)
+	if memConfDataVersion+1 != reqData.DataVersion {
+		Error(c, DATA_VERSION_ERROR, "slave node data version [%d] error for master data version [%d]", memConfDataVersion, reqData.DataVersion)
+		return
 	}
 
-	switch kind {
-	case NODE_REQUEST_DATA_SYNC_KIND_USER:
-		user := &models.User{
-			Key:  data["key"].(string),
-			Name: data["name"].(string),
+	switch reqData.Kind {
+	case NODE_REQUEST_SYNC_TYPE_USER:
+		user := &models.User{}
+		if err = json.Unmarshal([]byte(reqData.Data), user); err != nil {
+			Error(c, BAD_REQUEST, "bad data format for user model")
+			return
 		}
 		if _, err = updateUser(user); err != nil {
 			Error(c, SERVER_ERROR, err.Error())
@@ -386,12 +393,11 @@ func handleSlaveSyncUpdateData(c *gin.Context) {
 		}
 		Success(c, nil)
 
-	case NODE_REQUEST_DATA_SYNC_KIND_APP:
-		app := &models.App{
-			Key:     data["key"].(string),
-			UserKey: data["user_key"].(string),
-			Name:    data["name"].(string),
-			Type:    data["type"].(string),
+	case NODE_REQUEST_SYNC_TYPE_APP:
+		app := &models.App{}
+		if err = json.Unmarshal([]byte(reqData.Data), app); err != nil {
+			Error(c, BAD_REQUEST, "bad data format for app model")
+			return
 		}
 		if _, err = updateApp(app); err != nil {
 			Error(c, SERVER_ERROR, err.Error())
@@ -399,13 +405,11 @@ func handleSlaveSyncUpdateData(c *gin.Context) {
 		}
 		Success(c, nil)
 
-	case NODE_REQUEST_DATA_SYNC_KIND_CONFIG:
-		config := &models.Config{
-			Key:    data["key"].(string),
-			AppKey: data["app_key"].(string),
-			K:      data["k"].(string),
-			V:      data["v"].(string),
-			VType:  data["v_type"].(string),
+	case NODE_REQUEST_SYNC_TYPE_CONFIG:
+		config := &models.Config{}
+		if err = json.Unmarshal([]byte(reqData.Data), config); err != nil {
+			Error(c, BAD_REQUEST, "bad data format for user model")
+			return
 		}
 		if _, err = updateConfig(config); err != nil {
 			Error(c, SERVER_ERROR, err.Error())
@@ -414,14 +418,14 @@ func handleSlaveSyncUpdateData(c *gin.Context) {
 		Success(c, nil)
 
 	default:
-		Error(c, BAD_REQUEST, "unkown node data sync type: "+kind)
+		Error(c, BAD_REQUEST, "unkown node data sync type: "+reqData.Kind)
 		return
 	}
 }
 
 func handleSlaveCheckMaster(c *gin.Context) {
 	if !conf.IsMasterNode() {
-		Error(c, BAD_REQUEST, "invalid req type for slave node: "+NODE_REQUEST_TYPE_SLAVECHECKMASTER)
+		Error(c, BAD_REQUEST, "invalid req type for slave node: "+NODE_REQUEST_TYPE_CHECKMASTER)
 		return
 	}
 
@@ -465,14 +469,6 @@ func handleSlaveCheckMaster(c *gin.Context) {
 	Success(c, ver)
 }
 
-type syncDataT struct {
-	Nodes   map[string]*models.Node   `json:"nodes"`
-	Users   map[string]*models.User   `json:"users"`
-	Apps    map[string]*models.App    `json:"apps"`
-	Configs map[string]*models.Config `json:"configs"`
-	DataVer int                       `json:"data_ver"`
-}
-
 func handleSyncMaster(c *gin.Context) {
 	if !conf.IsMasterNode() {
 		Error(c, BAD_REQUEST, "invalid req type for slave node: "+NODE_REQUEST_TYPE_SYNCMASTER)
@@ -490,12 +486,12 @@ func handleSyncMaster(c *gin.Context) {
 	ver := memConfDataVersion
 	memConfMux.RUnlock()
 
-	resData, _ := json.Marshal(syncDataT{
-		Nodes:   nodes,
-		Users:   users,
-		Apps:    apps,
-		Configs: configs,
-		DataVer: ver,
+	resData, _ := json.Marshal(syncAllDataT{
+		Nodes:       nodes,
+		Users:       users,
+		Apps:        apps,
+		Configs:     configs,
+		DataVersion: ver,
 	})
 
 	Success(c, string(resData))

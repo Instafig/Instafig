@@ -231,3 +231,15 @@ func GetDataVersion(s *Session) (int, error) {
 
 	return res[0].Ver, nil
 }
+
+
+func ClearModeData(s *Session) error {
+	if s == nil {
+		s = newAutoCloseModelsSession()
+	}
+
+	sql := "delete from user; delete from app; delete from config; delete from node;update data_version set ver=0;"
+	_, err := s.Exec(sql)
+
+	return err
+}
