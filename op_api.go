@@ -68,9 +68,10 @@ func updateUser(user *models.User) (*models.User, error) {
 	memConfMux.RLock()
 	node := memConfNodes[conf.ClientAddr]
 	oldUser := memConfUsers[user.Key]
+	dataVer := memConfDataVersion
 	memConfMux.RUnlock()
 
-	if err := updateNodeDataVersion(s, node, memConfDataVersion+1); err != nil {
+	if err := updateNodeDataVersion(s, node, dataVer+1); err != nil {
 		s.Rollback()
 		return nil, err
 	}
@@ -179,9 +180,10 @@ func updateApp(app *models.App) (*models.App, error) {
 	memConfMux.RLock()
 	node := memConfNodes[conf.ClientAddr]
 	oldApp := memConfApps[app.Key]
+	ver := memConfDataVersion
 	memConfMux.RUnlock()
 
-	if err := updateNodeDataVersion(s, node, memConfDataVersion+1); err != nil {
+	if err := updateNodeDataVersion(s, node, ver+1); err != nil {
 		s.Rollback()
 		return nil, err
 	}
@@ -315,9 +317,10 @@ func updateConfig(config *models.Config) (*models.Config, error) {
 	memConfMux.RLock()
 	node := memConfNodes[conf.ClientAddr]
 	oldConfig := memConfConfigs[config.Key]
+	ver := memConfDataVersion
 	memConfMux.RUnlock()
 
-	if err := updateNodeDataVersion(s, node, memConfDataVersion+1); err != nil {
+	if err := updateNodeDataVersion(s, node, ver+1); err != nil {
 		s.Rollback()
 		return nil, err
 	}

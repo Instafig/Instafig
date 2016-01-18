@@ -153,7 +153,8 @@ func syncData2SlaveIfNeed(data interface{}) []map[string]interface{} {
 		}
 
 		if ver != node.DataVersion+1 {
-			// failedNodes[node] = fmt.Sprintf("data version of slave node [%s] is %d, master's data version is %d, can't sync", node.DataVersion, ver)
+			errStr := fmt.Sprintf("data version of slave node [%s] is %d, master's data version is %d, can't sync", node.URL, node.DataVersion, ver)
+			failedNodes = append(failedNodes, map[string]interface{}{"node": node, "err": errStr})
 			continue
 		}
 
@@ -371,12 +372,15 @@ func handleSlaveSyncUpdateData(c *gin.Context) {
 		return
 	}
 
-	//TODO: get lock to
 	confWriteMux.Lock()
 	defer confWriteMux.Unlock()
 
-	if memConfDataVersion+1 != reqData.DataVersion {
-		Error(c, DATA_VERSION_ERROR, "slave node data version [%d] error for master data version [%d]", memConfDataVersion, reqData.DataVersion)
+	memConfMux.RLock()
+	ver := memConfDataVersion
+	memConfMux.RUnlock()
+
+	if ver+1 != reqData.DataVersion {
+		Error(c, DATA_VERSION_ERROR, "slave node data version [%d] error for master data version [%d]", ver, reqData.DataVersion)
 		return
 	}
 
@@ -475,8 +479,9 @@ func handleSyncMaster(c *gin.Context) {
 		return
 	}
 
-	confWriteMux.Lock()
-	defer confWriteMux.Unlock()
+	// no need to hold the locker(confWriteMux) to avoid dead-lock, slave will eventually be consistent with master,
+	//	confWriteMux.Lock()
+	//	defer confWriteMux.Unlock()
 
 	memConfMux.RLock()
 	nodes := memConfNodes
@@ -484,8 +489,6 @@ func handleSyncMaster(c *gin.Context) {
 	apps := memConfApps
 	configs := memConfRawConfigs
 	ver := memConfDataVersion
-	memConfMux.RUnlock()
-
 	resData, _ := json.Marshal(syncAllDataT{
 		Nodes:       nodes,
 		Users:       users,
@@ -493,6 +496,7 @@ func handleSyncMaster(c *gin.Context) {
 		Configs:     configs,
 		DataVersion: ver,
 	})
+	memConfMux.RUnlock()
 
 	Success(c, string(resData))
 }
