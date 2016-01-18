@@ -354,7 +354,7 @@ func nodeRequest(targetNodeUrl string, reqType string, data interface{}) (interf
 		default:
 			transData, err = json.Marshal(data)
 			if err != nil {
-				return nil, fmt.Errorf("bad data format: ", err.Error())
+				return nil, fmt.Errorf("bad data format: %s ", err.Error())
 			}
 		}
 	}

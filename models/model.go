@@ -232,7 +232,6 @@ func GetDataVersion(s *Session) (int, error) {
 	return res[0].Ver, nil
 }
 
-
 func ClearModeData(s *Session) error {
 	if s == nil {
 		s = newAutoCloseModelsSession()

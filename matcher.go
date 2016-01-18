@@ -27,13 +27,13 @@ type Config struct {
 }
 
 var (
-	memConfUsers       = make(map[string]*models.User)
-	memConfUsersByName = make(map[string]*models.User)
-	memConfApps        = make(map[string]*models.App)
-	memConfAppsByName  = make(map[string][]*models.App)
-	memConfRawConfigs  = make(map[string]*models.Config)
-	memConfAppConfigs  = make(map[string][]*Config)
-	memConfNodes       = make(map[string]*models.Node)
+	memConfUsers       map[string]*models.User
+	memConfUsersByName map[string]*models.User
+	memConfApps        map[string]*models.App
+	memConfAppsByName  map[string][]*models.App
+	memConfRawConfigs  map[string]*models.Config
+	memConfAppConfigs  map[string][]*Config
+	memConfNodes       map[string]*models.Node
 	memConfDataVersion = 0
 
 	memConfMux = sync.RWMutex{}
