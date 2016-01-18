@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/appwilldev/Instafig/conf"
 	"github.com/appwilldev/Instafig/models"
 )
 
@@ -64,14 +63,6 @@ func transConfig(m *models.Config) *Config {
 	}
 
 	return config
-}
-
-func init() {
-	if conf.IsEasyDeployMode() {
-		checkNodeValidity()
-		loadAllData()
-		initLocalNodeData()
-	}
 }
 
 func loadAllData() {

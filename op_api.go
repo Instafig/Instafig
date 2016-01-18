@@ -53,8 +53,11 @@ func NewUser(c *gin.Context) {
 	}
 
 	failedNodes := syncData2SlaveIfNeed(user)
-
-	Success(c, map[string]interface{}{"failed_nodes": failedNodes})
+	if len(failedNodes) > 0 {
+		Success(c, map[string]interface{}{"failed_nodes": failedNodes})
+	} else {
+		Success(c, nil)
+	}
 }
 
 func updateUser(user *models.User) (*models.User, error) {

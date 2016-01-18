@@ -40,26 +40,45 @@ type syncAllDataT struct {
 	DataVersion int                       `json:"data_version"`
 }
 
-func checkNodeValidity() {
-	if !conf.IsMasterNode() {
-		return
+func init() {
+	if conf.IsEasyDeployMode() {
+		checkNodeValidity()
+		loadAllData()
+		initLocalNodeData()
 	}
+}
 
+func checkNodeValidity() {
 	nodes, err := models.GetAllNode(nil)
 	if err != nil {
-		log.Panicf("failed to get node info when init data: %s" + err.Error())
+		log.Panicf("failed to check node validity: %s" + err.Error())
 	}
 
 	for _, node := range nodes {
-		if node.Type == models.NODE_TYPE_MASTER && node.URL != conf.ClientAddr {
-			if !conf.ReplaceMaster {
-				log.Panicf("master[ %s ] already exists, you can start service with --replace-master to replace old master if need", node.URL)
+		if conf.IsMasterNode() {
+			// only one master in cluster
+			if node.Type == models.NODE_TYPE_MASTER && node.URL != conf.ClientAddr {
+				if !conf.ReplaceMaster {
+					log.Panicf("master[ %s ] already exists, you can start service with --replace-master to change this node to new master if need", node.URL)
+				} else {
+					if err := models.DeleteDBModel(nil, node); err != nil {
+						log.Panicf("failed to check node validity: %s" + err.Error())
+					}
+					break
+				}
 			}
 		} else {
-			if err := models.DeleteDBModel(nil, node); err != nil {
-				log.Panicf("failed to remove old master node: ", err.Error())
+			if node.Type == models.NODE_TYPE_MASTER && node.URL != conf.MasterAddr {
+				if !conf.ReplaceMaster {
+					log.Panicf("you must start service with --replace-master to replace old master if need", node.URL)
+				} else {
+					// this node is attached to a new master, sync full data from new master
+					if err = models.ClearModeData(nil); err != nil {
+						log.Panicf("failed to check node validity: %s" + err.Error())
+					}
+					break
+				}
 			}
-			break
 		}
 	}
 }
@@ -153,7 +172,7 @@ func syncData2SlaveIfNeed(data interface{}) []map[string]interface{} {
 		}
 
 		if ver != node.DataVersion+1 {
-			errStr := fmt.Sprintf("data version of slave node [%s] is %d, master's data version is %d, can't sync", node.URL, node.DataVersion, ver)
+			errStr := fmt.Sprintf("data_version error: slave node's data_version [%s] is %d, master's data_version is %d", node.URL, node.DataVersion, ver)
 			failedNodes = append(failedNodes, map[string]interface{}{"node": node, "err": errStr})
 			continue
 		}
