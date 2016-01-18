@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"github.com/hashicorp/go-version"
 	"github.com/zhemao/glisp/interpreter"
 )
@@ -24,23 +23,27 @@ func VersionCompareFunction(env *glisp.Glisp, name string,
 	case glisp.SexpStr:
 		vleft = string(t)
 	default:
-		return glisp.SexpNull, errors.New("version argument must be string")
+		//return glisp.SexpNull, errors.New("version argument must be string")
+		return glisp.SexpNull, nil
 	}
 
 	switch t := args[1].(type) {
 	case glisp.SexpStr:
 		vright = string(t)
 	default:
-		return glisp.SexpNull, errors.New("version argument must be string")
+		//return glisp.SexpNull, errors.New("version argument must be string")
+		return glisp.SexpNull, nil
 	}
 
 	v1, err := version.NewVersion(vleft)
 	if err != nil {
-		return glisp.SexpNull, errors.New("version format error")
+		return glisp.SexpNull, nil
+		//return glisp.SexpNull, errors.New("version format error")
 	}
 	v2, err := version.NewVersion(vright)
 	if err != nil {
-		return glisp.SexpNull, errors.New("version format error")
+		return glisp.SexpNull, nil
+		//return glisp.SexpNull, errors.New("version format error")
 	}
 	res := v1.Compare(v2)
 	return glisp.SexpInt(res), nil
@@ -49,12 +52,12 @@ func VersionCompareFunction(env *glisp.Glisp, name string,
 func defVersionCompareFunctions(env *glisp.Glisp) {
 	env.AddFunction("version-cmp", VersionCompareFunction)
 	shortcuts := `
-         (defn ver= [v1 v2] (= (version-cmp v1 v2) 0))
-         (defn ver> [v1 v2] (> (version-cmp v1 v2) 0))
-         (defn ver< [v1 v2] (< (version-cmp v1 v2) 0))
-         (defn ver>= [v1 v2] (>= (version-cmp v1 v2) 0))
-         (defn ver<= [v1 v2] (<= (version-cmp v1 v2) 0))
-         (defn ver!= [v1 v2] (not (= (version-cmp v1 v2) 0)))
+         (defn ver= [v1 v2] (let [ret (version-cmp v1 v2)] (cond (int? ret) (= ret 0) false)))
+         (defn ver> [v1 v2] (let [ret (version-cmp v1 v2)] (cond (int? ret) (> ret 0) false)))
+         (defn ver< [v1 v2] (let [ret (version-cmp v1 v2)] (cond (int? ret) (< ret 0) false)))
+         (defn ver>= [v1 v2] (let [ret (version-cmp v1 v2)] (cond (int? ret) (>= ret 0) false)))
+         (defn ver<= [v1 v2] (let [ret (version-cmp v1 v2)] (cond (int? ret) (<= ret 0) false)))
+         (defn ver!= [v1 v2] (let [ret (version-cmp v1 v2)] (cond (int? ret) (not= ret 0) false)))
     `
 	env.EvalString(shortcuts)
 }
