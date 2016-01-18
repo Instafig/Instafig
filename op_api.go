@@ -168,8 +168,74 @@ func NewApp(c *gin.Context) {
 	}
 
 	failedNodes := syncData2SlaveIfNeed(app)
+	if len(failedNodes) > 0 {
+		Success(c, map[string]interface{}{"failed_nodes": failedNodes})
+	} else {
+		Success(c, nil)
+	}
+}
 
-	Success(c, map[string]interface{}{"failed_nodes": failedNodes})
+type updateAppData struct {
+	Key     string `json:"key" binding:"required"`
+	UserKey string `json:"user_key" binding:"required"`
+	Name    string `json:"name" binding:"required"`
+	Type    string `json:"type" binding:"required"`
+}
+
+func UpdateApp(c *gin.Context) {
+	confWriteMux.Lock()
+	defer confWriteMux.Unlock()
+
+	data := &updateAppData{}
+	if err := c.BindJSON(data); err != nil {
+		Error(c, BAD_POST_DATA, err.Error())
+		return
+	}
+
+	if !models.IsValidAppType(data.Type) {
+		Error(c, BAD_REQUEST, "unkown app type: "+data.Type)
+		return
+	}
+
+	memConfMux.RLock()
+	if memConfApps[data.Key] == nil {
+		Error(c, BAD_REQUEST, "app key not exists: "+data.Key)
+		memConfMux.RUnlock()
+		return
+	}
+
+	if memConfApps[data.Key].Type == models.APP_TYPE_TEMPLATE && memConfApps[data.Key].Type != data.Type {
+		Error(c, BAD_REQUEST, "can not change template app to real app")
+		memConfMux.RUnlock()
+		return
+	}
+
+	for _, app := range memConfAppsByName[data.Name] {
+		if app.UserKey == data.UserKey && app.Key != data.Key {
+			Error(c, BAD_REQUEST, "appname already exists: "+data.Name)
+			memConfMux.RUnlock()
+			return
+		}
+	}
+	memConfMux.RUnlock()
+
+	app := &models.App{
+		Key:     data.Key,
+		Name:    data.Name,
+		UserKey: data.UserKey,
+		Type:    data.Type,
+	}
+	if _, err := updateApp(app); err != nil {
+		Error(c, SERVER_ERROR, err.Error())
+		return
+	}
+
+	failedNodes := syncData2SlaveIfNeed(app)
+	if len(failedNodes) > 0 {
+		Success(c, map[string]interface{}{"failed_nodes": failedNodes})
+	} else {
+		Success(c, nil)
+	}
 }
 
 func updateApp(app *models.App) (*models.App, error) {
@@ -305,8 +371,83 @@ func NewConfig(c *gin.Context) {
 	}
 
 	failedNodes := syncData2SlaveIfNeed(config)
+	if len(failedNodes) > 0 {
+		Success(c, map[string]interface{}{"failed_nodes": failedNodes})
+	} else {
+		Success(c, nil)
+	}
+}
 
-	Success(c, map[string]interface{}{"failed_nodes": failedNodes})
+type updateConfigData struct {
+	Key    string `json:"key" binding:"required"`
+	AppKey string `json:"app_key" binding:"required"`
+	K      string `json:"k" binding:"required"`
+	V      string `json:"v" binding:"required"`
+	VType  string `json:"v_type" binding:"required"`
+}
+
+func UpdateConfig(c *gin.Context) {
+	confWriteMux.Lock()
+	defer confWriteMux.Unlock()
+
+	data := &updateConfigData{}
+	if err := c.BindJSON(data); err != nil {
+		Error(c, BAD_POST_DATA, err.Error())
+		return
+	}
+
+	if !models.IsValidConfType(data.VType) {
+		Error(c, BAD_REQUEST, "unkown conf type: "+data.VType)
+		return
+	}
+
+	if data.VType == models.APP_TYPE_TEMPLATE {
+		memConfMux.RLock()
+		app := memConfApps[data.V]
+		memConfMux.RUnlock()
+		if app == nil {
+			Error(c, BAD_REQUEST, "template not found for: "+data.V)
+			return
+		}
+		if app.Type != models.APP_TYPE_TEMPLATE {
+			Error(c, BAD_REQUEST, "can not set a template conf that is a real app")
+			return
+		}
+	}
+
+	memConfMux.RLock()
+	oldConfig := memConfRawConfigs[data.Key]
+	memConfMux.RUnlock()
+
+	if oldConfig == nil {
+		Error(c, BAD_REQUEST, "config key not exists: "+data.Key)
+		return
+	}
+	if oldConfig.AppKey != data.AppKey {
+		Error(c, BAD_REQUEST, "can not change config's app key")
+		return
+	}
+
+	config := &models.Config{
+		Key:    data.Key,
+		AppKey: data.AppKey,
+		K:      data.K,
+		V:      data.V,
+		VType:  data.VType,
+	}
+
+	config, err := updateConfig(config)
+	if err != nil {
+		Error(c, SERVER_ERROR, err.Error())
+		return
+	}
+
+	failedNodes := syncData2SlaveIfNeed(config)
+	if len(failedNodes) > 0 {
+		Success(c, map[string]interface{}{"failed_nodes": failedNodes})
+	} else {
+		Success(c, nil)
+	}
 }
 
 func updateConfig(config *models.Config) (*models.Config, error) {
@@ -319,7 +460,7 @@ func updateConfig(config *models.Config) (*models.Config, error) {
 
 	memConfMux.RLock()
 	node := memConfNodes[conf.ClientAddr]
-	oldConfig := memConfConfigs[config.Key]
+	oldConfig := memConfRawConfigs[config.Key]
 	ver := memConfDataVersion
 	memConfMux.RUnlock()
 
@@ -350,9 +491,15 @@ func updateConfig(config *models.Config) (*models.Config, error) {
 
 	memConfDataVersion++
 	memConfRawConfigs[config.Key] = config
-	memConfConfigs[config.Key] = transConfig(config)
 	if oldConfig == nil {
 		memConfAppConfigs[config.AppKey] = append(memConfAppConfigs[config.AppKey], transConfig(config))
+	} else {
+		for ix, _config := range memConfAppConfigs[config.AppKey] {
+			if config.Key == _config.Key {
+				memConfAppConfigs[config.AppKey][ix] = transConfig(config)
+				break
+			}
+		}
 	}
 
 	return config, nil

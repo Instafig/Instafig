@@ -31,7 +31,6 @@ var (
 	memConfUsersByName = make(map[string]*models.User)
 	memConfApps        = make(map[string]*models.App)
 	memConfAppsByName  = make(map[string][]*models.App)
-	memConfConfigs     = make(map[string]*Config)
 	memConfRawConfigs  = make(map[string]*models.Config)
 	memConfAppConfigs  = make(map[string][]*Config)
 	memConfNodes       = make(map[string]*models.Node)
@@ -102,7 +101,6 @@ func fillMemConfData(users []*models.User, apps []*models.App, configs []*models
 	memConfUsersByName = make(map[string]*models.User)
 	memConfApps = make(map[string]*models.App)
 	memConfAppsByName = make(map[string][]*models.App)
-	memConfConfigs = make(map[string]*Config)
 	memConfRawConfigs = make(map[string]*models.Config)
 	memConfAppConfigs = make(map[string][]*Config)
 	memConfNodes = make(map[string]*models.Node)
@@ -121,7 +119,6 @@ func fillMemConfData(users []*models.User, apps []*models.App, configs []*models
 
 	for _, config := range configs {
 		c := transConfig(config)
-		memConfConfigs[config.Key] = c
 		memConfRawConfigs[config.Key] = config
 		memConfAppConfigs[config.AppKey] = append(memConfAppConfigs[config.AppKey], c)
 	}

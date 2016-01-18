@@ -51,9 +51,11 @@ func main() {
 
 		opAPIGroup.GET("/apps/:user_key", GetApps)
 		opAPIGroup.POST("/app", ConfWriteCheck, NewApp)
+		opAPIGroup.PUT("/app", ConfWriteCheck, UpdateApp)
 
 		opAPIGroup.GET("/configs/:app_key", GetConfigs)
 		opAPIGroup.POST("/config", ConfWriteCheck, NewConfig)
+		opAPIGroup.PUT("/config", ConfWriteCheck, UpdateConfig)
 	}
 
 	if conf.IsEasyDeployMode() {
