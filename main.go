@@ -6,6 +6,10 @@ import (
 
 	"time"
 
+	"os"
+	"path/filepath"
+	"strconv"
+
 	"github.com/appwilldev/Instafig/conf"
 	"github.com/facebookgo/grace/gracehttp"
 	"github.com/gin-gonic/gin"
@@ -24,6 +28,14 @@ func main() {
 			}
 		}()
 	}
+
+	wd, _ := os.Getwd()
+	pidFile, err := os.OpenFile(filepath.Join(wd, "instafig.pid"), os.O_CREATE|os.O_WRONLY, 0666)
+	if err != nil {
+		log.Panicf("failed to create pid file: %s", err.Error())
+	}
+	pidFile.WriteString(strconv.Itoa(os.Getpid()))
+	pidFile.Close()
 
 	if conf.DebugMode {
 		gin.SetMode(gin.DebugMode)
