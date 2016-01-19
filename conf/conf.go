@@ -90,7 +90,7 @@ func init() {
 	}
 
 	if *maxThreadNum == 0 {
-		*maxThreadNum = runtime.NumCPU() / 2
+		*maxThreadNum = runtime.NumCPU()
 	}
 	runtime.GOMAXPROCS(*maxThreadNum)
 
