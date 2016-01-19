@@ -14,6 +14,14 @@ var (
 	confWriteMux = sync.Mutex{}
 )
 
+func genNewDataVersion(old *models.DataVersion) *models.DataVersion {
+	return &models.DataVersion{
+		Version: old.Version + 1,
+		Sign:    utils.GenerateKey(),
+		OldSign: old.Sign,
+	}
+}
+
 func ConfWriteCheck(c *gin.Context) {
 	if conf.IsEasyDeployMode() && !conf.IsMasterNode() {
 		Error(c, NOT_PERMITTED, "You can not update config data as you connecting to slave node,")
@@ -47,7 +55,7 @@ func NewUser(c *gin.Context) {
 		Name: data.Name,
 		Key:  utils.GenerateKey()}
 
-	if _, err := updateUser(user); err != nil {
+	if _, err := updateUser(user, nil); err != nil {
 		Error(c, SERVER_ERROR, err.Error())
 		return
 	}
@@ -60,7 +68,7 @@ func NewUser(c *gin.Context) {
 	}
 }
 
-func updateUser(user *models.User) (*models.User, error) {
+func updateUser(user *models.User, newDataVersion *models.DataVersion) (*models.User, error) {
 	s := models.NewSession()
 	defer s.Close()
 	if err := s.Begin(); err != nil {
@@ -74,7 +82,10 @@ func updateUser(user *models.User) (*models.User, error) {
 	dataVer := memConfDataVersion
 	memConfMux.RUnlock()
 
-	if err := updateNodeDataVersion(s, node, dataVer+1); err != nil {
+	if newDataVersion == nil {
+		newDataVersion = genNewDataVersion(dataVer)
+	}
+	if err := updateNodeDataVersion(s, node, newDataVersion); err != nil {
 		s.Rollback()
 		return nil, err
 	}
@@ -99,7 +110,7 @@ func updateUser(user *models.User) (*models.User, error) {
 	memConfMux.Lock()
 	defer memConfMux.Unlock()
 
-	memConfDataVersion++
+	memConfDataVersion = newDataVersion
 	if oldUser != nil {
 		memConfUsersByName[oldUser.Name] = nil
 	}
@@ -162,7 +173,7 @@ func NewApp(c *gin.Context) {
 		UserKey: data.UserKey,
 		Type:    data.Type,
 	}
-	if _, err := updateApp(app); err != nil {
+	if _, err := updateApp(app, nil); err != nil {
 		Error(c, SERVER_ERROR, err.Error())
 		return
 	}
@@ -225,7 +236,7 @@ func UpdateApp(c *gin.Context) {
 		UserKey: data.UserKey,
 		Type:    data.Type,
 	}
-	if _, err := updateApp(app); err != nil {
+	if _, err := updateApp(app, nil); err != nil {
 		Error(c, SERVER_ERROR, err.Error())
 		return
 	}
@@ -238,7 +249,7 @@ func UpdateApp(c *gin.Context) {
 	}
 }
 
-func updateApp(app *models.App) (*models.App, error) {
+func updateApp(app *models.App, newDataVersion *models.DataVersion) (*models.App, error) {
 	s := models.NewSession()
 	defer s.Close()
 	if err := s.Begin(); err != nil {
@@ -249,10 +260,13 @@ func updateApp(app *models.App) (*models.App, error) {
 	memConfMux.RLock()
 	node := memConfNodes[conf.ClientAddr]
 	oldApp := memConfApps[app.Key]
-	ver := memConfDataVersion
+	dataVer := memConfDataVersion
 	memConfMux.RUnlock()
 
-	if err := updateNodeDataVersion(s, node, ver+1); err != nil {
+	if newDataVersion == nil {
+		newDataVersion = genNewDataVersion(dataVer)
+	}
+	if err := updateNodeDataVersion(s, node, newDataVersion); err != nil {
 		s.Rollback()
 		return nil, err
 	}
@@ -277,7 +291,7 @@ func updateApp(app *models.App) (*models.App, error) {
 	memConfMux.Lock()
 	defer memConfMux.Unlock()
 
-	memConfDataVersion++
+	memConfDataVersion = newDataVersion
 	if oldApp != nil {
 		apps := memConfAppsByName[oldApp.Name]
 		memConfAppsByName[oldApp.Name] = make([]*models.App, 0)
@@ -364,7 +378,7 @@ func NewConfig(c *gin.Context) {
 		VType:  data.VType,
 	}
 
-	config, err := updateConfig(config)
+	config, err := updateConfig(config, nil)
 	if err != nil {
 		Error(c, SERVER_ERROR, err.Error())
 		return
@@ -436,7 +450,7 @@ func UpdateConfig(c *gin.Context) {
 		VType:  data.VType,
 	}
 
-	config, err := updateConfig(config)
+	config, err := updateConfig(config, nil)
 	if err != nil {
 		Error(c, SERVER_ERROR, err.Error())
 		return
@@ -450,7 +464,7 @@ func UpdateConfig(c *gin.Context) {
 	}
 }
 
-func updateConfig(config *models.Config) (*models.Config, error) {
+func updateConfig(config *models.Config, newDataVersion *models.DataVersion) (*models.Config, error) {
 	s := models.NewSession()
 	defer s.Close()
 	if err := s.Begin(); err != nil {
@@ -464,7 +478,10 @@ func updateConfig(config *models.Config) (*models.Config, error) {
 	ver := memConfDataVersion
 	memConfMux.RUnlock()
 
-	if err := updateNodeDataVersion(s, node, ver+1); err != nil {
+	if newDataVersion == nil {
+		newDataVersion = genNewDataVersion(ver)
+	}
+	if err := updateNodeDataVersion(s, node, newDataVersion); err != nil {
 		s.Rollback()
 		return nil, err
 	}
@@ -489,7 +506,7 @@ func updateConfig(config *models.Config) (*models.Config, error) {
 	memConfMux.Lock()
 	defer memConfMux.Unlock()
 
-	memConfDataVersion++
+	memConfDataVersion = newDataVersion
 	memConfRawConfigs[config.Key] = config
 	if oldConfig == nil {
 		memConfAppConfigs[config.AppKey] = append(memConfAppConfigs[config.AppKey], transConfig(config))

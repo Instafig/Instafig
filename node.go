@@ -31,9 +31,9 @@ var (
 )
 
 type syncDataT struct {
-	DataVersion int    `json:"data_version"`
-	Kind        string `json:"kind"`
-	Data        string `json:"data"` // json string to bind go struct
+	DataVersion *models.DataVersion `json:"data_version"`
+	Kind        string              `json:"kind"`
+	Data        string              `json:"data"` // json string to bind go struct
 }
 
 type syncAllDataT struct {
@@ -41,7 +41,7 @@ type syncAllDataT struct {
 	Users       map[string]*models.User   `json:"users"`
 	Apps        map[string]*models.App    `json:"apps"`
 	Configs     map[string]*models.Config `json:"configs"`
-	DataVersion int                       `json:"data_version"`
+	DataVersion *models.DataVersion       `json:"data_version"`
 }
 
 type nodeRequestDataT struct {
@@ -101,13 +101,16 @@ func checkNodeValidity() {
 
 func initLocalNodeData() {
 	if memConfNodes[conf.ClientAddr] == nil {
+		bs, _ := json.Marshal(memConfDataVersion)
 		node := &models.Node{
-			URL:         conf.ClientAddr,
-			NodeURL:     conf.NodeAddr,
-			Type:        conf.NodeType,
-			DataVersion: memConfDataVersion,
-			CreatedUTC:  utils.GetNowSecond(),
+			URL:            conf.ClientAddr,
+			NodeURL:        conf.NodeAddr,
+			Type:           conf.NodeType,
+			DataVersion:    memConfDataVersion,
+			DataVersionStr: string(bs),
+			CreatedUTC:     utils.GetNowSecond(),
 		}
+
 		if err := models.InsertDBModel(nil, node); err != nil {
 			log.Panicf("Failed to init node data: %s", err.Error())
 		}
@@ -123,12 +126,13 @@ func initLocalNodeData() {
 	}
 }
 
-func updateNodeDataVersion(s *models.Session, node *models.Node, ver int) (err error) {
+func updateNodeDataVersion(s *models.Session, node *models.Node, ver *models.DataVersion) (err error) {
 	if !conf.IsEasyDeployMode() {
 		return
 	}
 
 	var _s *models.Session
+	var bs []byte
 
 	if s == nil {
 		_s = models.NewSession()
@@ -143,7 +147,9 @@ func updateNodeDataVersion(s *models.Session, node *models.Node, ver int) (err e
 		_s = s
 	}
 
+	bs, _ = json.Marshal(ver)
 	node.DataVersion = ver
+	node.DataVersionStr = string(bs)
 	if err = models.UpdateDBModel(_s, node); err != nil {
 		goto ERROR
 	}
@@ -187,8 +193,8 @@ func syncData2SlaveIfNeed(data interface{}) []map[string]interface{} {
 			continue
 		}
 
-		if ver != node.DataVersion+1 {
-			errStr := fmt.Sprintf("data_version error: slave node's data_version [%s] is %d, master's data_version is %d", node.URL, node.DataVersion, ver)
+		if ver.Version != node.DataVersion.Version+1 {
+			errStr := fmt.Sprintf("data_version error: slave node's data_version [%s] is %d, master's data_version is %d", node.URL, node.DataVersion.Version, ver.Version)
 			failedNodes = append(failedNodes, map[string]interface{}{"node": node, "err": errStr})
 			continue
 		}
@@ -201,7 +207,7 @@ func syncData2SlaveIfNeed(data interface{}) []map[string]interface{} {
 	return failedNodes
 }
 
-func syncData2Slave(node *models.Node, data interface{}, dataVer int) error {
+func syncData2Slave(node *models.Node, data interface{}, dataVer *models.DataVersion) error {
 	kind := ""
 	switch data.(type) {
 	case *models.User:
@@ -240,9 +246,7 @@ func slaveCheckMaster() error {
 	localNode := memConfNodes[conf.ClientAddr]
 	memConfMux.RUnlock()
 
-	node.DataVersion = ver
 	nodeString, _ := json.Marshal(node)
-
 	reqData := nodeRequestDataT{
 		Auth: nodeAuthString,
 		Data: string(nodeString),
@@ -252,8 +256,12 @@ func slaveCheckMaster() error {
 		return err
 	}
 
-	masterVer := int(data.(float64))
-	if masterVer == ver {
+	masterVersion := &models.DataVersion{}
+	if err = json.Unmarshal([]byte(data.(string)), masterVersion); err != nil {
+		return fmt.Errorf("bad response data format: %s < %s >", err.Error(), data.(string))
+	}
+
+	if masterVersion.Version == ver.Version && masterVersion.Sign == ver.Sign {
 		localNode.LastCheckUTC = utils.GetNowSecond()
 		return models.UpdateDBModel(nil, localNode)
 	}
@@ -315,7 +323,9 @@ func slaveCheckMaster() error {
 	for _, node := range resData.Nodes {
 		if node.URL == conf.ClientAddr {
 			node = localNode
+			bs, _ := json.Marshal(resData.DataVersion)
 			localNode.DataVersion = resData.DataVersion
+			localNode.DataVersionStr = string(bs)
 			node.LastCheckUTC = utils.GetNowSecond()
 		}
 		if err := models.InsertDBModel(s, node); err != nil {
@@ -441,8 +451,12 @@ func handleSlaveSyncUpdateData(c *gin.Context, data string) {
 	ver := memConfDataVersion
 	memConfMux.RUnlock()
 
-	if ver+1 != syncData.DataVersion {
-		Error(c, DATA_VERSION_ERROR, "slave node data version [%d] error for master data version [%d]", ver, syncData.DataVersion)
+	if ver.Version+1 != syncData.DataVersion.Version {
+		Error(c, DATA_VERSION_ERROR, "slave node data version [%d] error for master data version [%d]", ver.Version, syncData.DataVersion.Version)
+		return
+	}
+	if ver.Sign != syncData.DataVersion.OldSign {
+		Error(c, DATA_VERSION_ERROR, "slave node's data sign [%s] not equal master node's old data sign [%s]", ver.Sign, syncData.DataVersion.OldSign)
 		return
 	}
 
@@ -453,7 +467,7 @@ func handleSlaveSyncUpdateData(c *gin.Context, data string) {
 			Error(c, BAD_REQUEST, "bad data format for user model")
 			return
 		}
-		if _, err = updateUser(user); err != nil {
+		if _, err = updateUser(user, syncData.DataVersion); err != nil {
 			Error(c, SERVER_ERROR, err.Error())
 			return
 		}
@@ -465,7 +479,7 @@ func handleSlaveSyncUpdateData(c *gin.Context, data string) {
 			Error(c, BAD_REQUEST, "bad data format for app model")
 			return
 		}
-		if _, err = updateApp(app); err != nil {
+		if _, err = updateApp(app, syncData.DataVersion); err != nil {
 			Error(c, SERVER_ERROR, err.Error())
 			return
 		}
@@ -477,7 +491,7 @@ func handleSlaveSyncUpdateData(c *gin.Context, data string) {
 			Error(c, BAD_REQUEST, "bad data format for user model")
 			return
 		}
-		if _, err = updateConfig(config); err != nil {
+		if _, err = updateConfig(config, syncData.DataVersion); err != nil {
 			Error(c, SERVER_ERROR, err.Error())
 			return
 		}
@@ -523,10 +537,10 @@ func handleSlaveCheckMaster(c *gin.Context, data string) {
 
 	memConfMux.Lock()
 	memConfNodes[node.URL] = node
-	ver := memConfDataVersion
+	bs, _ := json.Marshal(memConfDataVersion)
 	memConfMux.Unlock()
 
-	Success(c, ver)
+	Success(c, string(bs))
 }
 
 func handleSyncMaster(c *gin.Context, data string) {
@@ -540,17 +554,12 @@ func handleSyncMaster(c *gin.Context, data string) {
 	//	defer confWriteMux.Unlock()
 
 	memConfMux.RLock()
-	nodes := memConfNodes
-	users := memConfUsers
-	apps := memConfApps
-	configs := memConfRawConfigs
-	ver := memConfDataVersion
 	resData, _ := json.Marshal(syncAllDataT{
-		Nodes:       nodes,
-		Users:       users,
-		Apps:        apps,
-		Configs:     configs,
-		DataVersion: ver,
+		Nodes:       memConfNodes,
+		Users:       memConfUsers,
+		Apps:        memConfApps,
+		Configs:     memConfRawConfigs,
+		DataVersion: memConfDataVersion,
 	})
 	memConfMux.RUnlock()
 

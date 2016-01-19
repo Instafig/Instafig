@@ -39,8 +39,7 @@ var (
 	LogLevel  string
 
 	configFile    = flag.String("config", "__unset__", "service config file")
-	replaceMaster = flag.Bool("replace-master", false, "node become new ")
-	changeMaster  = flag.Bool("change-master", false, "service config file")
+	replaceMaster = flag.Bool("replace-master", false, "local node become new master node or attached to a new master node")
 	maxThreadNum  = flag.Int("max-thread", 0, "max threads of service")
 	debugMode     = flag.Bool("debug", false, "debug mode")
 	logLevel      = flag.String("log-level", "INFO", "DEBUG | INFO | WARN | ERROR | FATAL | PANIC")

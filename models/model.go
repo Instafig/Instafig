@@ -161,14 +161,15 @@ const (
 )
 
 type Node struct {
-	URL          string `xorm:"url TEXT PK NOT NULL" json:"url"`
-	NodeURL      string `xorm:"node_url TEXT PK NOT NULL" json:"node_url"`
-	Type         string `xorm:"type TEXT NOT NULL" json:"type"`
-	DataVersion  int    `xorm:"data_version INT NOT NULL" json:"data_version"`
-	CreatedUTC   int    `xorm:"created_utc UTC NOT NULL" json:"created_utc"`
-	LastCheckUTC int    `xorm:"last_check_utc INT NOT NULL" json:"last_check_utc"`
+	URL            string `xorm:"url TEXT PK NOT NULL" json:"url"`
+	NodeURL        string `xorm:"node_url TEXT PK NOT NULL" json:"node_url"`
+	Type           string `xorm:"type TEXT NOT NULL" json:"type"`
+	CreatedUTC     int    `xorm:"created_utc UTC NOT NULL" json:"created_utc"`
+	LastCheckUTC   int    `xorm:"last_check_utc INT NOT NULL" json:"last_check_utc"`
+	DataVersionStr string `xorm:"data_version TEXT NOT NULL" json:"data_version"` // json string to store DataVersion in db
 
-	SchemeVersion string `xorm:"-"`
+	DataVersion   *DataVersion `xorm:"-"`
+	SchemeVersion string       `xorm:"-"`
 }
 
 func (*Node) TableName() string {
@@ -197,24 +198,26 @@ func IsValidNodeType(typ string) bool {
 }
 
 type DataVersion struct {
-	Ver int `xorm:"ver INT NOT NULL"`
+	Version int    `xorm:"version INT NOT NULL"`
+	Sign    string `xorm:"sign TEXT NOT NULL"`
+	OldSign string `xorm:"old_sign TEXT NOT NULL"`
 }
 
 func (*DataVersion) TableName() string {
 	return "data_version"
 }
 
-func UpdateDataVersion(s *Session, ver int) error {
+func UpdateDataVersion(s *Session, ver *DataVersion) error {
 	if s == nil {
 		s = newAutoCloseModelsSession()
 	}
 
-	sql := fmt.Sprintf("update data_version set ver=%d", ver)
+	sql := fmt.Sprintf("update data_version set version=%d, sign='%s', old_sign='%s'", ver.Version, ver.Sign, ver.OldSign)
 	_, err := s.Exec(sql)
 	return err
 }
 
-func GetDataVersion(s *Session) (int, error) {
+func GetDataVersion(s *Session) (*DataVersion, error) {
 	if s == nil {
 		s = newAutoCloseModelsSession()
 	}
@@ -222,14 +225,14 @@ func GetDataVersion(s *Session) (int, error) {
 	res := make([]*DataVersion, 0)
 	err := s.Find(&res)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	if len(res) == 0 {
-		return 0, NoDataVerError
+		return nil, NoDataVerError
 	}
 
-	return res[0].Ver, nil
+	return res[0], nil
 }
 
 func ClearModeData(s *Session) error {
@@ -237,7 +240,7 @@ func ClearModeData(s *Session) error {
 		s = newAutoCloseModelsSession()
 	}
 
-	sql := "delete from user; delete from app; delete from config; delete from node;update data_version set ver=0;"
+	sql := "delete from user; delete from app; delete from config; delete from node;update data_version set version=0;"
 	_, err := s.Exec(sql)
 
 	return err

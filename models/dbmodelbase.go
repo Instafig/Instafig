@@ -58,7 +58,7 @@ func init() {
 			if err != NoDataVerError {
 				log.Panicf("failed to get data version: %s", err.Error())
 			} else {
-				_, err = dbEngineDefault.Exec("INSERT INTO data_version(ver) VALUES(1)")
+				_, err = dbEngineDefault.Exec("INSERT INTO data_version(version, sign, old_sign) VALUES(0,'','')")
 				if err != nil {
 					log.Panicf("failed to init data version: %s", err.Error())
 				}

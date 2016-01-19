@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"sync"
 
+	"encoding/json"
+
 	"github.com/appwilldev/Instafig/models"
 )
 
@@ -34,7 +36,7 @@ var (
 	memConfRawConfigs  map[string]*models.Config
 	memConfAppConfigs  map[string][]*Config
 	memConfNodes       map[string]*models.Node
-	memConfDataVersion = 0
+	memConfDataVersion *models.DataVersion
 
 	memConfMux = sync.RWMutex{}
 )
@@ -93,7 +95,7 @@ func loadAllData() {
 	fillMemConfData(users, apps, configs, nodes, dataVersion)
 }
 
-func fillMemConfData(users []*models.User, apps []*models.App, configs []*models.Config, nodes []*models.Node, dataVersion int) {
+func fillMemConfData(users []*models.User, apps []*models.App, configs []*models.Config, nodes []*models.Node, dataVersion *models.DataVersion) {
 	memConfMux.Lock()
 	defer memConfMux.Unlock()
 
@@ -125,6 +127,8 @@ func fillMemConfData(users []*models.User, apps []*models.App, configs []*models
 
 	for _, node := range nodes {
 		memConfNodes[node.URL] = node
+		node.DataVersion = &models.DataVersion{}
+		json.Unmarshal([]byte(node.DataVersionStr), node.DataVersion)
 	}
 }
 
