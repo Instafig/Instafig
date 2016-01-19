@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 
+	"github.com/appwilldev/Instafig/conf"
 	"github.com/gin-gonic/gin"
 )
 
@@ -71,4 +72,10 @@ func getServiceStatus(c *gin.Context) bool {
 	data := i.(bool)
 
 	return data
+}
+
+// misc handlers
+
+func VersionHandler(c *gin.Context) {
+	c.String(200, conf.VersionString())
 }

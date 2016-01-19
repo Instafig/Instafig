@@ -37,6 +37,12 @@ func main() {
 		ginIns.Use(gin.Logger())
 	}
 
+	// misc api
+	miscAPIGroup := ginIns.Group("/misc")
+	{
+		miscAPIGroup.GET("/version", VersionHandler)
+	}
+
 	// client api
 	clientAPIGroup := ginIns.Group("/client")
 	{
