@@ -73,27 +73,19 @@ func checkNodeValidity() {
 		if conf.IsMasterNode() {
 			// only one master in cluster
 			if node.Type == models.NODE_TYPE_MASTER && node.URL != conf.ClientAddr {
-				if !conf.ReplaceMaster {
-					log.Panicf("master[ %s ] already exists, you can start service with --replace-master to change this node to new master if need", node.URL)
-				} else {
-					if err := models.DeleteDBModel(nil, node); err != nil {
-						log.Panicf("failed to check node validity: %s" + err.Error())
-					}
-					break
+				if err := models.DeleteDBModel(nil, node); err != nil {
+					log.Panicf("failed to check node validity: %s" + err.Error())
 				}
+				break
 			}
 		} else {
 			if node.Type == models.NODE_TYPE_MASTER && node.URL != conf.MasterAddr {
 				// this node is attached to a new master, sync full data from new master
-				if !conf.ReplaceMaster {
-					log.Panicf("you must start service with --replace-master to attach local node to a new-master[ %s ] old-master is [ %s ]", conf.MasterAddr, node.URL)
-				} else {
-					// just clear old-master data here, slave will sync new-master's data before serve for client
-					if err = models.ClearModeData(nil); err != nil {
-						log.Panicf("failed to check node validity: %s" + err.Error())
-					}
-					break
+				// just clear old-master data here, slave will sync new-master's data before serve for client
+				if err = models.ClearModeData(nil); err != nil {
+					log.Panicf("failed to check node validity: %s" + err.Error())
 				}
+				break
 			}
 		}
 	}
