@@ -7,9 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-
 	"strconv"
-
 	"os/exec"
 
 	"github.com/gpmgo/gopm/modules/goconfig"
@@ -78,7 +76,7 @@ func init() {
 			}
 			_, err = exec.Command("kill", "-USR2", string(pids[:n])).Output()
 			if err != nil {
-				log.Println("Failed to restart Instafig service: %s", err.Error())
+				log.Printf("Failed to restart Instafig service: %s", err.Error())
 				os.Exit(1)
 			}
 			pidFile.Close()
