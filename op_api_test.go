@@ -3,6 +3,8 @@ package main
 import (
 	"testing"
 
+	"reflect"
+
 	"github.com/appwilldev/Instafig/models"
 	"github.com/appwilldev/Instafig/utils"
 	"github.com/stretchr/testify/assert"
@@ -114,9 +116,6 @@ func TestDataVersion(t *testing.T) {
 	loadAllData()
 	initLocalNodeData()
 
-	confWriteMux.Lock()
-	defer confWriteMux.Unlock()
-
 	assert.True(t, memConfDataVersion.Version == 0, "init data version must be 0")
 
 	oldVersion := *memConfDataVersion
@@ -147,4 +146,56 @@ func TestDataVersion(t *testing.T) {
 	assert.True(t, memConfDataVersion.Version == 3, "data version must be 3")
 	assert.True(t, memConfDataVersion.OldSign == oldVersion.Sign)
 	assert.True(t, memConfDataVersion.Sign != oldVersion.Sign)
+}
+
+func TestTemplateApp(t *testing.T) {
+	err := _clearModelData()
+	assert.True(t, err == nil, "must correctly clear data")
+	loadAllData()
+	initLocalNodeData()
+
+	user, _ := updateUser(&models.User{
+		Name: "rahuahua",
+		Key:  utils.GenerateKey()}, nil)
+
+	templateApp, _ := updateApp(&models.App{
+		Key:     utils.GenerateKey(),
+		UserKey: user.Key,
+		Name:    "template_app",
+		Type:    models.APP_TYPE_TEMPLATE}, nil)
+	templateConfig, _ := updateConfig(&models.Config{
+		Key:    utils.GenerateKey(),
+		AppKey: templateApp.Key,
+		K:      "template_int_conf",
+		V:      "233",
+		VType:  models.CONF_V_TYPE_INT}, nil)
+
+	app, _ := updateApp(&models.App{
+		Key:     utils.GenerateKey(),
+		UserKey: user.Key,
+		Name:    "iconfreecn",
+		Type:    models.APP_TYPE_REAL}, nil)
+
+	updateConfig(&models.Config{
+		Key:    utils.GenerateKey(),
+		AppKey: app.Key,
+		K:      "int_conf",
+		V:      "1",
+		VType:  models.CONF_V_TYPE_INT}, nil)
+
+	_, err = updateConfig(&models.Config{
+		Key:    utils.GenerateKey(),
+		AppKey: app.Key,
+		K:      "template_conf",
+		V:      templateApp.Key,
+		VType:  models.CONF_V_TYPE_TEMPLATE}, nil)
+	assert.True(t, err == nil, "must correctly add template conf")
+	appConfig := getAppMatchConf(app.Key, &ClientData{AppKey: app.Key})
+	assert.True(t, reflect.TypeOf(appConfig["template_conf"]).Kind() == reflect.Map)
+
+	appOldDataSign := memConfApps[app.Key].DataSign
+	oldTemplateDataSign := memConfApps[templateApp.Key].DataSign
+	updateConfig(templateConfig, nil)
+	assert.True(t, appOldDataSign != memConfApps[app.Key].DataSign, "app's data_sign must update after update config")
+	assert.True(t, oldTemplateDataSign != memConfApps[templateApp.Key].DataSign, "app's data_sign must update after update config")
 }

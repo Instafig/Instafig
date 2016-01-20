@@ -520,10 +520,11 @@ func updateConfig(config *models.Config, newDataVersion *models.DataVersion) (*m
 		memConfMux.RLock()
 		for _, app := range memConfApps {
 			if app.Key == config.AppKey {
+				toUpdateApps = append(toUpdateApps, app)
 				continue
 			}
-			for _, config := range memConfAppConfigs[app.Key] {
-				if config.VType == models.CONF_V_TYPE_TEMPLATE && config.V == config.AppKey {
+			for _, _config := range memConfAppConfigs[app.Key] {
+				if _config.VType == models.CONF_V_TYPE_TEMPLATE && _config.V == config.AppKey {
 					// this app has a config refer to this template app
 					toUpdateApps = append(toUpdateApps, app)
 					break
@@ -535,7 +536,9 @@ func updateConfig(config *models.Config, newDataVersion *models.DataVersion) (*m
 
 	newDataSign := utils.GenerateKey()
 	for _, app := range toUpdateApps {
+		memConfMux.Lock()
 		app.DataSign = newDataSign
+		memConfMux.Unlock()
 		if err := models.UpdateDBModel(s, app); err != nil {
 			s.Rollback()
 			return nil, err
