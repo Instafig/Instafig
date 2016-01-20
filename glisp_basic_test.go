@@ -36,3 +36,18 @@ func TestVersionCompareFunctions(t *testing.T) {
 	assert.True(t, ret == glisp.SexpBool(false))
 
 }
+
+func TestStringWildcardFunctions(t *testing.T) {
+	env := NewGlisp()
+	var ret glisp.Sexp
+	ret, _ = env.EvalString(`(wildcard "a*c" "axyzc")`)
+	assert.True(t, ret == glisp.SexpBool(true))
+	ret, _ = env.EvalString(`(wildcard "a*c" "_axyzc")`)
+	assert.True(t, ret == glisp.SexpBool(false))
+	ret, _ = env.EvalString(`(wildcard "a?c" "abc")`)
+	assert.True(t, ret == glisp.SexpBool(true))
+	ret, _ = env.EvalString(`(wildcard-not "a?c" "abbc")`)
+	assert.True(t, ret == glisp.SexpBool(true))
+	ret, _ = env.EvalString(`(wildcard-not "a\\dc" "a2c")`)
+	assert.True(t, ret == glisp.SexpBool(true))
+}
