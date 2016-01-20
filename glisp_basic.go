@@ -4,6 +4,7 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/zhemao/glisp/interpreter"
 	"regexp"
+	"strings"
 	"unicode/utf8"
 )
 
@@ -66,7 +67,7 @@ func defVersionCompareFunctions(env *glisp.Glisp) {
 
 // string functions
 
-func wildcardMatchFunction(env *glisp.Glisp, name string,
+func stringWildcardMatchFunction(env *glisp.Glisp, name string,
 	args []glisp.Sexp) (glisp.Sexp, error) {
 	if len(args) != 2 {
 		return glisp.SexpNull, glisp.WrongNargs
@@ -116,10 +117,44 @@ func wildcardMatchFunction(env *glisp.Glisp, name string,
 	return glisp.SexpBool(match), err
 }
 
+func stringContainsFunction(env *glisp.Glisp, name string,
+	args []glisp.Sexp) (glisp.Sexp, error) {
+	if len(args) != 2 {
+		return glisp.SexpNull, glisp.WrongNargs
+	}
+
+	var str, substr string
+
+	switch t := args[0].(type) {
+	case glisp.SexpStr:
+		str = string(t)
+	default:
+		//return glisp.SexpNull, errors.New("wildcard parttern must be string")
+		return glisp.SexpNull, nil
+	}
+
+	switch t := args[1].(type) {
+	case glisp.SexpStr:
+		substr = string(t)
+	default:
+		//return glisp.SexpNull, errors.New("arg1 must be string")
+		return glisp.SexpNull, nil
+	}
+
+	return glisp.SexpBool(strings.Contains(str, substr)), nil
+
+}
+
 func defStringFunctions(env *glisp.Glisp) {
-	env.AddFunction("wildcard", wildcardMatchFunction)
+	env.AddFunction("str-wcmatch?", stringWildcardMatchFunction)
+	env.AddFunction("str-contains?", stringContainsFunction)
 	shortcuts := `
-         (defn wildcard-not [v1 v2] (not (wildcard v1 v2)))
+         (defn str= [v1 v2] (and (string? v1) (string? v2) (= v1 v2)))
+         (defn str!= [v1 v2] (not (str= v1 v2)))
+         (defn str-empty? [s] (or (null? s) (and (string? s) (= s ""))))
+         (defn str-not-empty? [s] (not (str-empty? s)))
+         (defn str-not-contains? [str substr] (not (str-contains? str substr)))
+         (defn str-not-wcmatch? [p s] (not (str-wcmatch? p s)))
     `
 	env.EvalString(shortcuts)
 }

@@ -37,17 +37,32 @@ func TestVersionCompareFunctions(t *testing.T) {
 
 }
 
-func TestStringWildcardFunctions(t *testing.T) {
+func TestStringContainsFunctions(t *testing.T) {
 	env := NewGlisp()
 	var ret glisp.Sexp
-	ret, _ = env.EvalString(`(wildcard "a*c" "axyzc")`)
+	ret, _ = env.EvalString(`(str-contains? "abc" "abc")`)
 	assert.True(t, ret == glisp.SexpBool(true))
-	ret, _ = env.EvalString(`(wildcard "a*c" "_axyzc")`)
+	ret, _ = env.EvalString(`(str-contains? "abc" "ayz")`)
 	assert.True(t, ret == glisp.SexpBool(false))
-	ret, _ = env.EvalString(`(wildcard "a?c" "abc")`)
+	ret, _ = env.EvalString(`(str-contains? "_abc_" "abc")`)
 	assert.True(t, ret == glisp.SexpBool(true))
-	ret, _ = env.EvalString(`(wildcard-not "a?c" "abbc")`)
+	ret, _ = env.EvalString(`(str-not-contains? "abc" "bb")`)
 	assert.True(t, ret == glisp.SexpBool(true))
-	ret, _ = env.EvalString(`(wildcard-not "a\\dc" "a2c")`)
+	ret, _ = env.EvalString(`(str-not-contains? "abc" "abcd")`)
+	assert.True(t, ret == glisp.SexpBool(true))
+}
+
+func TestStringWildcardMatchFunctions(t *testing.T) {
+	env := NewGlisp()
+	var ret glisp.Sexp
+	ret, _ = env.EvalString(`(str-wcmatch? "a*c" "axyzc")`)
+	assert.True(t, ret == glisp.SexpBool(true))
+	ret, _ = env.EvalString(`(str-wcmatch? "a*c" "_axyzc")`)
+	assert.True(t, ret == glisp.SexpBool(false))
+	ret, _ = env.EvalString(`(str-wcmatch? "a?c" "abc")`)
+	assert.True(t, ret == glisp.SexpBool(true))
+	ret, _ = env.EvalString(`(str-not-wcmatch? "a?c" "abbc")`)
+	assert.True(t, ret == glisp.SexpBool(true))
+	ret, _ = env.EvalString(`(str-not-wcmatch? "a\\dc" "a2c")`)
 	assert.True(t, ret == glisp.SexpBool(true))
 }
