@@ -96,6 +96,7 @@ func TestNewConfig(t *testing.T) {
 	assert.True(t, memConfAppConfigs[app.Key][0].Key == config.Key, "must the same config")
 	assert.True(t, len(memConfAppConfigs[app.Key]) == 1, "must one config for app")
 
+	oldAppDataSign := memConfApps[app.Key].DataSign
 	_, err = updateConfig(&models.Config{
 		Key:    utils.GenerateKey(),
 		AppKey: app.Key,
@@ -104,6 +105,7 @@ func TestNewConfig(t *testing.T) {
 		VType:  models.CONF_V_TYPE_FLOAT}, nil)
 	assert.True(t, err == nil, "must correctly add new config")
 	assert.True(t, len(memConfAppConfigs[app.Key]) == 2, "must two configs for app")
+	assert.True(t, oldAppDataSign != memConfApps[app.Key].DataSign, "app's data_sign must update when update app config")
 }
 
 func TestDataVersion(t *testing.T) {

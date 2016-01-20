@@ -490,6 +490,7 @@ func updateConfig(config *models.Config, newDataVersion *models.DataVersion) (*m
 	node := memConfNodes[conf.ClientAddr]
 	oldConfig := memConfRawConfigs[config.Key]
 	ver := memConfDataVersion
+	app := *memConfApps[config.AppKey]
 	memConfMux.RUnlock()
 
 	if newDataVersion == nil {
@@ -512,6 +513,12 @@ func updateConfig(config *models.Config, newDataVersion *models.DataVersion) (*m
 		}
 	}
 
+	app.DataSign = utils.GenerateKey()
+	if err := models.UpdateDBModel(s, &app); err != nil {
+		s.Rollback()
+		return nil, err
+	}
+
 	if err := s.Commit(); err != nil {
 		s.Rollback()
 		return nil, err
@@ -522,6 +529,7 @@ func updateConfig(config *models.Config, newDataVersion *models.DataVersion) (*m
 
 	memConfDataVersion = newDataVersion
 	memConfRawConfigs[config.Key] = config
+	*memConfApps[config.AppKey] = app
 	if oldConfig == nil {
 		memConfAppConfigs[config.AppKey] = append(memConfAppConfigs[config.AppKey], transConfig(config))
 	} else {

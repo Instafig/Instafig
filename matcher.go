@@ -18,6 +18,7 @@ type ClientData struct {
 	Ip         string `json:"ip" binding:"required"`
 	Lang       string `json:"lang" binding:"required"`
 	DeviceId   string `json:"device_id"`
+	DataSign   string `json:"data_sign"`
 }
 
 type Config struct {

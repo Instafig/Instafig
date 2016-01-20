@@ -53,10 +53,11 @@ const (
 )
 
 type App struct {
-	Key     string `xorm:"key TEXT PK NOT NULL" json:"key"`
-	UserKey string `xorm:"user_key TEXT NOT NULL" json:"user_key"`
-	Name    string `xorm:"name TEXT not NULL" json:"name"`
-	Type    string `xorm:"type TEXT not NULL" json:"type"`
+	Key      string `xorm:"key TEXT PK NOT NULL" json:"key"`
+	UserKey  string `xorm:"user_key TEXT NOT NULL" json:"user_key"`
+	Name     string `xorm:"name TEXT not NULL" json:"name"`
+	Type     string `xorm:"type TEXT not NULL" json:"type"`
+	DataSign string `xorm:"data_sign TEXT NOT NULL" json:"data_sign"`
 }
 
 func (*App) TableName() string {

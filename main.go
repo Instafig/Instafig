@@ -58,7 +58,7 @@ func main() {
 	// client api
 	clientAPIGroup := ginIns.Group("/client")
 	{
-		clientAPIGroup.GET("/conf", ClientReqData)
+		clientAPIGroup.GET("/config", ClientReqData)
 	}
 
 	// op api
