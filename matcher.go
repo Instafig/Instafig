@@ -58,7 +58,7 @@ func transConfig(m *models.Config) *Config {
 		config.V = m.V
 	case models.CONF_V_TYPE_CODE:
 		// TODO: trans to callable object
-		config.V = m.V
+		config.V, _ = JsonToSexpString(m.V)
 	case models.CONF_V_TYPE_TEMPLATE:
 		config.V = m.V
 	}

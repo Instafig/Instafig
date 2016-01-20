@@ -82,7 +82,6 @@ func init() {
 			pidFile.Close()
 			os.Exit(0)
 		}
-
 	}
 
 	if DebugMode {

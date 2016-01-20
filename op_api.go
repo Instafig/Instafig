@@ -354,6 +354,13 @@ func NewConfig(c *gin.Context) {
 		}
 	}
 
+	if data.VType == models.CONF_V_TYPE_CODE {
+		if _, err := JsonToSexpString(data.V); err != nil {
+			Error(c, BAD_REQUEST, "syntax error for code type value: "+err.Error())
+			return
+		}
+	}
+
 	memConfMux.RLock()
 	app := memConfApps[data.AppKey]
 	configs := getAppMemConfig(data.AppKey)
@@ -425,6 +432,13 @@ func UpdateConfig(c *gin.Context) {
 		}
 		if app.Type != models.APP_TYPE_TEMPLATE {
 			Error(c, BAD_REQUEST, "can not set a template conf that is a real app")
+			return
+		}
+	}
+
+	if data.VType == models.CONF_V_TYPE_CODE {
+		if _, err := JsonToSexpString(data.V); err != nil {
+			Error(c, BAD_REQUEST, "syntax error for code type value: "+err.Error())
 			return
 		}
 	}
