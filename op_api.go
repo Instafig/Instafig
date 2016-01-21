@@ -603,7 +603,7 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 
 		configHistory := &models.ConfigUpdateHistory{
 			Id:         utils.GenerateKey(),
-			ConfigKey:  oldConfig.Key,
+			ConfigKey:  config.Key,
 			K:          config.K,
 			OldV:       "",
 			OldVType:   "",
@@ -625,7 +625,7 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 
 		configHistory := &models.ConfigUpdateHistory{
 			Id:         utils.GenerateKey(),
-			ConfigKey:  oldConfig.Key,
+			ConfigKey:  config.Key,
 			K:          config.K,
 			OldV:       oldConfig.V,
 			OldVType:   oldConfig.VType,
@@ -706,6 +706,27 @@ func GetConfigs(c *gin.Context) {
 	}
 
 	Success(c, configs)
+}
+
+func GetConfigUpdateHistory(c *gin.Context) {
+	histories, err := models.GetConfigUpdateHistory(nil, c.Param("config_key"))
+	if err != nil {
+		Error(c, SERVER_ERROR)
+		return
+	}
+
+	res := make([]map[string]interface{}, len(histories))
+	for ix, history := range histories {
+		memConfMux.RLock()
+		userName := memConfUsers[history.UserKey].Name
+		memConfMux.RUnlock()
+		res[ix] = map[string]interface{}{
+			"value":  history,
+			"author": map[string]string{"name": userName, "key": history.UserKey},
+		}
+	}
+
+	Success(c, res)
 }
 
 func OpAuth(c *gin.Context) {

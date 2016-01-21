@@ -93,7 +93,7 @@ func TestNewConfig(t *testing.T) {
 		AppKey: app.Key,
 		K:      "int_conf",
 		V:      "1",
-		VType:  models.CONF_V_TYPE_INT}, nil)
+		VType:  models.CONF_V_TYPE_INT}, "", nil)
 	assert.True(t, err == nil, "must correctly add new config")
 	assert.True(t, memConfAppConfigs[app.Key][0].Key == config.Key, "must the same config")
 	assert.True(t, len(memConfAppConfigs[app.Key]) == 1, "must one config for app")
@@ -104,7 +104,7 @@ func TestNewConfig(t *testing.T) {
 		AppKey: app.Key,
 		K:      "float_conf",
 		V:      "1.2",
-		VType:  models.CONF_V_TYPE_FLOAT}, nil)
+		VType:  models.CONF_V_TYPE_FLOAT}, "", nil)
 	assert.True(t, err == nil, "must correctly add new config")
 	assert.True(t, len(memConfAppConfigs[app.Key]) == 2, "must two configs for app")
 	assert.True(t, oldAppDataSign != memConfApps[app.Key].DataSign, "app's data_sign must update when update app config")
@@ -142,7 +142,7 @@ func TestDataVersion(t *testing.T) {
 		AppKey: app.Key,
 		K:      "int_conf",
 		V:      "1",
-		VType:  models.CONF_V_TYPE_INT}, nil)
+		VType:  models.CONF_V_TYPE_INT}, "", nil)
 	assert.True(t, memConfDataVersion.Version == 3, "data version must be 3")
 	assert.True(t, memConfDataVersion.OldSign == oldVersion.Sign)
 	assert.True(t, memConfDataVersion.Sign != oldVersion.Sign)
@@ -168,7 +168,7 @@ func TestTemplateApp(t *testing.T) {
 		AppKey: templateApp.Key,
 		K:      "template_int_conf",
 		V:      "233",
-		VType:  models.CONF_V_TYPE_INT}, nil)
+		VType:  models.CONF_V_TYPE_INT}, "", nil)
 
 	app, _ := updateApp(&models.App{
 		Key:     utils.GenerateKey(),
@@ -181,21 +181,21 @@ func TestTemplateApp(t *testing.T) {
 		AppKey: app.Key,
 		K:      "int_conf",
 		V:      "1",
-		VType:  models.CONF_V_TYPE_INT}, nil)
+		VType:  models.CONF_V_TYPE_INT}, "", nil)
 
 	_, err = updateConfig(&models.Config{
 		Key:    utils.GenerateKey(),
 		AppKey: app.Key,
 		K:      "template_conf",
 		V:      templateApp.Key,
-		VType:  models.CONF_V_TYPE_TEMPLATE}, nil)
+		VType:  models.CONF_V_TYPE_TEMPLATE}, "", nil)
 	assert.True(t, err == nil, "must correctly add template conf")
 	appConfig := getAppMatchConf(app.Key, &ClientData{AppKey: app.Key})
 	assert.True(t, reflect.TypeOf(appConfig["template_conf"]).Kind() == reflect.Map)
 
 	appOldDataSign := memConfApps[app.Key].DataSign
 	oldTemplateDataSign := memConfApps[templateApp.Key].DataSign
-	updateConfig(templateConfig, nil)
+	updateConfig(templateConfig, "", nil)
 	assert.True(t, appOldDataSign != memConfApps[app.Key].DataSign, "app's data_sign must update after update config")
 	assert.True(t, oldTemplateDataSign != memConfApps[templateApp.Key].DataSign, "app's data_sign must update after update config")
 }
