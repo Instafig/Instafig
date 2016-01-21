@@ -262,7 +262,7 @@ type ConfigUpdateHistory struct {
 	ConfigKey  string `xorm:"config_key TEXT NOT NULL" json:"config_key"`
 	Kind       string `xorm:"kind TEXT NOT NULL" json:"kind"`
 	K          string `xorm:"k TEXT NOT NULL" json:"k"`
-	OldV       string `xorm:"old_v TEXT NOT NULL" jon:"old_v"`
+	OldV       string `xorm:"old_v TEXT NOT NULL" json:"old_v"`
 	OldVType   string `xorm:"old_v_type TEXT NOT NULL" json:"old_v_type"`
 	NewV       string `xorm:"new_v TEXT NOT NULL" json:"new_v"`
 	NewVType   string `xorm:"new_v_type TEXT NOT NULL" json:"new_v_type"`
