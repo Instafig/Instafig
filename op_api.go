@@ -206,11 +206,22 @@ func GetUsers(c *gin.Context) {
 		return
 	}
 
-	for _, user := range users {
+	res := make([]map[string]interface{}, len(users))
+	for ix, user := range users {
 		user.PassCode = ""
+		authorName := ""
+		memConfMux.RLock()
+		if memConfUsers[user.Creator] != nil {
+			authorName = memConfUsers[user.Creator].Name
+		}
+		memConfMux.RUnlock()
+		res[ix] = map[string]interface{}{
+			"user": user,
+			"creator": map[string]interface{}{"name": authorName, "key":user.Creator},
+		}
 	}
 
-	Success(c, users)
+	Success(c, res)
 }
 
 type newAppData struct {
