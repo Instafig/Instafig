@@ -67,7 +67,8 @@ func main() {
 		opAPIGroup.GET("/users/:page", GetUsers)
 		opAPIGroup.POST("/user", ConfWriteCheck, NewUser)
 
-		opAPIGroup.GET("/apps/:user_key", GetApps)
+		opAPIGroup.GET("/apps/user/:user_key", GetApps)
+		opAPIGroup.GET("/apps/all/:page", GetAllApps)
 		opAPIGroup.POST("/app", ConfWriteCheck, NewApp)
 		opAPIGroup.PUT("/app", ConfWriteCheck, UpdateApp)
 

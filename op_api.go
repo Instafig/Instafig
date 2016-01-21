@@ -318,6 +318,22 @@ func GetApps(c *gin.Context) {
 	Success(c, apps)
 }
 
+func GetAllApps(c *gin.Context) {
+	page, err := strconv.Atoi(c.Param("page"))
+	if err != nil {
+		Error(c, BAD_REQUEST, "page not number")
+		return
+	}
+
+	apps, err := models.GetAllApps(nil, page, 25)
+	if err != nil {
+		Error(c, SERVER_ERROR, err.Error())
+		return
+	}
+
+	Success(c, apps)
+}
+
 type newConfigData struct {
 	AppKey string `json:"app_key" binding:"required"`
 	K      string `json:"k" binding:"required"`

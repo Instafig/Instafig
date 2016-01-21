@@ -94,6 +94,19 @@ func GetAppsByUserKey(s *Session, userKey string) ([]*App, error) {
 	return res, nil
 }
 
+func GetAllApps(s *Session, page int, count int) ([]*App, error) {
+	if s == nil {
+		s = newAutoCloseModelsSession()
+	}
+
+	res := make([]*App, 0)
+	if err := s.OrderBy("name desc").Limit(count, (page-1)*count).Find(&res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
 func IsValidAppType(typ string) bool {
 	return typ == APP_TYPE_REAL || typ == APP_TYPE_TEMPLATE
 }
