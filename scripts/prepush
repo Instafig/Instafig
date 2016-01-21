@@ -1,0 +1,16 @@
+#!/bin/bash
+# -*- mode: sh -*-
+
+function e(){
+    echo "<- Error!!!"
+    exit 1
+}
+
+echo "-> Test..."
+./scripts/run-test || e
+
+echo "-> Vet..."
+go vet ./... || e
+
+echo "-> Build..."
+go build . || e
