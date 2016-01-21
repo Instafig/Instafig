@@ -36,6 +36,8 @@ func TestNewUser(t *testing.T) {
 		Key:  utils.GenerateKey()}, nil)
 	assert.True(t, err == nil, "must correctly add new user")
 	assert.True(t, len(memConfUsers) == 2, "must two users")
+
+	_clearModelData()
 }
 
 func TestNewApp(t *testing.T) {
@@ -67,6 +69,8 @@ func TestNewApp(t *testing.T) {
 		Type:    models.APP_TYPE_REAL}, nil)
 	assert.True(t, err == nil, "must correctly add new app")
 	assert.True(t, len(memConfApps) == 2, "must two apps")
+
+	_clearModelData()
 }
 
 func TestNewConfig(t *testing.T) {
@@ -108,6 +112,8 @@ func TestNewConfig(t *testing.T) {
 	assert.True(t, err == nil, "must correctly add new config")
 	assert.True(t, len(memConfAppConfigs[app.Key]) == 2, "must two configs for app")
 	assert.True(t, oldAppDataSign != memConfApps[app.Key].DataSign, "app's data_sign must update when update app config")
+
+	_clearModelData()
 }
 
 func TestDataVersion(t *testing.T) {
@@ -146,6 +152,8 @@ func TestDataVersion(t *testing.T) {
 	assert.True(t, memConfDataVersion.Version == 3, "data version must be 3")
 	assert.True(t, memConfDataVersion.OldSign == oldVersion.Sign)
 	assert.True(t, memConfDataVersion.Sign != oldVersion.Sign)
+
+	_clearModelData()
 }
 
 func TestTemplateApp(t *testing.T) {
@@ -198,4 +206,6 @@ func TestTemplateApp(t *testing.T) {
 	updateConfig(templateConfig, "", nil)
 	assert.True(t, appOldDataSign != memConfApps[app.Key].DataSign, "app's data_sign must update after update config")
 	assert.True(t, oldTemplateDataSign != memConfApps[templateApp.Key].DataSign, "app's data_sign must update after update config")
+
+	_clearModelData()
 }
