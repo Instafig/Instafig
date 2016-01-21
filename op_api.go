@@ -84,18 +84,18 @@ func InitUser(c *gin.Context) {
 	}
 	memConfMux.RUnlock()
 
+	key := utils.GenerateKey()
 	user := &models.User{
 		Name:     data.Name,
 		PassCode: encryptUserPassCode(data.PassCode),
-		Creator:  "",
-		Key:      utils.GenerateKey()}
-
+		Creator:  key,
+		Key:      key}
 	if _, err := updateUser(user, nil); err != nil {
 		Error(c, SERVER_ERROR, err.Error())
 		return
 	}
 
-	failedNodes := syncData2SlaveIfNeed(user)
+	failedNodes := syncData2SlaveIfNeed(user, key)
 	setUserKeyCookie(c, user.Key)
 	if len(failedNodes) > 0 {
 		Success(c, map[string]interface{}{"failed_nodes": failedNodes})
@@ -133,7 +133,7 @@ func NewUser(c *gin.Context) {
 		return
 	}
 
-	failedNodes := syncData2SlaveIfNeed(user)
+	failedNodes := syncData2SlaveIfNeed(user, getOpUserKey(c))
 	if len(failedNodes) > 0 {
 		Success(c, map[string]interface{}{"failed_nodes": failedNodes})
 	} else {
@@ -216,8 +216,8 @@ func GetUsers(c *gin.Context) {
 		}
 		memConfMux.RUnlock()
 		res[ix] = map[string]interface{}{
-			"user": user,
-			"creator": map[string]interface{}{"name": authorName, "key":user.Creator},
+			"user":    user,
+			"creator": map[string]interface{}{"name": authorName, "key": user.Creator},
 		}
 	}
 
@@ -225,9 +225,9 @@ func GetUsers(c *gin.Context) {
 }
 
 type newAppData struct {
-	UserKey string `json:"user_key" binding:"required"`
-	Name    string `json:"name" binding:"required"`
-	Type    string `json:"type" binding:"required"`
+	//	UserKey string `json:"user_key" binding:"required"`
+	Name string `json:"name" binding:"required"`
+	Type string `json:"type" binding:"required"`
 }
 
 func NewApp(c *gin.Context) {
@@ -255,7 +255,7 @@ func NewApp(c *gin.Context) {
 	app := &models.App{
 		Key:     utils.GenerateKey(),
 		Name:    data.Name,
-		UserKey: data.UserKey,
+		UserKey: getOpUserKey(c),
 		Type:    data.Type,
 	}
 	if _, err := updateApp(app, nil); err != nil {
@@ -263,7 +263,7 @@ func NewApp(c *gin.Context) {
 		return
 	}
 
-	failedNodes := syncData2SlaveIfNeed(app)
+	failedNodes := syncData2SlaveIfNeed(app, getOpUserKey(c))
 	if len(failedNodes) > 0 {
 		Success(c, map[string]interface{}{"failed_nodes": failedNodes})
 	} else {
@@ -272,10 +272,9 @@ func NewApp(c *gin.Context) {
 }
 
 type updateAppData struct {
-	Key     string `json:"key" binding:"required"`
-	UserKey string `json:"user_key" binding:"required"`
-	Name    string `json:"name" binding:"required"`
-	Type    string `json:"type" binding:"required"`
+	Key  string `json:"key" binding:"required"`
+	Name string `json:"name" binding:"required"`
+	Type string `json:"type" binding:"required"`
 }
 
 func UpdateApp(c *gin.Context) {
@@ -294,39 +293,37 @@ func UpdateApp(c *gin.Context) {
 	}
 
 	memConfMux.RLock()
-	if memConfApps[data.Key] == nil {
+	oldApp := memConfApps[data.Key]
+	if oldApp == nil {
 		Error(c, BAD_REQUEST, "app key not exists: "+data.Key)
 		memConfMux.RUnlock()
 		return
 	}
 
-	if memConfApps[data.Key].Type == models.APP_TYPE_TEMPLATE && memConfApps[data.Key].Type != data.Type {
+	if oldApp.Type == models.APP_TYPE_TEMPLATE && oldApp.Type != data.Type {
 		Error(c, BAD_REQUEST, "can not change template app to real app")
 		memConfMux.RUnlock()
 		return
 	}
 
-	for _, app := range memConfAppsByName[data.Name] {
-		if app.UserKey == data.UserKey && app.Key != data.Key {
-			Error(c, BAD_REQUEST, "appname already exists: "+data.Name)
-			memConfMux.RUnlock()
-			return
-		}
+	if conf.IsEasyDeployMode() && memConfAppsByName[data.Name].Key != data.Key {
+		Error(c, BAD_REQUEST, "appname already exists: "+data.Name)
+		return
 	}
 	memConfMux.RUnlock()
 
 	app := &models.App{
-		Key:     data.Key,
+		Key:     oldApp.Key,
 		Name:    data.Name,
-		UserKey: data.UserKey,
-		Type:    data.Type,
+		UserKey: oldApp.Key,
+		Type:    oldApp.Type,
 	}
 	if _, err := updateApp(app, nil); err != nil {
 		Error(c, SERVER_ERROR, err.Error())
 		return
 	}
 
-	failedNodes := syncData2SlaveIfNeed(app)
+	failedNodes := syncData2SlaveIfNeed(app, getOpUserKey(c))
 	if len(failedNodes) > 0 {
 		Success(c, map[string]interface{}{"failed_nodes": failedNodes})
 	} else {
@@ -378,16 +375,10 @@ func updateApp(app *models.App, newDataVersion *models.DataVersion) (*models.App
 
 	memConfDataVersion = newDataVersion
 	if oldApp != nil {
-		apps := memConfAppsByName[oldApp.Name]
-		memConfAppsByName[oldApp.Name] = make([]*models.App, 0)
-		for _, app := range apps {
-			if app.Key != oldApp.Key {
-				memConfAppsByName[oldApp.Name] = append(memConfAppsByName[oldApp.Name], app)
-			}
-		}
+		memConfAppsByName[oldApp.Name] = nil
 	}
 	memConfApps[app.Key] = app
-	memConfAppsByName[app.Name] = append(memConfAppsByName[app.Name], app)
+	memConfAppsByName[app.Name] = app
 
 	return app, nil
 }
@@ -492,7 +483,7 @@ func NewConfig(c *gin.Context) {
 		return
 	}
 
-	failedNodes := syncData2SlaveIfNeed(config)
+	failedNodes := syncData2SlaveIfNeed(config, getOpUserKey(c))
 	if len(failedNodes) > 0 {
 		Success(c, map[string]interface{}{"failed_nodes": failedNodes})
 	} else {
@@ -575,7 +566,7 @@ func UpdateConfig(c *gin.Context) {
 		return
 	}
 
-	failedNodes := syncData2SlaveIfNeed(config)
+	failedNodes := syncData2SlaveIfNeed(config, getOpUserKey(c))
 	if len(failedNodes) > 0 {
 		Success(c, map[string]interface{}{"failed_nodes": failedNodes})
 	} else {

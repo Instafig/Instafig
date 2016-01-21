@@ -60,7 +60,7 @@ func TestNewApp(t *testing.T) {
 		Type:    models.APP_TYPE_REAL}, nil)
 	assert.True(t, err == nil, "must correctly add new app")
 	assert.True(t, len(memConfApps) == 1, "must only one app")
-	assert.True(t, app.Key == memConfAppsByName["iconfreecn"][0].Key, "must the same app")
+	assert.True(t, app.Key == memConfAppsByName["iconfreecn"].Key, "must the same app")
 
 	_, err = updateApp(&models.App{
 		Key:     utils.GenerateKey(),

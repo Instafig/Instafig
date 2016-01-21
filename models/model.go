@@ -264,7 +264,7 @@ type ConfigUpdateHistory struct {
 	K          string `xorm:"k TEXT NOT NULL" json:"k"`
 	OldV       string `xorm:"old_v TEXT NOT NULL" jon:"old_v"`
 	OldVType   string `xorm:"old_v_type TEXT NOT NULL" json:"old_v_type"`
-	NewV       string `xorm:"new_v TEXT NOT NULL" jon:"new_v"`
+	NewV       string `xorm:"new_v TEXT NOT NULL" json:"new_v"`
 	NewVType   string `xorm:"new_v_type TEXT NOT NULL" json:"new_v_type"`
 	UserKey    string `xorm:"user_key TEXT NOT NULL" json:"user_key"`
 	CreatedUTC int    `xorm:"created_utc INT NOT NULL" json:"created_utc"`
@@ -289,12 +289,23 @@ func GetConfigUpdateHistory(s *Session, configKey string) ([]*ConfigUpdateHistor
 	return res, err
 }
 
+func GetAllConfigUpdateHistory(s *Session) ([]*ConfigUpdateHistory, error) {
+	if s == nil {
+		s = newAutoCloseModelsSession()
+	}
+
+	res := make([]*ConfigUpdateHistory, 0)
+	err := s.Find(&res)
+
+	return res, err
+}
+
 func ClearModeData(s *Session) error {
 	if s == nil {
 		s = newAutoCloseModelsSession()
 	}
 
-	sql := "delete from user; delete from app; delete from config; delete from node;update data_version set version=0;"
+	sql := "delete from user; delete from app; delete from config; delete from node;update data_version set version=0;delete from config_update_history"
 	_, err := s.Exec(sql)
 
 	return err

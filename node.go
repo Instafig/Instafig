@@ -34,15 +34,16 @@ type syncDataT struct {
 	DataVersion *models.DataVersion `json:"data_version"`
 	Kind        string              `json:"kind"`
 	Data        string              `json:"data"` // json string to bind go struct
-	UserKey     string              `json:"user_key"`
+	OpUserKey   string              `json:"op_user_key"`
 }
 
 type syncAllDataT struct {
-	Nodes       map[string]*models.Node   `json:"nodes"`
-	Users       map[string]*models.User   `json:"users"`
-	Apps        map[string]*models.App    `json:"apps"`
-	Configs     map[string]*models.Config `json:"configs"`
-	DataVersion *models.DataVersion       `json:"data_version"`
+	Nodes       map[string]*models.Node       `json:"nodes"`
+	Users       map[string]*models.User       `json:"users"`
+	Apps        map[string]*models.App        `json:"apps"`
+	Configs     map[string]*models.Config     `json:"configs"`
+	ConfHistory []*models.ConfigUpdateHistory `json:"conf_history"`
+	DataVersion *models.DataVersion           `json:"data_version"`
 }
 
 type nodeRequestDataT struct {
@@ -129,13 +130,10 @@ func updateNodeDataVersion(s *models.Session, node *models.Node, ver *models.Dat
 
 	if s == nil {
 		_s = models.NewSession()
-		defer s.Close()
-		if err = s.Begin(); err != nil {
+		defer _s.Close()
+		if err = _s.Begin(); err != nil {
 			goto ERROR
 		}
-
-		confWriteMux.Lock()
-		defer confWriteMux.Unlock()
 	} else {
 		_s = s
 	}
@@ -170,7 +168,7 @@ ERROR:
 	return
 }
 
-func syncData2SlaveIfNeed(data interface{}) []map[string]interface{} {
+func syncData2SlaveIfNeed(data interface{}, opUserKey string) []map[string]interface{} {
 	if !conf.IsEasyDeployMode() {
 		return nil
 	}
@@ -178,6 +176,7 @@ func syncData2SlaveIfNeed(data interface{}) []map[string]interface{} {
 	memConfMux.RLock()
 	ver := memConfDataVersion
 	nodes := memConfNodes
+	dataVersionStr, _ := json.Marshal(ver)
 	memConfMux.RUnlock()
 
 	failedNodes := make([]map[string]interface{}, 0)
@@ -192,15 +191,23 @@ func syncData2SlaveIfNeed(data interface{}) []map[string]interface{} {
 			continue
 		}
 
-		if err := syncData2Slave(node, data, ver); err != nil {
+		if err := syncData2Slave(node, data, ver, opUserKey); err != nil {
 			failedNodes = append(failedNodes, map[string]interface{}{"node": node, "err": err.Error()})
+		} else {
+			// update slave data version here
+			memConfMux.Lock()
+			node.DataVersion = ver
+			node.DataVersionStr = string(dataVersionStr)
+			node.LastCheckUTC = utils.GetNowSecond()
+			memConfMux.Unlock()
+			updateNodeDataVersion(nil, node, ver)
 		}
 	}
 
 	return failedNodes
 }
 
-func syncData2Slave(node *models.Node, data interface{}, dataVer *models.DataVersion) error {
+func syncData2Slave(node *models.Node, data interface{}, dataVer *models.DataVersion, opUserKey string) error {
 	kind := ""
 	switch data.(type) {
 	case *models.User:
@@ -218,6 +225,7 @@ func syncData2Slave(node *models.Node, data interface{}, dataVer *models.DataVer
 		DataVersion: dataVer,
 		Kind:        kind,
 		Data:        string(bs),
+		OpUserKey:   opUserKey,
 	})
 
 	reqData := nodeRequestDataT{
@@ -234,12 +242,11 @@ func slaveCheckMaster() error {
 	defer confWriteMux.Unlock()
 
 	memConfMux.RLock()
-	node := memConfNodes[conf.ClientAddr]
 	ver := memConfDataVersion
 	localNode := memConfNodes[conf.ClientAddr]
 	memConfMux.RUnlock()
 
-	nodeString, _ := json.Marshal(node)
+	nodeString, _ := json.Marshal(localNode)
 	reqData := nodeRequestDataT{
 		Auth: nodeAuthString,
 		Data: string(nodeString),
@@ -277,6 +284,7 @@ func slaveCheckMaster() error {
 	users := make([]*models.User, 0)
 	apps := make([]*models.App, 0)
 	configs := make([]*models.Config, 0)
+	conHistories := make([]*models.ConfigUpdateHistory, 0)
 	nodes := make([]*models.Node, 0)
 
 	s := models.NewSession()
@@ -292,25 +300,35 @@ func slaveCheckMaster() error {
 	}
 
 	for _, user := range resData.Users {
-		if err = models.InsertDBModel(s, user); err != nil {
-			s.Rollback()
-			return err
-		}
 		users = append(users, user)
 	}
+	if err = models.InsertMutltiRows(s, users); err != nil {
+		s.Rollback()
+		return err
+	}
+
 	for _, app := range resData.Apps {
-		if err = models.InsertDBModel(s, app); err != nil {
-			s.Rollback()
-			return err
-		}
 		apps = append(apps, app)
 	}
+	if err = models.InsertMutltiRows(s, apps); err != nil {
+		s.Rollback()
+		return err
+	}
+
 	for _, config := range resData.Configs {
-		if err = models.InsertDBModel(s, config); err != nil {
-			s.Rollback()
-			return err
-		}
 		configs = append(configs, config)
+	}
+	if err = models.InsertMutltiRows(s, configs); err != nil {
+		s.Rollback()
+		return err
+	}
+
+	for _, history := range resData.ConfHistory {
+		conHistories = append(conHistories, history)
+	}
+	if err = models.InsertMutltiRows(s, conHistories); err != nil {
+		s.Rollback()
+		return err
 	}
 
 	for _, node := range resData.Nodes {
@@ -321,11 +339,11 @@ func slaveCheckMaster() error {
 			localNode.DataVersionStr = string(bs)
 			node.LastCheckUTC = utils.GetNowSecond()
 		}
-		if err := models.InsertDBModel(s, node); err != nil {
-			s.Rollback()
-			return err
-		}
 		nodes = append(nodes, node)
+	}
+	if err := models.InsertMutltiRows(s, nodes); err != nil {
+		s.Rollback()
+		return err
 	}
 
 	if err = models.UpdateDataVersion(s, resData.DataVersion); err != nil {
@@ -339,6 +357,16 @@ func slaveCheckMaster() error {
 	}
 
 	fillMemConfData(users, apps, configs, nodes, resData.DataVersion)
+
+	memConfMux.RLock()
+	localNode = memConfNodes[conf.ClientAddr]
+	memConfMux.RUnlock()
+	nodeString, _ = json.Marshal(localNode)
+	reqData = nodeRequestDataT{
+		Auth: nodeAuthString,
+		Data: string(nodeString),
+	}
+	nodeRequest(conf.MasterAddr, NODE_REQUEST_TYPE_CHECKMASTER, reqData)
 
 	return nil
 }
@@ -484,7 +512,7 @@ func handleSlaveSyncUpdateData(c *gin.Context, data string) {
 			Error(c, BAD_REQUEST, "bad data format for user model")
 			return
 		}
-		if _, err = updateConfig(config, syncData.UserKey, syncData.DataVersion); err != nil {
+		if _, err = updateConfig(config, syncData.OpUserKey, syncData.DataVersion); err != nil {
 			Error(c, SERVER_ERROR, err.Error())
 			return
 		}
@@ -546,6 +574,12 @@ func handleSyncMaster(c *gin.Context, data string) {
 	//	confWriteMux.Lock()
 	//	defer confWriteMux.Unlock()
 
+	history, err := models.GetAllConfigUpdateHistory(nil)
+	if err != nil {
+		Error(c, SERVER_ERROR, err.Error())
+		return
+	}
+
 	memConfMux.RLock()
 	resData, _ := json.Marshal(syncAllDataT{
 		Nodes:       memConfNodes,
@@ -553,6 +587,7 @@ func handleSyncMaster(c *gin.Context, data string) {
 		Apps:        memConfApps,
 		Configs:     memConfRawConfigs,
 		DataVersion: memConfDataVersion,
+		ConfHistory: history,
 	})
 	memConfMux.RUnlock()
 
