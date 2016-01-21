@@ -49,6 +49,9 @@ func main() {
 		ginIns.Use(gin.Logger())
 	}
 
+	// static
+	ginIns.Static("web", "./web")
+
 	// misc api
 	miscAPIGroup := ginIns.Group("/misc")
 	{
