@@ -10,7 +10,7 @@ for (( i=0; i<${#TEST_DIRS[*]}; i++)); do
     echo "Runing tests for [$DIR]"
 
     if [ $DIR != "utils" ]; then
-        go test -v -covermode=count -coverprofile=./${DIR}/coverage.out ./${DIR}  --config=./conf/config_test1.ini> .test.output
+        go test -v -covermode=count -coverprofile=./${DIR}/coverage.out ./${DIR}  --config=./conf/config_test_1.ini> .test.output
     else
         go test -v -covermode=count -coverprofile=./${DIR}/coverage.out ./${DIR} > .test.output
     fi
