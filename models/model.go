@@ -10,7 +10,7 @@ var (
 
 type User struct {
 	Key      string `xorm:"key TEXT PK NOT NULL" json:"key"`
-	PassCode string `xorm:"pass_code TEXT NOT NULL`
+	PassCode string `xorm:"pass_code TEXT NOT NULL"`
 	Name     string `xorm:"name TEXT NOT NULL UNIQUE" json:"name"`
 	Creator  string `xorm:"creator TEXT NOT NULL" json:"creator"`
 }
