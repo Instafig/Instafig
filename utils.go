@@ -77,12 +77,6 @@ func getServiceStatus(c *gin.Context) bool {
 	return data
 }
 
-// misc handlers
-
-func VersionHandler(c *gin.Context) {
-	c.String(200, conf.VersionString())
-}
-
 func setOpUserKey(c *gin.Context, key string) {
 	c.Set("_user_key_", key)
 }
@@ -96,4 +90,10 @@ func getOpUserKey(c *gin.Context) string {
 	data := i.(string)
 
 	return data
+}
+
+// misc handlers
+
+func VersionHandler(c *gin.Context) {
+	c.String(200, conf.VersionString())
 }
