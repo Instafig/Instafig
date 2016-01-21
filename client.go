@@ -23,35 +23,30 @@ func ClientReqData(c *gin.Context) {
 		}
 
 		memConfMux.RLock()
-		nodes := memConfNodes
-		needConf := memConfApps[clientData.AppKey] != nil && clientData.DataSign != memConfApps[clientData.AppKey].DataSign
-		memConfMux.RUnlock()
-
-		var confData map[string]interface{}
-		newDataSign := ""
-		if needConf {
-			confData = getAppMatchConf(clientData.AppKey, clientData)
-			memConfMux.RLock()
-			newDataSign = memConfApps[clientData.AppKey].DataSign
-			memConfMux.RUnlock()
-		}
-
-		nodeRes := make([]string, len(nodes))
+		nodes := make([]string, len(memConfNodes))
 		ix := 0
-		for _, node := range nodes {
-			nodeRes[ix] = node.URL
+		for _, node := range memConfNodes {
+			nodes[ix] = node.URL
 			ix++
 		}
+		// do not support app data_sign in server-side, always return app configs
+		needConf := true || (memConfApps[clientData.AppKey] != nil && clientData.DataSign != memConfApps[clientData.AppKey].DataSign)
+		memConfMux.RUnlock()
 
 		if needConf {
+			configs := getAppMatchConf(clientData.AppKey, clientData)
+			memConfMux.RLock()
+			dataSign := memConfApps[clientData.AppKey].DataSign
+			memConfMux.RUnlock()
+
 			Success(c, map[string]interface{}{
-				"nodes":     nodeRes,
-				"configs":   confData,
-				"data_sign": newDataSign,
+				"nodes":     nodes,
+				"configs":   configs,
+				"data_sign": dataSign,
 			})
 		} else {
 			Success(c, map[string]interface{}{
-				"nodes": nodeRes,
+				"nodes": nodes,
 			})
 		}
 		return
