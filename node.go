@@ -34,6 +34,7 @@ type syncDataT struct {
 	DataVersion *models.DataVersion `json:"data_version"`
 	Kind        string              `json:"kind"`
 	Data        string              `json:"data"` // json string to bind go struct
+	UserKey     string              `json:"user_key"`
 }
 
 type syncAllDataT struct {
@@ -483,7 +484,7 @@ func handleSlaveSyncUpdateData(c *gin.Context, data string) {
 			Error(c, BAD_REQUEST, "bad data format for user model")
 			return
 		}
-		if _, err = updateConfig(config, syncData.DataVersion); err != nil {
+		if _, err = updateConfig(config, syncData.UserKey, syncData.DataVersion); err != nil {
 			Error(c, SERVER_ERROR, err.Error())
 			return
 		}

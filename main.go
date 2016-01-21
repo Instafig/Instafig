@@ -64,17 +64,20 @@ func main() {
 	// op api
 	opAPIGroup := ginIns.Group("/op")
 	{
-		opAPIGroup.GET("/users/:page", GetUsers)
-		opAPIGroup.POST("/user", ConfWriteCheck, NewUser)
+		opAPIGroup.POST("/login", Login)
 
-		opAPIGroup.GET("/apps/user/:user_key", GetApps)
-		opAPIGroup.GET("/apps/all/:page", GetAllApps)
-		opAPIGroup.POST("/app", ConfWriteCheck, NewApp)
-		opAPIGroup.PUT("/app", ConfWriteCheck, UpdateApp)
+		opAPIGroup.GET("/users/:page", OpAuth, GetUsers)
+		opAPIGroup.POST("/user", OpAuth, ConfWriteCheck, NewUser)
+		opAPIGroup.POST("/user/init", ConfWriteCheck, InitUser)
 
-		opAPIGroup.GET("/configs/:app_key", GetConfigs)
-		opAPIGroup.POST("/config", ConfWriteCheck, NewConfig)
-		opAPIGroup.PUT("/config", ConfWriteCheck, UpdateConfig)
+		opAPIGroup.GET("/apps/user/:user_key", OpAuth, GetApps)
+		opAPIGroup.GET("/apps/all/:page", OpAuth, GetAllApps)
+		opAPIGroup.POST("/app", OpAuth, ConfWriteCheck, NewApp)
+		opAPIGroup.PUT("/app", OpAuth, ConfWriteCheck, UpdateApp)
+
+		opAPIGroup.GET("/configs/:app_key", OpAuth, GetConfigs)
+		opAPIGroup.POST("/config", OpAuth, ConfWriteCheck, NewConfig)
+		opAPIGroup.PUT("/config", OpAuth, ConfWriteCheck, UpdateConfig)
 	}
 
 	if conf.IsEasyDeployMode() {

@@ -9,8 +9,10 @@ var (
 )
 
 type User struct {
-	Key  string `xorm:"key TEXT PK NOT NULL" json:"key"`
-	Name string `xorm:"name TEXT NOT NULL UNIQUE" json:"name"`
+	Key      string `xorm:"key TEXT PK NOT NULL" json:"key"`
+	PassCode string `xorm:"pass_code TEXT NOT NULL`
+	Name     string `xorm:"name TEXT NOT NULL UNIQUE" json:"name"`
+	Creator  string `xorm:"creator TEXT NOT NULL" json:"creator"`
 }
 
 func (*User) TableName() string {
@@ -247,6 +249,44 @@ func GetDataVersion(s *Session) (*DataVersion, error) {
 	}
 
 	return res[0], nil
+}
+
+const (
+	CONFIG_UPDATE_KIND_NEW    = "new"
+	CONFIG_UPDATE_KIND_UPDATE = "up"
+	CONFIG_UPDATE_KIND_DELETE = "del"
+)
+
+type ConfigUpdateHistory struct {
+	Id         string `xorm:"id PK TEXT NOT NULL" json:"id"`
+	ConfigKey  string `xorm:"config_key TEXT NOT NULL" json:"config_key"`
+	Kind       string `xorm:"kind TEXT NOT NULL" json:"kind"`
+	K          string `xorm:"k TEXT NOT NULL" json:"k"`
+	OldV       string `xorm:"old_v TEXT NOT NULL" jon:"old_v"`
+	OldVType   string `xorm:"old_v_type TEXT NOT NULL" json:"old_v_type"`
+	NewV       string `xorm:"new_v TEXT NOT NULL" jon:"new_v"`
+	NewVType   string `xorm:"new_v_type TEXT NOT NULL" json:"new_v_type"`
+	UserKey    string `xorm:"user_key TEXT NOT NULL" json:"user_key"`
+	CreatedUTC int    `xorm:"created_utc INT NOT NULL" json:"created_utc"`
+}
+
+func (*ConfigUpdateHistory) TableName() string {
+	return "config_update_history"
+}
+
+func (m *ConfigUpdateHistory) UniqueCond() (string, []interface{}) {
+	return "id=?", []interface{}{m.Id}
+}
+
+func GetConfigUpdateHistory(s *Session, configKey string) ([]*ConfigUpdateHistory, error) {
+	if s == nil {
+		s = newAutoCloseModelsSession()
+	}
+
+	res := make([]*ConfigUpdateHistory, 0)
+	err := s.Where("config_key=?", configKey).OrderBy("created_utc desc").Find(&res)
+
+	return res, err
 }
 
 func ClearModeData(s *Session) error {

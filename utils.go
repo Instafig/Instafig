@@ -11,12 +11,14 @@ const (
 	SERVER_ERROR = iota
 	BAD_REQUEST
 	BAD_POST_DATA
-	LOGIN_NEEDED
-	LOGIN_FAILED
 	NOT_PERMITTED
 	DATA_EXPIRED
 	DATA_SYNCING
 	DATA_VERSION_ERROR
+
+	NOT_LOGIN
+	USER_NOT_EXIST
+	PASS_CODE_ERR
 )
 
 var (
@@ -24,12 +26,13 @@ var (
 		SERVER_ERROR:       [2]string{"server_error", "server error"},
 		BAD_REQUEST:        [2]string{"bad_request", "bad requeset"},
 		BAD_POST_DATA:      [2]string{"bad_post_data", "bad request body"},
-		LOGIN_NEEDED:       [2]string{"login_needed", "need login"},
-		LOGIN_FAILED:       [2]string{"login_failed", "failed to login"},
 		NOT_PERMITTED:      [2]string{"not_permitted", "not permitted"},
 		DATA_EXPIRED:       [2]string{"data_expired", "conf data expired, try from anthor node"},
 		DATA_SYNCING:       [2]string{"data_syncing", "conf data syncing, try from anthor node"},
 		DATA_VERSION_ERROR: [2]string{"data_verison_error", "data version error"},
+		NOT_LOGIN:          [2]string{"not_login", "need login"},
+		USER_NOT_EXIST:     [2]string{"user_not_exist", "user not exist"},
+		PASS_CODE_ERR:      [2]string{"pass_code_err", "user passcode wrong"},
 	}
 )
 
@@ -78,4 +81,19 @@ func getServiceStatus(c *gin.Context) bool {
 
 func VersionHandler(c *gin.Context) {
 	c.String(200, conf.VersionString())
+}
+
+func setOpUserKey(c *gin.Context, key string) {
+	c.Set("_user_key_", key)
+}
+
+func getOpUserKey(c *gin.Context) string {
+	i, exists := c.Get("_user_key_")
+	if !exists || i == nil {
+		return ""
+	}
+
+	data := i.(string)
+
+	return data
 }

@@ -1,12 +1,17 @@
 package main
 
 import (
+	"crypto/sha1"
+	"fmt"
+	"net/http"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/appwilldev/Instafig/conf"
 	"github.com/appwilldev/Instafig/models"
 	"github.com/appwilldev/Instafig/utils"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 )
 
@@ -29,8 +34,74 @@ func ConfWriteCheck(c *gin.Context) {
 	}
 }
 
+func Login(c *gin.Context) {
+	var data struct {
+		Name     string `json:"name" binding:"required"`
+		PassCode string `json:"pass_code" binding:"required"`
+	}
+	if err := c.BindJSON(&data); err != nil {
+		Error(c, BAD_POST_DATA, err.Error())
+		return
+	}
+
+	memConfMux.RLock()
+	user := memConfUsersByName[data.Name]
+	memConfMux.RUnlock()
+
+	if user == nil {
+		Error(c, USER_NOT_EXIST)
+		return
+	}
+	if user.PassCode != encryptUserPassCode(data.PassCode) {
+		Error(c, PASS_CODE_ERR)
+		return
+	}
+
+	setUserKeyCookie(c, user.Key)
+	Success(c, nil)
+}
+
 type newUserData struct {
-	Name string `json:"name" binding:"required"`
+	Name     string `json:"name" binding:"required"`
+	PassCode string `json:"pass_code" binding:"required"`
+}
+
+func InitUser(c *gin.Context) {
+	confWriteMux.Lock()
+	defer confWriteMux.Unlock()
+
+	data := &newUserData{}
+	if err := c.BindJSON(data); err != nil {
+		Error(c, BAD_POST_DATA, err.Error())
+		return
+	}
+
+	memConfMux.RLock()
+	if len(memConfUsersByName) > 0 {
+		Error(c, NOT_PERMITTED, "some users already exists: ")
+		memConfMux.RUnlock()
+		return
+	}
+	memConfMux.RUnlock()
+
+	user := &models.User{
+		Name:     data.Name,
+		PassCode: encryptUserPassCode(data.PassCode),
+		Creator:  "",
+		Key:      utils.GenerateKey()}
+
+	if _, err := updateUser(user, nil); err != nil {
+		Error(c, SERVER_ERROR, err.Error())
+		return
+	}
+
+	failedNodes := syncData2SlaveIfNeed(user)
+	setUserKeyCookie(c, user.Key)
+	if len(failedNodes) > 0 {
+		Success(c, map[string]interface{}{"failed_nodes": failedNodes})
+	} else {
+		Success(c, nil)
+	}
 }
 
 func NewUser(c *gin.Context) {
@@ -52,8 +123,10 @@ func NewUser(c *gin.Context) {
 	memConfMux.RUnlock()
 
 	user := &models.User{
-		Name: data.Name,
-		Key:  utils.GenerateKey()}
+		Name:     data.Name,
+		PassCode: encryptUserPassCode(data.PassCode),
+		Creator:  getOpUserKey(c),
+		Key:      utils.GenerateKey()}
 
 	if _, err := updateUser(user, nil); err != nil {
 		Error(c, SERVER_ERROR, err.Error())
@@ -131,6 +204,10 @@ func GetUsers(c *gin.Context) {
 	if err != nil {
 		Error(c, SERVER_ERROR, err.Error())
 		return
+	}
+
+	for _, user := range users {
+		user.PassCode = ""
 	}
 
 	Success(c, users)
@@ -398,7 +475,7 @@ func NewConfig(c *gin.Context) {
 		VType:  data.VType,
 	}
 
-	config, err := updateConfig(config, nil)
+	config, err := updateConfig(config, getOpUserKey(c), nil)
 	if err != nil {
 		Error(c, SERVER_ERROR, err.Error())
 		return
@@ -468,6 +545,10 @@ func UpdateConfig(c *gin.Context) {
 		Error(c, BAD_REQUEST, "can not change config's app key")
 		return
 	}
+	if oldConfig.K != data.K {
+		Error(c, BAD_REQUEST, "can not change config's key")
+		return
+	}
 
 	config := &models.Config{
 		Key:    data.Key,
@@ -477,7 +558,7 @@ func UpdateConfig(c *gin.Context) {
 		VType:  data.VType,
 	}
 
-	config, err := updateConfig(config, nil)
+	config, err := updateConfig(config, getOpUserKey(c), nil)
 	if err != nil {
 		Error(c, SERVER_ERROR, err.Error())
 		return
@@ -491,7 +572,7 @@ func UpdateConfig(c *gin.Context) {
 	}
 }
 
-func updateConfig(config *models.Config, newDataVersion *models.DataVersion) (*models.Config, error) {
+func updateConfig(config *models.Config, userKey string, newDataVersion *models.DataVersion) (*models.Config, error) {
 	s := models.NewSession()
 	defer s.Close()
 	if err := s.Begin(); err != nil {
@@ -519,8 +600,42 @@ func updateConfig(config *models.Config, newDataVersion *models.DataVersion) (*m
 			s.Rollback()
 			return nil, err
 		}
+
+		configHistory := &models.ConfigUpdateHistory{
+			Id:         utils.GenerateKey(),
+			ConfigKey:  oldConfig.Key,
+			K:          config.K,
+			OldV:       "",
+			OldVType:   "",
+			NewV:       config.V,
+			NewVType:   config.VType,
+			Kind:       models.CONFIG_UPDATE_KIND_NEW,
+			UserKey:    userKey,
+			CreatedUTC: utils.GetNowSecond(),
+		}
+		if err := models.InsertDBModel(s, configHistory); err != nil {
+			s.Rollback()
+			return nil, err
+		}
 	} else {
 		if err := models.UpdateDBModel(s, config); err != nil {
+			s.Rollback()
+			return nil, err
+		}
+
+		configHistory := &models.ConfigUpdateHistory{
+			Id:         utils.GenerateKey(),
+			ConfigKey:  oldConfig.Key,
+			K:          config.K,
+			OldV:       oldConfig.V,
+			OldVType:   oldConfig.VType,
+			NewV:       config.V,
+			NewVType:   config.VType,
+			Kind:       models.CONFIG_UPDATE_KIND_UPDATE,
+			UserKey:    userKey,
+			CreatedUTC: utils.GetNowSecond(),
+		}
+		if err := models.InsertDBModel(s, configHistory); err != nil {
 			s.Rollback()
 			return nil, err
 		}
@@ -591,4 +706,62 @@ func GetConfigs(c *gin.Context) {
 	}
 
 	Success(c, configs)
+}
+
+func OpAuth(c *gin.Context) {
+	cookie, err := c.Request.Cookie("op_user")
+	if err != nil {
+		Error(c, NOT_LOGIN, err.Error())
+		c.Abort()
+		return
+	}
+
+	token, err := jwt.Parse(cookie.Value, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(conf.MasterAuth), nil
+	})
+	if err != nil {
+		Error(c, NOT_LOGIN, err.Error())
+		c.Abort()
+		return
+	}
+
+	if !token.Valid {
+		Error(c, NOT_LOGIN, "cookie token invalid")
+		c.Abort()
+		return
+	}
+
+	userKey := token.Claims["uky"].(string)
+	memConfMux.RLock()
+	if memConfUsers[userKey] == nil {
+		memConfMux.RUnlock()
+		Error(c, NOT_LOGIN, "user not exist")
+		c.Abort()
+		return
+	}
+	memConfMux.RUnlock()
+
+	setOpUserKey(c, userKey)
+}
+
+func encryptUserPassCode(code string) string {
+	s := sha1.Sum([]byte(code))
+	return string(s[:sha1.Size])
+}
+
+func setUserKeyCookie(c *gin.Context, userKey string) {
+	jwtIns := jwt.New(jwt.SigningMethodHS256)
+	jwtIns.Claims["uky"] = userKey
+
+	encStr, _ := jwtIns.SignedString([]byte(conf.MasterAuth))
+	cookie := new(http.Cookie)
+	cookie.Name = "op_user"
+	cookie.Expires = time.Now().Add(time.Duration(30*86400) * time.Second)
+	cookie.Value = encStr
+	//	cookie.Path = "/"
+	//	cookie.Domain = ""
+	http.SetCookie(c.Writer, cookie)
 }
