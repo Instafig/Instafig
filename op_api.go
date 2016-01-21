@@ -158,12 +158,9 @@ func NewApp(c *gin.Context) {
 	}
 
 	memConfMux.RLock()
-	for _, app := range memConfAppsByName[data.Name] {
-		if app.UserKey == data.UserKey {
-			Error(c, BAD_REQUEST, "appname already exists: "+data.Name)
-			memConfMux.RUnlock()
-			return
-		}
+	if conf.IsEasyDeployMode() && memConfAppsByName[data.Name] != nil {
+		Error(c, BAD_REQUEST, "appname already exists: "+data.Name)
+		return
 	}
 	memConfMux.RUnlock()
 
