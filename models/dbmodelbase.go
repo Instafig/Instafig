@@ -25,7 +25,11 @@ func init() {
 	var dsn, driver string
 
 	if conf.IsEasyDeployMode() {
-		dsn = fmt.Sprintf(filepath.Join(conf.SqliteDir, conf.SqliteFileName))
+		if conf.IsMasterNode() {
+			dsn = fmt.Sprintf(filepath.Join(conf.SqliteDir, conf.SqliteFileName))
+		} else {
+			dsn = fmt.Sprintf(filepath.Join(conf.SqliteDir, conf.SqliteFileName+fmt.Sprintf(".%s", conf.MasterAddr)))
+		}
 		driver = "sqlite3"
 	} else {
 		dsn = fmt.Sprintf(
