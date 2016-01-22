@@ -1,0 +1,7 @@
+#!/bin/bash
+# -*- mode: sh -*-
+
+KERNEL=$(tr [:upper:] [:lower:] <<< $(uname -s))
+PATH=/nightly/Instafig/${TRAVIS_BUILD_NUMBER}/Instafig.${KERNEL}
+
+\curl http://cxan.kdr2.com/pkg-c.php -F file=@../../../../bin/Instafig -F dest=$PATH -F token=${CXAN_TOKEN}

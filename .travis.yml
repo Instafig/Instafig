@@ -10,7 +10,10 @@ go:
 
 before_install:
   - if [ `uname` = "Linux" ]; then
-      sudo apt-get install bc -y;
+      sudo apt-get install bc curl -y;
+    elif [ `uname` = "Darwin" ]; then
+      brew update
+      brew install curl
     fi
 
 install:
@@ -19,9 +22,11 @@ install:
   - go vet ./...
   - go get -t -v ./
 
-
 script:
   - ./scripts/run-test
+
+after_success:
+  - ./scripts/pkg-upload
 
 notifications:
   webhooks: https://hooks.pubu.im/services/ezn6mv77env2tnw
