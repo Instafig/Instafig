@@ -24,10 +24,12 @@ const (
 	NODE_REQUEST_SYNC_TYPE_USER   = "USER"
 	NODE_REQUEST_SYNC_TYPE_APP    = "APP"
 	NODE_REQUEST_SYNC_TYPE_CONFIG = "CONFIG"
+	NODE_REQUEST_SYNC_TYPE_NODE   = "NODE"
 )
 
 var (
 	nodeAuthString string
+	nodeSyncChan   = make(chan models.Node, 10)
 )
 
 type syncDataT struct {
@@ -62,6 +64,15 @@ func init() {
 	nodeAuthToken := jwt.New(jwt.SigningMethodHS256)
 	if nodeAuthString, err = nodeAuthToken.SignedString([]byte(conf.MasterAuth)); err != nil {
 		log.Panicf("Failed to init node auth token: %s", err.Error())
+	}
+
+	if conf.IsEasyDeployMode() && conf.IsMasterNode() {
+		go func() {
+			for {
+				node := <-nodeSyncChan
+				go masterSyncNodeToSlave(&node)
+			}
+		}()
 	}
 }
 
@@ -176,7 +187,6 @@ func syncData2SlaveIfNeed(data interface{}, opUserKey string) []map[string]inter
 	memConfMux.RLock()
 	ver := memConfDataVersion
 	nodes := memConfNodes
-	dataVersionStr, _ := json.Marshal(ver)
 	memConfMux.RUnlock()
 
 	failedNodes := make([]map[string]interface{}, 0)
@@ -193,14 +203,6 @@ func syncData2SlaveIfNeed(data interface{}, opUserKey string) []map[string]inter
 
 		if err := syncData2Slave(node, data, ver, opUserKey); err != nil {
 			failedNodes = append(failedNodes, map[string]interface{}{"node": node, "err": err.Error()})
-		} else {
-			// update slave data version here
-			memConfMux.Lock()
-			node.DataVersion = ver
-			node.DataVersionStr = string(dataVersionStr)
-			node.LastCheckUTC = utils.GetNowSecond()
-			memConfMux.Unlock()
-			updateNodeDataVersion(nil, node, ver)
 		}
 	}
 
@@ -216,6 +218,8 @@ func syncData2Slave(node *models.Node, data interface{}, dataVer *models.DataVer
 		kind = NODE_REQUEST_SYNC_TYPE_APP
 	case *models.Config:
 		kind = NODE_REQUEST_SYNC_TYPE_CONFIG
+	case *models.Node:
+		kind = NODE_REQUEST_SYNC_TYPE_NODE
 	default:
 		log.Panicln("unkown node data sync type: ", reflect.TypeOf(data))
 	}
@@ -233,6 +237,17 @@ func syncData2Slave(node *models.Node, data interface{}, dataVer *models.DataVer
 		Data: string(syncDataString),
 	}
 	_, err := nodeRequest(node.NodeURL, NODE_REQUEST_TYPE_SYNCSLAVE, reqData)
+
+	if err == nil && kind != NODE_REQUEST_SYNC_TYPE_NODE {
+		// update slave data version here
+		dataVersionStr, _ := json.Marshal(dataVer)
+		memConfMux.Lock()
+		node.DataVersion = dataVer
+		node.DataVersionStr = string(dataVersionStr)
+		node.LastCheckUTC = utils.GetNowSecond()
+		memConfMux.Unlock()
+		updateNodeDataVersion(nil, node, dataVer)
+	}
 
 	return err
 }
@@ -472,13 +487,15 @@ func handleSlaveSyncUpdateData(c *gin.Context, data string) {
 	ver := memConfDataVersion
 	memConfMux.RUnlock()
 
-	if ver.Version+1 != syncData.DataVersion.Version {
-		Error(c, DATA_VERSION_ERROR, "slave node data version [%d] error for master data version [%d]", ver.Version, syncData.DataVersion.Version)
-		return
-	}
-	if ver.Sign != syncData.DataVersion.OldSign {
-		Error(c, DATA_VERSION_ERROR, "slave node's data sign [%s] not equal master node's old data sign [%s]", ver.Sign, syncData.DataVersion.OldSign)
-		return
+	if syncData.Kind != NODE_REQUEST_SYNC_TYPE_NODE {
+		if ver.Version+1 != syncData.DataVersion.Version {
+			Error(c, DATA_VERSION_ERROR, "slave node data version [%d] error for master data version [%d]", ver.Version, syncData.DataVersion.Version)
+			return
+		}
+		if ver.Sign != syncData.DataVersion.OldSign {
+			Error(c, DATA_VERSION_ERROR, "slave node's data sign [%s] not equal master node's old data sign [%s]", ver.Sign, syncData.DataVersion.OldSign)
+			return
+		}
 	}
 
 	switch syncData.Kind {
@@ -516,6 +533,35 @@ func handleSlaveSyncUpdateData(c *gin.Context, data string) {
 			Error(c, SERVER_ERROR, err.Error())
 			return
 		}
+		Success(c, nil)
+
+	case NODE_REQUEST_SYNC_TYPE_NODE:
+		node := &models.Node{}
+		if err = json.Unmarshal([]byte(syncData.Data), node); err != nil {
+			Error(c, BAD_REQUEST, "bad data format for node model")
+			return
+		}
+
+		memConfMux.RLock()
+		oldNode := memConfNodes[node.URL]
+		memConfMux.RUnlock()
+
+		if oldNode == nil {
+			if err := models.InsertRow(nil, node); err != nil {
+				Error(c, SERVER_ERROR, err.Error())
+				return
+			}
+		} else {
+			if err := models.UpdateDBModel(nil, node); err != nil {
+				Error(c, SERVER_ERROR, err.Error())
+				return
+			}
+		}
+
+		memConfMux.Lock()
+		memConfNodes[node.URL] = node
+		memConfMux.Unlock()
+
 		Success(c, nil)
 
 	default:
@@ -561,6 +607,8 @@ func handleSlaveCheckMaster(c *gin.Context, data string) {
 	bs, _ := json.Marshal(memConfDataVersion)
 	memConfMux.Unlock()
 
+	nodeSyncChan <- *node
+
 	Success(c, string(bs))
 }
 
@@ -592,6 +640,17 @@ func handleSyncMaster(c *gin.Context, data string) {
 	memConfMux.RUnlock()
 
 	Success(c, string(resData))
+}
+
+func masterSyncNodeToSlave(node *models.Node) {
+	for _, _node := range memConfNodes {
+		if _node.URL == node.URL || _node.Type == models.NODE_TYPE_MASTER {
+			continue
+		}
+		if err := syncData2Slave(_node, node, nil, ""); err != nil {
+			log.Println("Failed to sync slave node to other slaves: " + err.Error())
+		}
+	}
 }
 
 func nodeAuth(authString string) error {
