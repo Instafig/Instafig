@@ -82,6 +82,8 @@ func main() {
 		opAPIGroup.POST("/config", OpAuth, ConfWriteCheck, NewConfig)
 		opAPIGroup.PUT("/config", OpAuth, ConfWriteCheck, UpdateConfig)
 		opAPIGroup.GET("/config/history/:config_key", OpAuth, GetConfigUpdateHistory)
+
+		opAPIGroup.GET("/nodes", OpAuth, GetNodes)
 	}
 
 	if conf.IsEasyDeployMode() {

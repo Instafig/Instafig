@@ -199,9 +199,9 @@ type Node struct {
 	Type           string `xorm:"type TEXT " json:"type"`
 	CreatedUTC     int    `xorm:"created_utc INT " json:"created_utc"`
 	LastCheckUTC   int    `xorm:"last_check_utc INT " json:"last_check_utc"`
-	DataVersionStr string `xorm:"data_version TEXT " json:"data_version"` // json string to store DataVersion in db
+	DataVersionStr string `xorm:"data_version TEXT " json:"data_version_str"` // json string to store DataVersion in db
 
-	DataVersion   *DataVersion `xorm:"-"`
+	DataVersion   *DataVersion `xorm:"-" json:"data_version"`
 	SchemeVersion string       `xorm:"-"`
 }
 
@@ -231,9 +231,9 @@ func IsValidNodeType(typ string) bool {
 }
 
 type DataVersion struct {
-	Version int    `xorm:"version INT "`
-	Sign    string `xorm:"sign TEXT "`
-	OldSign string `xorm:"old_sign TEXT "`
+	Version int    `xorm:"version INT" json:"version"`
+	Sign    string `xorm:"sign TEXT" json:"sign"`
+	OldSign string `xorm:"old_sign TEXT" json:"old_sign"`
 }
 
 func (*DataVersion) TableName() string {

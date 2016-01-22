@@ -19,7 +19,7 @@ func TestNewUser(t *testing.T) {
 	err := _clearModelData()
 	assert.True(t, err == nil, "must correctly clear data")
 	loadAllData()
-	initLocalNodeData()
+	initNodeData()
 
 	confWriteMux.Lock()
 	defer confWriteMux.Unlock()
@@ -44,7 +44,7 @@ func TestNewApp(t *testing.T) {
 	err := _clearModelData()
 	assert.True(t, err == nil, "must correctly clear data")
 	loadAllData()
-	initLocalNodeData()
+	initNodeData()
 
 	confWriteMux.Lock()
 	defer confWriteMux.Unlock()
@@ -77,7 +77,7 @@ func TestNewConfig(t *testing.T) {
 	err := _clearModelData()
 	assert.True(t, err == nil, "must correctly clear data")
 	loadAllData()
-	initLocalNodeData()
+	initNodeData()
 
 	confWriteMux.Lock()
 	defer confWriteMux.Unlock()
@@ -120,7 +120,7 @@ func TestDataVersion(t *testing.T) {
 	err := _clearModelData()
 	assert.True(t, err == nil, "must correctly clear data")
 	loadAllData()
-	initLocalNodeData()
+	initNodeData()
 
 	assert.True(t, memConfDataVersion.Version == 0, "init data version must be 0")
 
@@ -160,7 +160,7 @@ func TestTemplateApp(t *testing.T) {
 	err := _clearModelData()
 	assert.True(t, err == nil, "must correctly clear data")
 	loadAllData()
-	initLocalNodeData()
+	initNodeData()
 
 	user, _ := updateUser(&models.User{
 		Name: "rahuahua",

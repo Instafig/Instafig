@@ -763,6 +763,19 @@ func GetConfigUpdateHistory(c *gin.Context) {
 	Success(c, histories)
 }
 
+func GetNodes(c *gin.Context) {
+	nodes := make([]*models.Node, 0)
+
+	memConfMux.RLock()
+	for _, node := range memConfNodes {
+		node.DataVersionStr = ""
+		nodes = append(nodes, node)
+	}
+	memConfMux.RUnlock()
+
+	Success(c, nodes)
+}
+
 func OpAuth(c *gin.Context) {
 	cookie, err := c.Request.Cookie("op_user")
 	if err != nil {

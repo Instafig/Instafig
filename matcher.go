@@ -126,10 +126,12 @@ func fillMemConfData(users []*models.User, apps []*models.App, configs []*models
 		memConfAppConfigs[config.AppKey] = append(memConfAppConfigs[config.AppKey], c)
 	}
 
-	for _, node := range nodes {
-		memConfNodes[node.URL] = node
-		node.DataVersion = &models.DataVersion{}
-		json.Unmarshal([]byte(node.DataVersionStr), node.DataVersion)
+	if dataVersion != nil {
+		for _, node := range nodes {
+			memConfNodes[node.URL] = node
+			node.DataVersion = &models.DataVersion{}
+			json.Unmarshal([]byte(node.DataVersionStr), node.DataVersion)
+		}
 	}
 }
 

@@ -57,7 +57,7 @@ func init() {
 	if conf.IsEasyDeployMode() {
 		checkNodeValidity()
 		loadAllData()
-		initLocalNodeData()
+		initNodeData()
 	}
 
 	var err error
@@ -104,7 +104,7 @@ func checkNodeValidity() {
 	}
 }
 
-func initLocalNodeData() {
+func initNodeData() {
 	if memConfNodes[conf.ClientAddr] == nil {
 		bs, _ := json.Marshal(memConfDataVersion)
 		node := &models.Node{
@@ -128,6 +128,17 @@ func initLocalNodeData() {
 		if err := models.UpdateDBModel(nil, node); err != nil {
 			log.Panicf("Failed to update node data: %s", err.Error())
 		}
+	}
+
+	if !conf.IsMasterNode() && memConfNodes[conf.MasterAddr] == nil {
+		masterNode := &models.Node{
+			URL:  conf.MasterAddr,
+			Type: models.NODE_TYPE_MASTER,
+		}
+		if err := models.InsertRow(nil, masterNode); err != nil {
+			log.Panicf("Failed to init master node data: %s", err.Error())
+		}
+		memConfNodes[conf.MasterAddr] = masterNode
 	}
 }
 
@@ -258,7 +269,7 @@ func slaveCheckMaster() error {
 
 	memConfMux.RLock()
 	ver := memConfDataVersion
-	localNode := memConfNodes[conf.ClientAddr]
+	localNode := *memConfNodes[conf.ClientAddr]
 	memConfMux.RUnlock()
 
 	nodeString, _ := json.Marshal(localNode)
@@ -278,7 +289,15 @@ func slaveCheckMaster() error {
 
 	if masterVersion.Version == ver.Version && masterVersion.Sign == ver.Sign {
 		localNode.LastCheckUTC = utils.GetNowSecond()
-		return models.UpdateDBModel(nil, localNode)
+		if err = models.UpdateDBModel(nil, &localNode); err != nil {
+			return err
+		}
+
+		memConfMux.Lock()
+		memConfNodes[conf.ClientAddr] = &localNode
+		memConfMux.Unlock()
+
+		return nil
 	}
 
 	reqData = nodeRequestDataT{
@@ -301,6 +320,10 @@ func slaveCheckMaster() error {
 	configs := make([]*models.Config, 0)
 	conHistories := make([]*models.ConfigUpdateHistory, 0)
 	nodes := make([]*models.Node, 0)
+
+	bs, _ := json.Marshal(resData.DataVersion)
+	localNode.DataVersion = resData.DataVersion
+	localNode.DataVersionStr = string(bs)
 
 	s := models.NewSession()
 	defer s.Close()
@@ -348,10 +371,8 @@ func slaveCheckMaster() error {
 
 	for _, node := range resData.Nodes {
 		if node.URL == conf.ClientAddr {
-			node = localNode
-			bs, _ := json.Marshal(resData.DataVersion)
-			localNode.DataVersion = resData.DataVersion
-			localNode.DataVersionStr = string(bs)
+			node.DataVersion = localNode.DataVersion
+			node.DataVersionStr = localNode.DataVersionStr
 			node.LastCheckUTC = utils.GetNowSecond()
 		}
 		nodes = append(nodes, node)
@@ -366,21 +387,36 @@ func slaveCheckMaster() error {
 		return err
 	}
 
+	// update master node info in slave
+	memConfMux.RLock()
+	masterNode := *memConfNodes[conf.MasterAddr]
+	memConfMux.RUnlock()
+	if err = models.UpdateDBModel(s, &masterNode); err != nil {
+		s.Rollback()
+		return err
+	}
+
 	if err = s.Commit(); err != nil {
 		s.Rollback()
 		return err
 	}
 
-	fillMemConfData(users, apps, configs, nodes, resData.DataVersion)
+	fillMemConfData(users, apps, configs, nodes, nil)
 
-	memConfMux.RLock()
-	localNode = memConfNodes[conf.ClientAddr]
-	memConfMux.RUnlock()
-	nodeString, _ = json.Marshal(localNode)
+	memConfMux.Lock()
+	memConfDataVersion = resData.DataVersion
+	memConfNodes = map[string]*models.Node{}
+	for _, node := range nodes {
+		memConfNodes[node.URL] = node
+	}
+	memConfMux.Unlock()
+
+	nodeString, _ = json.Marshal(&localNode)
 	reqData = nodeRequestDataT{
 		Auth: nodeAuthString,
 		Data: string(nodeString),
 	}
+
 	nodeRequest(conf.MasterAddr, NODE_REQUEST_TYPE_CHECKMASTER, reqData)
 
 	return nil
@@ -509,6 +545,7 @@ func handleSlaveSyncUpdateData(c *gin.Context, data string) {
 			Error(c, SERVER_ERROR, err.Error())
 			return
 		}
+
 		Success(c, nil)
 
 	case NODE_REQUEST_SYNC_TYPE_APP:
@@ -521,6 +558,7 @@ func handleSlaveSyncUpdateData(c *gin.Context, data string) {
 			Error(c, SERVER_ERROR, err.Error())
 			return
 		}
+
 		Success(c, nil)
 
 	case NODE_REQUEST_SYNC_TYPE_CONFIG:
@@ -533,6 +571,7 @@ func handleSlaveSyncUpdateData(c *gin.Context, data string) {
 			Error(c, SERVER_ERROR, err.Error())
 			return
 		}
+
 		Success(c, nil)
 
 	case NODE_REQUEST_SYNC_TYPE_NODE:
