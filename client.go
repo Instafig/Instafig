@@ -20,7 +20,6 @@ func ClientReqData(c *gin.Context) {
 
 	if conf.IsEasyDeployMode() {
 		if !conf.IsMasterNode() && conf.DataExpires > 0 {
-			//todo: to check node sync status
 			memConfMux.RLock()
 			if memConfNodes[conf.ClientAddr].LastCheckUTC < utils.GetNowSecond()-conf.DataExpires {
 				memConfMux.RUnlock()

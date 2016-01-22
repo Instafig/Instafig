@@ -141,6 +141,7 @@ type Config struct {
 	CreatedUTC   int    `xorm:"created_utc INT " json:"created_utc"`
 	LastUpdateId string `xorm:"last_update_id TEXT " json:"last_update_id"`
 	UpdateTimes  int    `xorm:"update_times INT " json:"update_times"`
+	Des          string `xorm:"des TEXT " json:"des"`
 
 	CreatorName    string               `xorm:"-" json:"creator_name"`
 	LastUpdateInfo *ConfigUpdateHistory `xorm:"-" json:"last_update_info"`

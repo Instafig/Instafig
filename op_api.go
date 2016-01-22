@@ -388,7 +388,9 @@ func GetApps(c *gin.Context) {
 	for _, app := range apps {
 		app.UserName = memConfUsers[app.UserKey].Name
 		app.LastUpdateInfo, _ = models.GetConfigUpdateHistoryById(nil, app.LastUpdateId)
-		app.LastUpdateInfo.UserName = memConfUsers[app.LastUpdateInfo.UserKey].Name
+		if app.LastUpdateInfo != nil {
+			app.LastUpdateInfo.UserName = memConfUsers[app.LastUpdateInfo.UserKey].Name
+		}
 	}
 	memConfMux.RUnlock()
 
@@ -412,7 +414,9 @@ func GetAllApps(c *gin.Context) {
 	for _, app := range apps {
 		app.UserName = memConfUsers[app.UserKey].Name
 		app.LastUpdateInfo, _ = models.GetConfigUpdateHistoryById(nil, app.LastUpdateId)
-		app.LastUpdateInfo.UserName = memConfUsers[app.LastUpdateInfo.UserKey].Name
+		if app.LastUpdateInfo != nil {
+			app.LastUpdateInfo.UserName = memConfUsers[app.LastUpdateInfo.UserKey].Name
+		}
 	}
 	memConfMux.RUnlock()
 
@@ -424,6 +428,7 @@ type newConfigData struct {
 	K      string `json:"k" binding:"required"`
 	V      string `json:"v" binding:"required"`
 	VType  string `json:"v_type" binding:"required"`
+	Des    string `json:"des"`
 }
 
 func NewConfig(c *gin.Context) {
@@ -486,6 +491,7 @@ func NewConfig(c *gin.Context) {
 		VType:       data.VType,
 		CreatedUTC:  utils.GetNowSecond(),
 		CreatorKey:  getOpUserKey(c),
+		Des:         data.Des,
 		UpdateTimes: 1,
 	}
 
@@ -508,6 +514,7 @@ type updateConfigData struct {
 	K     string `json:"k" binding:"required"`
 	V     string `json:"v" binding:"required"`
 	VType string `json:"v_type" binding:"required"`
+	Des   string `json:"des"`
 }
 
 func UpdateConfig(c *gin.Context) {
@@ -564,6 +571,7 @@ func UpdateConfig(c *gin.Context) {
 	config.UpdateTimes += 1
 	config.V = data.V
 	config.VType = data.VType
+	config.Des = data.Des
 
 	config, err := updateConfig(config, getOpUserKey(c), nil)
 	if err != nil {
