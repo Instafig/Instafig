@@ -24,7 +24,7 @@ func main() {
 
 		go func() {
 			for {
-				time.Sleep(60 * time.Second)
+				time.Sleep(time.Duration(conf.CheckMasterInerval) * time.Second)
 				slaveCheckMaster()
 			}
 		}()

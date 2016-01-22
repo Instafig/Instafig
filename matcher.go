@@ -162,7 +162,7 @@ func getMatchConf(matchData *ClientData, configs []*Config) map[string]interface
 func getAppMatchConf(appKey string, clientData *ClientData) map[string]interface{} {
 	appConfigs := getAppMemConfig(appKey)
 	if appConfigs == nil {
-		return nil
+		return map[string]interface{}{}
 	}
 
 	return getMatchConf(clientData, appConfigs)

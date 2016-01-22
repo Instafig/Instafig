@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/appwilldev/Instafig/conf"
+	"github.com/appwilldev/Instafig/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,8 +19,15 @@ func ClientReqData(c *gin.Context) {
 	}
 
 	if conf.IsEasyDeployMode() {
-		if !conf.IsMasterNode() {
+		if !conf.IsMasterNode() && conf.DataExpires > 0 {
 			//todo: to check node sync status
+			memConfMux.RLock()
+			if memConfNodes[conf.ClientAddr].LastCheckUTC < utils.GetNowSecond()-conf.DataExpires {
+				memConfMux.RUnlock()
+				Error(c, DATA_EXPIRED)
+				return
+			}
+			memConfMux.RUnlock()
 		}
 
 		memConfMux.RLock()
@@ -36,7 +44,10 @@ func ClientReqData(c *gin.Context) {
 		if needConf {
 			configs := getAppMatchConf(clientData.AppKey, clientData)
 			memConfMux.RLock()
-			dataSign := memConfApps[clientData.AppKey].DataSign
+			dataSign := ""
+			if len(configs) > 0 {
+				dataSign = memConfApps[clientData.AppKey].DataSign
+			}
 			memConfMux.RUnlock()
 
 			Success(c, map[string]interface{}{

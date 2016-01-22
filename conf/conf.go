@@ -23,17 +23,18 @@ type DBConfig struct {
 }
 
 var (
-	Mode           string
-	HttpAddr       string
-	SqliteDir      string
-	SqliteFileName string
-	DatabaseConfig = &DBConfig{}
-	NodeType       string
-	NodeAddr       string
-	ClientAddr     string
-	NodeAuth       string
-	MasterAddr     string
-	ReplaceMaster  bool
+	Mode               string
+	HttpAddr           string
+	SqliteDir          string
+	SqliteFileName     string
+	DatabaseConfig     = &DBConfig{}
+	NodeType           string
+	NodeAddr           string
+	ClientAddr         string
+	NodeAuth           string
+	MasterAddr         string
+	CheckMasterInerval int
+	DataExpires        int
 
 	DebugMode bool
 	LogLevel  string
@@ -112,6 +113,7 @@ func init() {
 
 	Mode, _ = config.GetValue("", "mode")
 	HttpAddr, _ = config.GetValue("", "addr")
+
 	if IsEasyDeployMode() {
 		SqliteDir, _ = config.GetValue("sqlite", "dir")
 		SqliteFileName, _ = config.GetValue("sqlite", "filename")
@@ -135,6 +137,27 @@ func init() {
 	NodeAuth, _ = config.GetValue("node", "node_auth")
 	if !IsMasterNode() {
 		MasterAddr, _ = config.GetValue("node", "master_addr")
+	}
+
+	if !IsMasterNode() {
+		intervalStr, _ := config.GetValue("node", "check_master_interval")
+		if CheckMasterInerval, err = strconv.Atoi(intervalStr); err != nil {
+			log.Printf("No correct expires: %s - %s", intervalStr, err.Error())
+			os.Exit(1)
+		}
+
+		expiresStr, _ := config.GetValue("node", "data_expires")
+		if expiresStr != "" {
+			if DataExpires, err = strconv.Atoi(expiresStr); err != nil {
+				log.Printf("No correct expires: %s - %s", expiresStr, err.Error())
+				os.Exit(1)
+			}
+			if DataExpires <= CheckMasterInerval {
+				DataExpires = CheckMasterInerval * 2
+			}
+		} else {
+			DataExpires = -1
+		}
 	}
 }
 
