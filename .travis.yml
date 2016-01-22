@@ -12,7 +12,6 @@ before_install:
   - if [ `uname` = "Linux" ]; then
       sudo apt-get install bc curl -y;
     elif [ `uname` = "Darwin" ]; then
-      brew update;
       brew install curl;
     fi
 
