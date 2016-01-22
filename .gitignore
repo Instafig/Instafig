@@ -1,5 +1,6 @@
 # Created by https://www.gitignore.io
 Instafig
+*.pid
 
 ### Go ###
 # Compiled Object files, Static and Dynamic libs (Shared Objects)

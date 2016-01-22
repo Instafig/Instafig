@@ -2,6 +2,9 @@
 # -*- mode: sh -*-
 
 KERNEL=$(tr [:upper:] [:lower:] <<< $(uname -s))
-DEST_PATH=/nightly/Instafig/${TRAVIS_BUILD_NUMBER}/Instafig.${KERNEL}
+DEST_PATH=/nightly/Instafig/
 
-\curl http://cxan.kdr2.com/pkg-c.php -F file=@../../../../bin/Instafig -F dest=${DEST_PATH} -F token=${CXAN_TOKEN}
+PKG=Instafig.build-${TRAVIS_BUILD_NUMBER}.${KERNEL}.tar.gz
+tar -czf $PKG -C ../../../../bin/ Instafig
+#zip Instafig.build-${TRAVIS_BUILD_NUMBER}.${KERNEL}.zip ../../../../bin/Instafig
+\curl http://cxan.kdr2.com/pkg-c.php -F file=@$PKG -F dest=${DEST_PATH}/$PKG -F token=${CXAN_TOKEN}
