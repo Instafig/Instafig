@@ -412,6 +412,7 @@ func GetAllApps(c *gin.Context) {
 	for _, app := range apps {
 		app.UserName = memConfUsers[app.UserKey].Name
 		app.LastUpdateInfo, _ = models.GetConfigUpdateHistoryById(nil, app.LastUpdateId)
+		app.LastUpdateInfo.UserName = memConfUsers[app.LastUpdateInfo.UserKey].Name
 	}
 	memConfMux.RUnlock()
 
@@ -570,7 +571,7 @@ func UpdateConfig(c *gin.Context) {
 		return
 	}
 
-	failedNodes := syncData2SlaveIfNeed(&config, getOpUserKey(c))
+	failedNodes := syncData2SlaveIfNeed(config, getOpUserKey(c))
 	if len(failedNodes) > 0 {
 		Success(c, map[string]interface{}{"failed_nodes": failedNodes})
 	} else {
@@ -738,11 +739,7 @@ func GetConfigs(c *gin.Context) {
 	memConfMux.RLock()
 	for _, config := range configs {
 		config.CreatorName = memConfUsers[config.CreatorKey].Name
-		config.LastUpdateInfo, err = models.GetConfigUpdateHistoryById(nil, config.LastUpdateId)
-		if err != nil {
-			Error(c, SERVER_ERROR, err.Error())
-			return
-		}
+		config.LastUpdateInfo, _ = models.GetConfigUpdateHistoryById(nil, config.LastUpdateId)
 		config.LastUpdateInfo.UserName = memConfUsers[config.LastUpdateInfo.UserKey].Name
 	}
 	memConfMux.RUnlock()
@@ -757,18 +754,13 @@ func GetConfigUpdateHistory(c *gin.Context) {
 		return
 	}
 
-	res := make([]map[string]interface{}, len(histories))
-	for ix, history := range histories {
-		memConfMux.RLock()
-		userName := memConfUsers[history.UserKey].Name
-		memConfMux.RUnlock()
-		res[ix] = map[string]interface{}{
-			"value":  history,
-			"author": map[string]string{"name": userName, "key": history.UserKey},
-		}
+	memConfMux.RLock()
+	for _, history := range histories {
+		history.UserName = memConfUsers[history.UserKey].Name
 	}
+	memConfMux.RUnlock()
 
-	Success(c, res)
+	Success(c, histories)
 }
 
 func OpAuth(c *gin.Context) {
