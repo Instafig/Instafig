@@ -31,7 +31,7 @@ var (
 	NodeType       string
 	NodeAddr       string
 	ClientAddr     string
-	MasterAuth     string
+	NodeAuth       string
 	MasterAddr     string
 	ReplaceMaster  bool
 
@@ -100,12 +100,14 @@ func init() {
 
 	confFile, err := filepath.Abs(*configFile)
 	if err != nil {
-		log.Panicf("No correct config file: %s - %s", *configFile, err.Error())
+		log.Printf("No correct config file: %s - %s", *configFile, err.Error())
+		os.Exit(1)
 	}
 
 	config, err := goconfig.LoadConfigFile(confFile)
 	if err != nil {
-		log.Panicf("No correct config file: %s - %s", *configFile, err.Error())
+		log.Printf("No correct config file: %s - %s", *configFile, err.Error())
+		os.Exit(1)
 	}
 
 	Mode, _ = config.GetValue("", "mode")
@@ -120,7 +122,8 @@ func init() {
 		port, _ := config.GetValue("db", "port")
 		DatabaseConfig.Port, err = strconv.Atoi(port)
 		if err != nil {
-			log.Panicf("DB port is not correct: %s - %s", *configFile, err.Error())
+			log.Printf("DB port is not correct: %s - %s", *configFile, err.Error())
+			os.Exit(1)
 		}
 		DatabaseConfig.PassWd, _ = config.GetValue("db", "passwd")
 		DatabaseConfig.User, _ = config.GetValue("db", "user")
@@ -129,7 +132,7 @@ func init() {
 	NodeType, _ = config.GetValue("node", "type")
 	NodeAddr, _ = config.GetValue("node", "node_addr")
 	ClientAddr, _ = config.GetValue("node", "client_addr")
-	MasterAuth, _ = config.GetValue("node", "master_auth")
+	NodeAuth, _ = config.GetValue("node", "node_auth")
 	if !IsMasterNode() {
 		MasterAddr, _ = config.GetValue("node", "master_addr")
 	}

@@ -788,7 +788,7 @@ func OpAuth(c *gin.Context) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
 		}
-		return []byte(conf.MasterAuth), nil
+		return []byte(conf.NodeAuth), nil
 	})
 	if err != nil {
 		Error(c, NOT_LOGIN, err.Error())
@@ -824,7 +824,7 @@ func setUserKeyCookie(c *gin.Context, userKey string) {
 	jwtIns := jwt.New(jwt.SigningMethodHS256)
 	jwtIns.Claims["uky"] = userKey
 
-	encStr, _ := jwtIns.SignedString([]byte(conf.MasterAuth))
+	encStr, _ := jwtIns.SignedString([]byte(conf.NodeAuth))
 	cookie := new(http.Cookie)
 	cookie.Name = "op_user"
 	cookie.Expires = time.Now().Add(time.Duration(30*86400) * time.Second)

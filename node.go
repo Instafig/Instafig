@@ -62,7 +62,7 @@ func init() {
 
 	var err error
 	nodeAuthToken := jwt.New(jwt.SigningMethodHS256)
-	if nodeAuthString, err = nodeAuthToken.SignedString([]byte(conf.MasterAuth)); err != nil {
+	if nodeAuthString, err = nodeAuthToken.SignedString([]byte(conf.NodeAuth)); err != nil {
 		log.Panicf("Failed to init node auth token: %s", err.Error())
 	}
 
@@ -697,7 +697,7 @@ func nodeAuth(authString string) error {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
 		}
-		return []byte(conf.MasterAuth), nil
+		return []byte(conf.NodeAuth), nil
 	})
 	if err != nil {
 		return err

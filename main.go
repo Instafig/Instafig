@@ -18,7 +18,8 @@ import (
 func main() {
 	if conf.IsEasyDeployMode() && !conf.IsMasterNode() {
 		if err := slaveCheckMaster(); err != nil {
-			log.Panicf("slave node failed to check master: %s", err.Error())
+			log.Printf("slave node failed to check master: %s", err.Error())
+			os.Exit(1)
 		}
 
 		go func() {
@@ -32,7 +33,8 @@ func main() {
 	wd, _ := os.Getwd()
 	pidFile, err := os.OpenFile(filepath.Join(wd, "instafig.pid"), os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
-		log.Panicf("failed to create pid file: %s", err.Error())
+		log.Printf("failed to create pid file: %s", err.Error())
+		os.Exit(1)
 	}
 	pidFile.WriteString(strconv.Itoa(os.Getpid()))
 	pidFile.Close()
