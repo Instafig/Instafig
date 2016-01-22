@@ -83,7 +83,20 @@ func newAutoCloseModelsSession() *Session {
 	return ms
 }
 
-func InsertMutltiRows(s *Session, m ...interface{}) (err error) {
+type DBModel interface {
+	TableName() string
+}
+
+func InsertRow(s *Session, m DBModel) (err error) {
+	if s == nil {
+		s = newAutoCloseModelsSession()
+	}
+	_, err = s.AllCols().InsertOne(m)
+
+	return
+}
+
+func InsertMultiRows(s *Session, m ...interface{}) (err error) {
 	if s == nil {
 		s = newAutoCloseModelsSession()
 	}
@@ -95,15 +108,6 @@ func InsertMutltiRows(s *Session, m ...interface{}) (err error) {
 type UniqueDBModel interface {
 	TableName() string
 	UniqueCond() (string, []interface{})
-}
-
-func InsertDBModel(s *Session, m UniqueDBModel) (err error) {
-	if s == nil {
-		s = newAutoCloseModelsSession()
-	}
-	_, err = s.AllCols().InsertOne(m)
-
-	return
 }
 
 func UpdateDBModel(s *Session, m UniqueDBModel) (err error) {

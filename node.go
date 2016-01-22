@@ -105,7 +105,7 @@ func initLocalNodeData() {
 			CreatedUTC:     utils.GetNowSecond(),
 		}
 
-		if err := models.InsertDBModel(nil, node); err != nil {
+		if err := models.InsertRow(nil, node); err != nil {
 			log.Panicf("Failed to init node data: %s", err.Error())
 		}
 		memConfNodes[conf.ClientAddr] = node
@@ -302,7 +302,7 @@ func slaveCheckMaster() error {
 	for _, user := range resData.Users {
 		users = append(users, user)
 	}
-	if err = models.InsertMutltiRows(s, users); err != nil {
+	if err = models.InsertMultiRows(s, users); err != nil {
 		s.Rollback()
 		return err
 	}
@@ -310,7 +310,7 @@ func slaveCheckMaster() error {
 	for _, app := range resData.Apps {
 		apps = append(apps, app)
 	}
-	if err = models.InsertMutltiRows(s, apps); err != nil {
+	if err = models.InsertMultiRows(s, apps); err != nil {
 		s.Rollback()
 		return err
 	}
@@ -318,7 +318,7 @@ func slaveCheckMaster() error {
 	for _, config := range resData.Configs {
 		configs = append(configs, config)
 	}
-	if err = models.InsertMutltiRows(s, configs); err != nil {
+	if err = models.InsertMultiRows(s, configs); err != nil {
 		s.Rollback()
 		return err
 	}
@@ -326,7 +326,7 @@ func slaveCheckMaster() error {
 	for _, history := range resData.ConfHistory {
 		conHistories = append(conHistories, history)
 	}
-	if err = models.InsertMutltiRows(s, conHistories); err != nil {
+	if err = models.InsertMultiRows(s, conHistories); err != nil {
 		s.Rollback()
 		return err
 	}
@@ -341,7 +341,7 @@ func slaveCheckMaster() error {
 		}
 		nodes = append(nodes, node)
 	}
-	if err := models.InsertMutltiRows(s, nodes); err != nil {
+	if err := models.InsertMultiRows(s, nodes); err != nil {
 		s.Rollback()
 		return err
 	}
@@ -545,7 +545,7 @@ func handleSlaveCheckMaster(c *gin.Context, data string) {
 
 	node.LastCheckUTC = utils.GetNowSecond()
 	if oldNode == nil {
-		if err := models.InsertDBModel(nil, node); err != nil {
+		if err := models.InsertRow(nil, node); err != nil {
 			Error(c, SERVER_ERROR, err.Error())
 			return
 		}

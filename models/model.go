@@ -9,10 +9,13 @@ var (
 )
 
 type User struct {
-	Key      string `xorm:"key TEXT PK NOT NULL" json:"key"`
-	PassCode string `xorm:"pass_code TEXT NOT NULL"`
-	Name     string `xorm:"name TEXT NOT NULL UNIQUE" json:"name"`
-	Creator  string `xorm:"creator TEXT NOT NULL" json:"creator"`
+	Key        string `xorm:"key TEXT PK " json:"key"`
+	PassCode   string `xorm:"pass_code TEXT "`
+	Name       string `xorm:"name TEXT  UNIQUE" json:"name"`
+	CreatorKey string `xorm:"creator_key TEXT " json:"creator_key"`
+	CreatedUTC int    `xorm:"created_utc INT " json:"created_utc"`
+
+	CreatorName string `xorm:"-" json:"creator_name"`
 }
 
 func (*User) TableName() string {
@@ -55,11 +58,18 @@ const (
 )
 
 type App struct {
-	Key      string `xorm:"key TEXT PK NOT NULL" json:"key"`
-	UserKey  string `xorm:"user_key TEXT NOT NULL" json:"user_key"`
-	Name     string `xorm:"name TEXT not NULL" json:"name"`
-	Type     string `xorm:"type TEXT not NULL" json:"type"`
-	DataSign string `xorm:"data_sign TEXT NOT NULL" json:"data_sign"`
+	Key          string `xorm:"key TEXT PK " json:"key"`
+	UserKey      string `xorm:"user_key TEXT " json:"creator_key"`
+	Name         string `xorm:"name TEXT not NULL" json:"name"`
+	Type         string `xorm:"type TEXT not NULL" json:"type"`
+	DataSign     string `xorm:"data_sign TEXT " json:"data_sign"`
+	CreatedUTC   int    `xorm:"created_utc INT " json:"created_utc"`
+	LastUpdateId string `xorm:"last_update_id TEXT " json:"last_update_id"`
+	KeyCount     int    `xorm:"key_count INT " json:"key_count"`
+	UpdateTimes  int    `xorm:"update_times INT " json:"update_times"`
+
+	UserName       string               `xorm:"-" json:"creator_name"`
+	LastUpdateInfo *ConfigUpdateHistory `xorm:"-" json:"last_update_info"`
 }
 
 func (*App) TableName() string {
@@ -122,11 +132,18 @@ const (
 )
 
 type Config struct {
-	Key    string `xorm:"key TEXT PK NOT NULL" json:"key"`
-	AppKey string `xorm:"app_key TEXT NOT NULL" json:"app_key"`
-	K      string `xorm:"k TEXT NOT NULL" json:"k"`
-	V      string `xorm:"v TEXT NOT NULL" json:"v"`
-	VType  string `xorm:"v_type TEXT NOT NULL" json:"v_type"`
+	Key          string `xorm:"key TEXT PK " json:"key"`
+	AppKey       string `xorm:"app_key TEXT " json:"app_key"`
+	K            string `xorm:"k TEXT " json:"k"`
+	V            string `xorm:"v TEXT " json:"v"`
+	VType        string `xorm:"v_type TEXT " json:"v_type"`
+	CreatorKey   string `xorm:"creator_key TEXT " json:"creator_key"`
+	CreatedUTC   int    `xorm:"created_utc INT " json:"created_utc"`
+	LastUpdateId string `xorm:"last_update_id TEXT " json:"last_update_id"`
+	UpdateTimes  int    `xorm:"update_times INT " json:"update_times"`
+
+	CreatorName    string               `xorm:"-" json:"creator_name"`
+	LastUpdateInfo *ConfigUpdateHistory `xorm:"-" json:"last_update_info"`
 }
 
 func (*Config) TableName() string {
@@ -177,12 +194,12 @@ const (
 )
 
 type Node struct {
-	URL            string `xorm:"url TEXT PK NOT NULL" json:"url"`
-	NodeURL        string `xorm:"node_url TEXT PK NOT NULL" json:"node_url"`
-	Type           string `xorm:"type TEXT NOT NULL" json:"type"`
-	CreatedUTC     int    `xorm:"created_utc UTC NOT NULL" json:"created_utc"`
-	LastCheckUTC   int    `xorm:"last_check_utc INT NOT NULL" json:"last_check_utc"`
-	DataVersionStr string `xorm:"data_version TEXT NOT NULL" json:"data_version"` // json string to store DataVersion in db
+	URL            string `xorm:"url TEXT PK " json:"url"`
+	NodeURL        string `xorm:"node_url TEXT PK " json:"node_url"`
+	Type           string `xorm:"type TEXT " json:"type"`
+	CreatedUTC     int    `xorm:"created_utc INT " json:"created_utc"`
+	LastCheckUTC   int    `xorm:"last_check_utc INT " json:"last_check_utc"`
+	DataVersionStr string `xorm:"data_version TEXT " json:"data_version"` // json string to store DataVersion in db
 
 	DataVersion   *DataVersion `xorm:"-"`
 	SchemeVersion string       `xorm:"-"`
@@ -214,9 +231,9 @@ func IsValidNodeType(typ string) bool {
 }
 
 type DataVersion struct {
-	Version int    `xorm:"version INT NOT NULL"`
-	Sign    string `xorm:"sign TEXT NOT NULL"`
-	OldSign string `xorm:"old_sign TEXT NOT NULL"`
+	Version int    `xorm:"version INT "`
+	Sign    string `xorm:"sign TEXT "`
+	OldSign string `xorm:"old_sign TEXT "`
 }
 
 func (*DataVersion) TableName() string {
@@ -258,16 +275,18 @@ const (
 )
 
 type ConfigUpdateHistory struct {
-	Id         string `xorm:"id PK TEXT NOT NULL" json:"id"`
-	ConfigKey  string `xorm:"config_key TEXT NOT NULL" json:"config_key"`
-	Kind       string `xorm:"kind TEXT NOT NULL" json:"kind"`
-	K          string `xorm:"k TEXT NOT NULL" json:"k"`
-	OldV       string `xorm:"old_v TEXT NOT NULL" json:"old_v"`
-	OldVType   string `xorm:"old_v_type TEXT NOT NULL" json:"old_v_type"`
-	NewV       string `xorm:"new_v TEXT NOT NULL" json:"new_v"`
-	NewVType   string `xorm:"new_v_type TEXT NOT NULL" json:"new_v_type"`
-	UserKey    string `xorm:"user_key TEXT NOT NULL" json:"user_key"`
-	CreatedUTC int    `xorm:"created_utc INT NOT NULL" json:"created_utc"`
+	Id         string `xorm:"id PK TEXT " json:"id"`
+	ConfigKey  string `xorm:"config_key TEXT " json:"config_key"`
+	Kind       string `xorm:"kind TEXT " json:"kind"`
+	K          string `xorm:"k TEXT " json:"k"`
+	OldV       string `xorm:"old_v TEXT " json:"old_v"`
+	OldVType   string `xorm:"old_v_type TEXT " json:"old_v_type"`
+	NewV       string `xorm:"new_v TEXT " json:"new_v"`
+	NewVType   string `xorm:"new_v_type TEXT " json:"new_v_type"`
+	UserKey    string `xorm:"user_key TEXT " json:"user_key"`
+	CreatedUTC int    `xorm:"created_utc INT " json:"created_utc"`
+
+	UserName string `xorm:"-" json:"user_name"`
 }
 
 func (*ConfigUpdateHistory) TableName() string {
@@ -276,6 +295,20 @@ func (*ConfigUpdateHistory) TableName() string {
 
 func (m *ConfigUpdateHistory) UniqueCond() (string, []interface{}) {
 	return "id=?", []interface{}{m.Id}
+}
+
+func GetConfigUpdateHistoryById(s *Session, id string) (*ConfigUpdateHistory, error) {
+	if s == nil {
+		s = newAutoCloseModelsSession()
+	}
+
+	res := &ConfigUpdateHistory{}
+	has, err := s.Where("id=?", id).Get(res)
+	if !has || err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
 func GetConfigUpdateHistory(s *Session, configKey string) ([]*ConfigUpdateHistory, error) {

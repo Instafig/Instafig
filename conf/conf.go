@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strconv"
-	"os/exec"
 
 	"github.com/gpmgo/gopm/modules/goconfig"
 )

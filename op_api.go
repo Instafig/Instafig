@@ -86,10 +86,11 @@ func InitUser(c *gin.Context) {
 
 	key := utils.GenerateKey()
 	user := &models.User{
-		Name:     data.Name,
-		PassCode: encryptUserPassCode(data.PassCode),
-		Creator:  key,
-		Key:      key}
+		Name:       data.Name,
+		PassCode:   encryptUserPassCode(data.PassCode),
+		CreatorKey: key,
+		CreatedUTC: utils.GetNowSecond(),
+		Key:        key}
 	if _, err := updateUser(user, nil); err != nil {
 		Error(c, SERVER_ERROR, err.Error())
 		return
@@ -123,10 +124,11 @@ func NewUser(c *gin.Context) {
 	memConfMux.RUnlock()
 
 	user := &models.User{
-		Name:     data.Name,
-		PassCode: encryptUserPassCode(data.PassCode),
-		Creator:  getOpUserKey(c),
-		Key:      utils.GenerateKey()}
+		Name:       data.Name,
+		PassCode:   encryptUserPassCode(data.PassCode),
+		CreatorKey: getOpUserKey(c),
+		CreatedUTC: utils.GetNowSecond(),
+		Key:        utils.GenerateKey()}
 
 	if _, err := updateUser(user, nil); err != nil {
 		Error(c, SERVER_ERROR, err.Error())
@@ -164,7 +166,7 @@ func updateUser(user *models.User, newDataVersion *models.DataVersion) (*models.
 	}
 
 	if oldUser == nil {
-		if err := models.InsertDBModel(s, user); err != nil {
+		if err := models.InsertRow(s, user); err != nil {
 			s.Rollback()
 			return nil, err
 		}
@@ -206,22 +208,16 @@ func GetUsers(c *gin.Context) {
 		return
 	}
 
-	res := make([]map[string]interface{}, len(users))
-	for ix, user := range users {
+	for _, user := range users {
 		user.PassCode = ""
-		authorName := ""
 		memConfMux.RLock()
-		if memConfUsers[user.Creator] != nil {
-			authorName = memConfUsers[user.Creator].Name
+		if memConfUsers[user.CreatorKey] != nil {
+			user.CreatorName = memConfUsers[user.CreatorKey].Name
 		}
 		memConfMux.RUnlock()
-		res[ix] = map[string]interface{}{
-			"user":    user,
-			"creator": map[string]interface{}{"name": authorName, "key": user.Creator},
-		}
 	}
 
-	Success(c, res)
+	Success(c, users)
 }
 
 type newAppData struct {
@@ -253,10 +249,11 @@ func NewApp(c *gin.Context) {
 	memConfMux.RUnlock()
 
 	app := &models.App{
-		Key:     utils.GenerateKey(),
-		Name:    data.Name,
-		UserKey: getOpUserKey(c),
-		Type:    data.Type,
+		Key:        utils.GenerateKey(),
+		Name:       data.Name,
+		UserKey:    getOpUserKey(c),
+		Type:       data.Type,
+		CreatedUTC: utils.GetNowSecond(),
 	}
 	if _, err := updateApp(app, nil); err != nil {
 		Error(c, SERVER_ERROR, err.Error())
@@ -312,18 +309,14 @@ func UpdateApp(c *gin.Context) {
 	}
 	memConfMux.RUnlock()
 
-	app := &models.App{
-		Key:     oldApp.Key,
-		Name:    data.Name,
-		UserKey: oldApp.Key,
-		Type:    oldApp.Type,
-	}
-	if _, err := updateApp(app, nil); err != nil {
+	app := *oldApp
+	app.Name = data.Name
+	if _, err := updateApp(&app, nil); err != nil {
 		Error(c, SERVER_ERROR, err.Error())
 		return
 	}
 
-	failedNodes := syncData2SlaveIfNeed(app, getOpUserKey(c))
+	failedNodes := syncData2SlaveIfNeed(&app, getOpUserKey(c))
 	if len(failedNodes) > 0 {
 		Success(c, map[string]interface{}{"failed_nodes": failedNodes})
 	} else {
@@ -354,7 +347,7 @@ func updateApp(app *models.App, newDataVersion *models.DataVersion) (*models.App
 	}
 
 	if oldApp == nil {
-		if err := models.InsertDBModel(s, app); err != nil {
+		if err := models.InsertRow(s, app); err != nil {
 			s.Rollback()
 			return nil, err
 		}
@@ -391,6 +384,14 @@ func GetApps(c *gin.Context) {
 		return
 	}
 
+	memConfMux.RLock()
+	for _, app := range apps {
+		app.UserName = memConfUsers[app.UserKey].Name
+		app.LastUpdateInfo, _ = models.GetConfigUpdateHistoryById(nil, app.LastUpdateId)
+		app.LastUpdateInfo.UserName = memConfUsers[app.LastUpdateInfo.UserKey].Name
+	}
+	memConfMux.RUnlock()
+
 	Success(c, apps)
 }
 
@@ -406,6 +407,13 @@ func GetAllApps(c *gin.Context) {
 		Error(c, SERVER_ERROR, err.Error())
 		return
 	}
+
+	memConfMux.RLock()
+	for _, app := range apps {
+		app.UserName = memConfUsers[app.UserKey].Name
+		app.LastUpdateInfo, _ = models.GetConfigUpdateHistoryById(nil, app.LastUpdateId)
+	}
+	memConfMux.RUnlock()
 
 	Success(c, apps)
 }
@@ -470,11 +478,14 @@ func NewConfig(c *gin.Context) {
 	}
 
 	config := &models.Config{
-		Key:    utils.GenerateKey(),
-		AppKey: data.AppKey,
-		K:      data.K,
-		V:      data.V,
-		VType:  data.VType,
+		Key:         utils.GenerateKey(),
+		AppKey:      data.AppKey,
+		K:           data.K,
+		V:           data.V,
+		VType:       data.VType,
+		CreatedUTC:  utils.GetNowSecond(),
+		CreatorKey:  getOpUserKey(c),
+		UpdateTimes: 1,
 	}
 
 	config, err := updateConfig(config, getOpUserKey(c), nil)
@@ -492,11 +503,10 @@ func NewConfig(c *gin.Context) {
 }
 
 type updateConfigData struct {
-	Key    string `json:"key" binding:"required"`
-	AppKey string `json:"app_key" binding:"required"`
-	K      string `json:"k" binding:"required"`
-	V      string `json:"v" binding:"required"`
-	VType  string `json:"v_type" binding:"required"`
+	Key   string `json:"key" binding:"required"`
+	K     string `json:"k" binding:"required"`
+	V     string `json:"v" binding:"required"`
+	VType string `json:"v_type" binding:"required"`
 }
 
 func UpdateConfig(c *gin.Context) {
@@ -543,22 +553,16 @@ func UpdateConfig(c *gin.Context) {
 		Error(c, BAD_REQUEST, "config key not exists: "+data.Key)
 		return
 	}
-	if oldConfig.AppKey != data.AppKey {
-		Error(c, BAD_REQUEST, "can not change config's app key")
-		return
-	}
 	if oldConfig.K != data.K {
 		Error(c, BAD_REQUEST, "can not change config's key")
 		return
 	}
 
-	config := &models.Config{
-		Key:    data.Key,
-		AppKey: data.AppKey,
-		K:      data.K,
-		V:      data.V,
-		VType:  data.VType,
-	}
+	config := &models.Config{}
+	*config = *oldConfig
+	config.UpdateTimes += 1
+	config.V = data.V
+	config.VType = data.VType
 
 	config, err := updateConfig(config, getOpUserKey(c), nil)
 	if err != nil {
@@ -566,7 +570,7 @@ func UpdateConfig(c *gin.Context) {
 		return
 	}
 
-	failedNodes := syncData2SlaveIfNeed(config, getOpUserKey(c))
+	failedNodes := syncData2SlaveIfNeed(&config, getOpUserKey(c))
 	if len(failedNodes) > 0 {
 		Success(c, map[string]interface{}{"failed_nodes": failedNodes})
 	} else {
@@ -597,12 +601,8 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 		return nil, err
 	}
 
+	temApp := *app
 	if oldConfig == nil {
-		if err := models.InsertDBModel(s, config); err != nil {
-			s.Rollback()
-			return nil, err
-		}
-
 		configHistory := &models.ConfigUpdateHistory{
 			Id:         utils.GenerateKey(),
 			ConfigKey:  config.Key,
@@ -615,16 +615,21 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 			UserKey:    userKey,
 			CreatedUTC: utils.GetNowSecond(),
 		}
-		if err := models.InsertDBModel(s, configHistory); err != nil {
-			s.Rollback()
-			return nil, err
-		}
-	} else {
-		if err := models.UpdateDBModel(s, config); err != nil {
+		if err := models.InsertRow(s, configHistory); err != nil {
 			s.Rollback()
 			return nil, err
 		}
 
+		config.LastUpdateId = configHistory.Id
+		if err := models.InsertRow(s, config); err != nil {
+			s.Rollback()
+			return nil, err
+		}
+
+		temApp.KeyCount += 1
+		temApp.LastUpdateId = configHistory.Id
+		temApp.UpdateTimes += 1
+	} else {
 		configHistory := &models.ConfigUpdateHistory{
 			Id:         utils.GenerateKey(),
 			ConfigKey:  config.Key,
@@ -637,10 +642,25 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 			UserKey:    userKey,
 			CreatedUTC: utils.GetNowSecond(),
 		}
-		if err := models.InsertDBModel(s, configHistory); err != nil {
+		if err := models.InsertRow(s, configHistory); err != nil {
 			s.Rollback()
 			return nil, err
 		}
+
+		config.UpdateTimes += 1
+		config.LastUpdateId = configHistory.Id
+		if err := models.UpdateDBModel(s, config); err != nil {
+			s.Rollback()
+			return nil, err
+		}
+
+		temApp.LastUpdateId = configHistory.Id
+		temApp.UpdateTimes += 1
+	}
+
+	if err := models.UpdateDBModel(s, &temApp); err != nil {
+		s.Rollback()
+		return nil, err
 	}
 
 	toUpdateApps := make([]*models.App, 0)
@@ -666,10 +686,13 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 
 	newDataSign := utils.GenerateKey()
 	for _, app := range toUpdateApps {
-		memConfMux.Lock()
-		app.DataSign = newDataSign
-		memConfMux.Unlock()
-		if err := models.UpdateDBModel(s, app); err != nil {
+		_app := *app
+		if app.Key == temApp.Key {
+			_app = temApp
+			temApp.DataSign = newDataSign
+		}
+		_app.DataSign = newDataSign
+		if err := models.UpdateDBModel(s, &_app); err != nil {
 			s.Rollback()
 			return nil, err
 		}
@@ -684,7 +707,12 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 	defer memConfMux.Unlock()
 
 	memConfDataVersion = newDataVersion
+	memConfApps[config.AppKey] = &temApp
 	memConfRawConfigs[config.Key] = config
+	for _, app := range toUpdateApps {
+		app.DataSign = newDataSign
+	}
+
 	if oldConfig == nil {
 		memConfAppConfigs[config.AppKey] = append(memConfAppConfigs[config.AppKey], transConfig(config))
 	} else {
@@ -706,6 +734,18 @@ func GetConfigs(c *gin.Context) {
 		Error(c, SERVER_ERROR, err.Error())
 		return
 	}
+
+	memConfMux.RLock()
+	for _, config := range configs {
+		config.CreatorName = memConfUsers[config.CreatorKey].Name
+		config.LastUpdateInfo, err = models.GetConfigUpdateHistoryById(nil, config.LastUpdateId)
+		if err != nil {
+			Error(c, SERVER_ERROR, err.Error())
+			return
+		}
+		config.LastUpdateInfo.UserName = memConfUsers[config.LastUpdateInfo.UserKey].Name
+	}
+	memConfMux.RUnlock()
 
 	Success(c, configs)
 }
