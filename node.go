@@ -232,7 +232,7 @@ func syncData2Slave(node *models.Node, data interface{}, dataVer *models.DataVer
 	case *models.Node:
 		kind = NODE_REQUEST_SYNC_TYPE_NODE
 	default:
-		log.Panicln("unkown node data sync type: ", reflect.TypeOf(data))
+		log.Panicln("unknown node data sync type: ", reflect.TypeOf(data))
 	}
 
 	bs, _ := json.Marshal(data)
@@ -499,7 +499,7 @@ func NodeRequestHandler(c *gin.Context) {
 	case NODE_REQUEST_TYPE_SYNCMASTER:
 		handleSyncMaster(c, reqData.Data)
 	default:
-		Error(c, BAD_REQUEST, "unkown node request type")
+		Error(c, BAD_REQUEST, "unknown node request type")
 	}
 }
 
@@ -604,7 +604,7 @@ func handleSlaveSyncUpdateData(c *gin.Context, data string) {
 		Success(c, nil)
 
 	default:
-		Error(c, BAD_REQUEST, "unkown node data sync type: "+syncData.Kind)
+		Error(c, BAD_REQUEST, "unknown node data sync type: "+syncData.Kind)
 		return
 	}
 }

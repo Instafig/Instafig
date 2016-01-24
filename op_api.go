@@ -237,7 +237,7 @@ func NewApp(c *gin.Context) {
 	}
 
 	if !models.IsValidAppType(data.Type) {
-		Error(c, BAD_REQUEST, "unkown app type: "+data.Type)
+		Error(c, BAD_REQUEST, "unknown app type: "+data.Type)
 		return
 	}
 
@@ -285,7 +285,7 @@ func UpdateApp(c *gin.Context) {
 	}
 
 	if !models.IsValidAppType(data.Type) {
-		Error(c, BAD_REQUEST, "unkown app type: "+data.Type)
+		Error(c, BAD_REQUEST, "unknown app type: "+data.Type)
 		return
 	}
 
@@ -442,7 +442,7 @@ func NewConfig(c *gin.Context) {
 	}
 
 	if !models.IsValidConfType(data.VType) {
-		Error(c, BAD_REQUEST, "unkown conf type: "+data.VType)
+		Error(c, BAD_REQUEST, "unknown conf type: "+data.VType)
 		return
 	}
 
@@ -528,7 +528,7 @@ func UpdateConfig(c *gin.Context) {
 	}
 
 	if !models.IsValidConfType(data.VType) {
-		Error(c, BAD_REQUEST, "unkown conf type: "+data.VType)
+		Error(c, BAD_REQUEST, "unknown conf type: "+data.VType)
 		return
 	}
 
