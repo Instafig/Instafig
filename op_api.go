@@ -201,8 +201,13 @@ func GetUsers(c *gin.Context) {
 		Error(c, BAD_REQUEST, "page not number")
 		return
 	}
+	count, err := strconv.Atoi(c.Param("count"))
+	if err != nil {
+		Error(c, BAD_REQUEST, "count not number")
+		return
+	}
 
-	users, err := models.GetUsers(nil, page, 25)
+	users, err := models.GetUsers(nil, page, count)
 	if err != nil {
 		Error(c, SERVER_ERROR, err.Error())
 		return
@@ -412,8 +417,13 @@ func GetAllApps(c *gin.Context) {
 		Error(c, BAD_REQUEST, "page not number")
 		return
 	}
+	count, err := strconv.Atoi(c.Param("count"))
+	if err != nil {
+		Error(c, BAD_REQUEST, "count not number")
+		return
+	}
 
-	apps, err := models.GetAllApps(nil, page, 25)
+	apps, err := models.GetAllApps(nil, page, count)
 	if err != nil {
 		Error(c, SERVER_ERROR, err.Error())
 		return
