@@ -208,16 +208,25 @@ func GetUsers(c *gin.Context) {
 		return
 	}
 
+	totalCount, err := models.GetUserCount(nil)
+	if err != nil {
+		Error(c, SERVER_ERROR, err.Error())
+		return
+	}
+
+	memConfMux.RLock()
 	for _, user := range users {
 		user.PassCode = ""
-		memConfMux.RLock()
 		if memConfUsers[user.CreatorKey] != nil {
 			user.CreatorName = memConfUsers[user.CreatorKey].Name
 		}
-		memConfMux.RUnlock()
 	}
+	memConfMux.RUnlock()
 
-	Success(c, users)
+	Success(c, map[string]interface{}{
+		"total_count": totalCount,
+		"list":        users,
+	})
 }
 
 type newAppData struct {
@@ -410,6 +419,12 @@ func GetAllApps(c *gin.Context) {
 		return
 	}
 
+	totalCount, err := models.GetAppCount(nil)
+	if err != nil {
+		Error(c, SERVER_ERROR, err.Error())
+		return
+	}
+
 	memConfMux.RLock()
 	for _, app := range apps {
 		app.UserName = memConfUsers[app.UserKey].Name
@@ -420,7 +435,10 @@ func GetAllApps(c *gin.Context) {
 	}
 	memConfMux.RUnlock()
 
-	Success(c, apps)
+	Success(c, map[string]interface{}{
+		"total_count": totalCount,
+		"list":        apps,
+	})
 }
 
 type newConfigData struct {

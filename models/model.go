@@ -10,7 +10,7 @@ var (
 
 type User struct {
 	Key        string `xorm:"key TEXT PK " json:"key"`
-	PassCode   string `xorm:"pass_code TEXT "`
+	PassCode   string `xorm:"pass_code TEXT " json:"pass_code"`
 	Name       string `xorm:"name TEXT  UNIQUE" json:"name"`
 	CreatorKey string `xorm:"creator_key TEXT " json:"creator_key"`
 	CreatedUTC int    `xorm:"created_utc INT " json:"created_utc"`
@@ -50,6 +50,16 @@ func GetUsers(s *Session, page, count int) ([]*User, error) {
 	}
 
 	return res, nil
+}
+
+func GetUserCount(s *Session) (int, error) {
+	if s == nil {
+		s = newAutoCloseModelsSession()
+	}
+
+	count, err := s.Count(&User{})
+
+	return int(count), err
 }
 
 const (
@@ -117,6 +127,16 @@ func GetAllApps(s *Session, page int, count int) ([]*App, error) {
 	}
 
 	return res, nil
+}
+
+func GetAppCount(s *Session) (int, error) {
+	if s == nil {
+		s = newAutoCloseModelsSession()
+	}
+
+	count, err := s.Count(&App{})
+
+	return int(count), err
 }
 
 func IsValidAppType(typ string) bool {
