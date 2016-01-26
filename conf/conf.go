@@ -159,6 +159,13 @@ func init() {
 			DataExpires = -1
 		}
 	}
+
+	if !DebugMode {
+		// disable all console log
+		nullFile, _ := os.Open(os.DevNull)
+		log.SetOutput(nullFile)
+		os.Stdout = nullFile
+	}
 }
 
 func IsEasyDeployMode() bool {
