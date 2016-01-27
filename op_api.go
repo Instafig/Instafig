@@ -469,7 +469,7 @@ func NewConfig(c *gin.Context) {
 		return
 	}
 
-	if !models.IsValidConfType(data.VType) {
+	if !models.IsValidConfValueType(data.VType) {
 		Error(c, BAD_REQUEST, "unknown conf type: "+data.VType)
 		return
 	}
@@ -521,6 +521,7 @@ func NewConfig(c *gin.Context) {
 		CreatorKey:  getOpUserKey(c),
 		Des:         data.Des,
 		UpdateTimes: 1,
+		Status:      models.CONF_STATUS_ACTIVE,
 	}
 
 	config, err := updateConfig(config, getOpUserKey(c), nil)
@@ -538,11 +539,12 @@ func NewConfig(c *gin.Context) {
 }
 
 type updateConfigData struct {
-	Key   string `json:"key" binding:"required"`
-	K     string `json:"k" binding:"required"`
-	V     string `json:"v" binding:"required"`
-	VType string `json:"v_type" binding:"required"`
-	Des   string `json:"des"`
+	Key    string `json:"key" binding:"required"`
+	K      string `json:"k" binding:"required"`
+	V      string `json:"v" binding:"required"`
+	VType  string `json:"v_type" binding:"required"`
+	Des    string `json:"des"`
+	Status int    `json:"status"`
 }
 
 func UpdateConfig(c *gin.Context) {
@@ -555,8 +557,12 @@ func UpdateConfig(c *gin.Context) {
 		return
 	}
 
-	if !models.IsValidConfType(data.VType) {
+	if !models.IsValidConfValueType(data.VType) {
 		Error(c, BAD_REQUEST, "unknown conf type: "+data.VType)
+		return
+	}
+	if !models.IsValidConfStatus(data.Status) {
+		Error(c, BAD_REQUEST, "unknown conf status: "+strconv.Itoa(data.Status))
 		return
 	}
 
@@ -600,6 +606,7 @@ func UpdateConfig(c *gin.Context) {
 	config.V = data.V
 	config.VType = data.VType
 	config.Des = data.Des
+	config.Status = data.Status
 
 	config, err := updateConfig(config, getOpUserKey(c), nil)
 	if err != nil {
@@ -667,6 +674,15 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 		temApp.LastUpdateId = configHistory.Id
 		temApp.UpdateTimes += 1
 	} else {
+		kind := models.CONFIG_UPDATE_KIND_UPDATE
+		if config.Status != oldConfig.Status {
+			if config.Status == models.CONF_STATUS_ACTIVE {
+				kind = models.CONFIG_UPDATE_KIND_RECOVER
+			} else {
+				kind = models.CONFIG_UPDATE_KIND_HIDE
+			}
+		}
+
 		configHistory := &models.ConfigUpdateHistory{
 			Id:         utils.GenerateKey(),
 			ConfigKey:  config.Key,
@@ -675,7 +691,7 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 			OldVType:   oldConfig.VType,
 			NewV:       config.V,
 			NewVType:   config.VType,
-			Kind:       models.CONFIG_UPDATE_KIND_UPDATE,
+			Kind:       kind,
 			UserKey:    userKey,
 			CreatedUTC: utils.GetNowSecond(),
 		}

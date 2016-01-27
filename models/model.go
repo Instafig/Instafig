@@ -149,6 +149,9 @@ const (
 	CONF_V_TYPE_FLOAT    = "float"
 	CONF_V_TYPE_CODE     = "code"
 	CONF_V_TYPE_TEMPLATE = "template"
+
+	CONF_STATUS_INACTIVE = 0
+	CONF_STATUS_ACTIVE   = 1
 )
 
 type Config struct {
@@ -162,6 +165,7 @@ type Config struct {
 	LastUpdateId string `xorm:"last_update_id TEXT " json:"last_update_id"`
 	UpdateTimes  int    `xorm:"update_times INT " json:"update_times"`
 	Des          string `xorm:"des TEXT " json:"des"`
+	Status       int    `xorm:"status INT" json:"status"`
 
 	CreatorName    string               `xorm:"-" json:"creator_name"`
 	LastUpdateInfo *ConfigUpdateHistory `xorm:"-" json:"last_update_info"`
@@ -201,12 +205,16 @@ func GetConfigsByAppKey(s *Session, appKey string) ([]*Config, error) {
 	return res, nil
 }
 
-func IsValidConfType(typ string) bool {
+func IsValidConfValueType(typ string) bool {
 	return typ == CONF_V_TYPE_CODE ||
 		typ == CONF_V_TYPE_FLOAT ||
 		typ == CONF_V_TYPE_INT ||
 		typ == CONF_V_TYPE_STRING ||
 		typ == CONF_V_TYPE_TEMPLATE
+}
+
+func IsValidConfStatus(status int) bool {
+	return status == CONF_STATUS_ACTIVE || status == CONF_STATUS_INACTIVE
 }
 
 const (
@@ -290,9 +298,11 @@ func GetDataVersion(s *Session) (*DataVersion, error) {
 }
 
 const (
-	CONFIG_UPDATE_KIND_NEW    = "new"
-	CONFIG_UPDATE_KIND_UPDATE = "up"
-	CONFIG_UPDATE_KIND_DELETE = "del"
+	CONFIG_UPDATE_KIND_NEW     = "new"
+	CONFIG_UPDATE_KIND_UPDATE  = "up"
+	CONFIG_UPDATE_KIND_HIDE    = "hide"
+	CONFIG_UPDATE_KIND_RECOVER = "recover"
+	CONFIG_UPDATE_KIND_DELETE  = "del"
 )
 
 type ConfigUpdateHistory struct {

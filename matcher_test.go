@@ -27,6 +27,7 @@ func TestMatch(t *testing.T) {
 			K:      "time_out",
 			V:      "1",
 			VType:  models.CONF_V_TYPE_INT,
+			Status: models.CONF_STATUS_ACTIVE,
 		},
 		&models.Config{
 			Key:    "conf2",
@@ -34,6 +35,7 @@ func TestMatch(t *testing.T) {
 			K:      "accuracy",
 			V:      "1.2",
 			VType:  models.CONF_V_TYPE_FLOAT,
+			Status: models.CONF_STATUS_ACTIVE,
 		},
 		&models.Config{
 			Key:    "conf3",
@@ -41,16 +43,17 @@ func TestMatch(t *testing.T) {
 			K:      "dsn",
 			V:      "beijing.appdao.com:8080",
 			VType:  models.CONF_V_TYPE_STRING,
+			Status: models.CONF_STATUS_ACTIVE,
 		},
-//		&models.Config{
-//			Key:    "conf4",
-//			AppKey: "app1",
-//			K:      "guaji",
-//			V: `(cond (= LANG "zh")
-//			(cond (and (>= APP_VERSION "1.3.1") (< APP_VERSION "1.5")) 1 101)
-//			(cond (and (>= APP_VERSION "1.3.1") (< APP_VERSION "1.5")) 2 3))`,
-//			VType: models.CONF_V_TYPE_CODE,
-//		},
+		//		&models.Config{
+		//			Key:    "conf4",
+		//			AppKey: "app1",
+		//			K:      "guaji",
+		//			V: `(cond (= LANG "zh")
+		//			(cond (and (>= APP_VERSION "1.3.1") (< APP_VERSION "1.5")) 1 101)
+		//			(cond (and (>= APP_VERSION "1.3.1") (< APP_VERSION "1.5")) 2 3))`,
+		//			VType: models.CONF_V_TYPE_CODE,
+		//		},
 	}
 
 	_clearModelData()
@@ -60,7 +63,7 @@ func TestMatch(t *testing.T) {
 	assert.True(t, res["time_out"].(int) == 1)
 	assert.True(t, res["accuracy"].(float64) == 1.2)
 	assert.True(t, res["dsn"].(string) == "beijing.appdao.com:8080")
-//	assert.True(t, res["guaji"] == 101)
+	//	assert.True(t, res["guaji"] == 101)
 	assert.True(t, res["no-exist-key"] == nil)
 }
 
@@ -86,6 +89,7 @@ func TestTemplateConf(t *testing.T) {
 			K:      "int_conf_temp",
 			V:      "1",
 			VType:  models.CONF_V_TYPE_INT,
+			Status: models.CONF_STATUS_ACTIVE,
 		},
 		&models.Config{
 			Key:    "conf_temp2",
@@ -93,6 +97,7 @@ func TestTemplateConf(t *testing.T) {
 			K:      "float_conf_temp",
 			V:      "1.2",
 			VType:  models.CONF_V_TYPE_FLOAT,
+			Status: models.CONF_STATUS_ACTIVE,
 		},
 		&models.Config{
 			Key:    "conf1",
@@ -100,6 +105,7 @@ func TestTemplateConf(t *testing.T) {
 			K:      "time_out",
 			V:      "1",
 			VType:  models.CONF_V_TYPE_INT,
+			Status: models.CONF_STATUS_ACTIVE,
 		},
 		&models.Config{
 			Key:    "conf2",
@@ -107,6 +113,7 @@ func TestTemplateConf(t *testing.T) {
 			K:      "accuracy",
 			V:      "1.2",
 			VType:  models.CONF_V_TYPE_FLOAT,
+			Status: models.CONF_STATUS_ACTIVE,
 		},
 		&models.Config{
 			Key:    "conf3",
@@ -114,6 +121,15 @@ func TestTemplateConf(t *testing.T) {
 			K:      "template_conf",
 			V:      "app_template",
 			VType:  models.CONF_V_TYPE_TEMPLATE,
+			Status: models.CONF_STATUS_ACTIVE,
+		},
+		&models.Config{
+			Key:    "conf4",
+			AppKey: "app1",
+			K:      "inactive_conf",
+			V:      "1.2",
+			VType:  models.CONF_V_TYPE_FLOAT,
+			Status: models.CONF_STATUS_INACTIVE,
 		},
 	}
 
@@ -126,4 +142,5 @@ func TestTemplateConf(t *testing.T) {
 	mapConfV := mapConf.(map[string]interface{})
 	assert.True(t, mapConfV["int_conf_temp"] == 1)
 	assert.True(t, mapConfV["float_conf_temp"] == 1.2)
+	assert.True(t, mapConfV["inactive_conf"] == nil)
 }

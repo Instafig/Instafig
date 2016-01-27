@@ -27,6 +27,7 @@ type Config struct {
 	K      string
 	V      interface{}
 	VType  string
+	Status int
 }
 
 var (
@@ -48,6 +49,7 @@ func transConfig(m *models.Config) *Config {
 		AppKey: m.AppKey,
 		K:      m.K,
 		VType:  m.VType,
+		Status: m.Status,
 	}
 
 	switch m.VType {
@@ -121,9 +123,8 @@ func fillMemConfData(users []*models.User, apps []*models.App, configs []*models
 	}
 
 	for _, config := range configs {
-		c := transConfig(config)
 		memConfRawConfigs[config.Key] = config
-		memConfAppConfigs[config.AppKey] = append(memConfAppConfigs[config.AppKey], c)
+		memConfAppConfigs[config.AppKey] = append(memConfAppConfigs[config.AppKey], transConfig(config))
 	}
 
 	if dataVersion != nil {
@@ -146,6 +147,9 @@ func getAppMemConfig(appKey string) []*Config {
 func getMatchConf(matchData *ClientData, configs []*Config) map[string]interface{} {
 	res := make(map[string]interface{}, 0)
 	for _, config := range configs {
+		if config.Status != models.CONF_STATUS_ACTIVE {
+			continue
+		}
 		switch config.VType {
 		case models.CONF_V_TYPE_CODE:
 			res[config.K] = EvalDynVal(config.V.(string), matchData)
