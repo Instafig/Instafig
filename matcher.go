@@ -75,7 +75,7 @@ func loadAllData() {
 		log.Panicf("Failed to load user info: %s", err.Error())
 	}
 
-	apps, err := models.GetAllApp(nil)
+	apps, err := models.GetAllApps(nil)
 	if err != nil {
 		log.Panicf("Failed to load app info: %s", err.Error())
 	}

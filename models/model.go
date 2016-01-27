@@ -68,15 +68,16 @@ const (
 )
 
 type App struct {
-	Key          string `xorm:"key TEXT PK " json:"key"`
-	UserKey      string `xorm:"user_key TEXT " json:"creator_key"`
-	Name         string `xorm:"name TEXT not NULL" json:"name"`
-	Type         string `xorm:"type TEXT not NULL" json:"type"`
-	DataSign     string `xorm:"data_sign TEXT " json:"data_sign"`
-	CreatedUTC   int    `xorm:"created_utc INT " json:"created_utc"`
-	LastUpdateId string `xorm:"last_update_id TEXT " json:"last_update_id"`
-	KeyCount     int    `xorm:"key_count INT " json:"key_count"`
-	UpdateTimes  int    `xorm:"update_times INT " json:"update_times"`
+	Key           string `xorm:"key TEXT PK " json:"key"`
+	UserKey       string `xorm:"user_key TEXT " json:"creator_key"`
+	Name          string `xorm:"name TEXT not NULL" json:"name"`
+	Type          string `xorm:"type TEXT not NULL" json:"type"`
+	DataSign      string `xorm:"data_sign TEXT " json:"data_sign"`
+	CreatedUTC    int    `xorm:"created_utc INT " json:"created_utc"`
+	LastUpdateId  string `xorm:"last_update_id TEXT " json:"last_update_id"`
+	LastUpdateUTC int    `xorm:"last_update_utc INT " json:"last_update_utc"`
+	KeyCount      int    `xorm:"key_count INT " json:"key_count"`
+	UpdateTimes   int    `xorm:"update_times INT " json:"update_times"`
 
 	UserName       string               `xorm:"-" json:"creator_name"`
 	LastUpdateInfo *ConfigUpdateHistory `xorm:"-" json:"last_update_info"`
@@ -90,7 +91,7 @@ func (m *App) UniqueCond() (string, []interface{}) {
 	return "key=?", []interface{}{m.Key}
 }
 
-func GetAllApp(s *Session) ([]*App, error) {
+func GetAllApps(s *Session) ([]*App, error) {
 	if s == nil {
 		s = newAutoCloseModelsSession()
 	}
@@ -109,20 +110,20 @@ func GetAppsByUserKey(s *Session, userKey string) ([]*App, error) {
 	}
 
 	res := make([]*App, 0)
-	if err := s.Where("user_key=?", userKey).Find(&res); err != nil {
+	if err := s.Where("user_key=?", userKey).OrderBy("last_update_utc desc").Find(&res); err != nil {
 		return nil, err
 	}
 
 	return res, nil
 }
 
-func GetAllApps(s *Session, page int, count int) ([]*App, error) {
+func GetAllAppsPage(s *Session, page int, count int) ([]*App, error) {
 	if s == nil {
 		s = newAutoCloseModelsSession()
 	}
 
 	res := make([]*App, 0)
-	if err := s.OrderBy("name desc").Limit(count, (page-1)*count).Find(&res); err != nil {
+	if err := s.OrderBy("last_update_utc desc").Limit(count, (page-1)*count).Find(&res); err != nil {
 		return nil, err
 	}
 

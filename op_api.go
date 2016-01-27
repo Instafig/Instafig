@@ -423,7 +423,7 @@ func GetAllApps(c *gin.Context) {
 		return
 	}
 
-	apps, err := models.GetAllApps(nil, page, count)
+	apps, err := models.GetAllAppsPage(nil, page, count)
 	if err != nil {
 		Error(c, SERVER_ERROR, err.Error())
 		return
@@ -671,6 +671,7 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 		}
 
 		temApp.KeyCount += 1
+		temApp.LastUpdateUTC = configHistory.CreatedUTC
 		temApp.LastUpdateId = configHistory.Id
 		temApp.UpdateTimes += 1
 	} else {
@@ -707,6 +708,7 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 			return nil, err
 		}
 
+		temApp.LastUpdateUTC = configHistory.CreatedUTC
 		temApp.LastUpdateId = configHistory.Id
 		temApp.UpdateTimes += 1
 	}
