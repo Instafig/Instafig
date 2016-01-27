@@ -851,6 +851,17 @@ func OpAuth(c *gin.Context) {
 	setOpUserKey(c, userKey)
 }
 
+func InitUserCheck(c *gin.Context) {
+	memConfMux.RLock()
+	userCount := len(memConfUsers)
+	memConfMux.RUnlock()
+
+	if userCount == 0 {
+		Error(c, USER_NOT_INIT)
+		c.Abort()
+	}
+}
+
 func encryptUserPassCode(code string) string {
 	s := sha1.Sum([]byte(code))
 	return string(s[:sha1.Size])
