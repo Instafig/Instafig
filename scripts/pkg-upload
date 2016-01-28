@@ -2,7 +2,7 @@
 # -*- mode: sh -*-
 
 [[ "$TRAVIS_PULL_REQUEST" = true ]] && exit 0
-[[ "$TRAVIS_BRANCH" != master ]] && exit 0
+# [[ "$TRAVIS_BRANCH" != master ]] && exit 0
 
 KERNEL=$(tr [:upper:] [:lower:] <<< $(uname -s))
 DEST_PATH=/nightly/Instafig/
