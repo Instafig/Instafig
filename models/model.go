@@ -31,7 +31,7 @@ func GetAllUser(s *Session) ([]*User, error) {
 		s = newAutoCloseModelsSession()
 	}
 
-	res := make([]*User, 0)
+	var res []*User
 	if err := s.Find(&res); err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func GetUsers(s *Session, page, count int) ([]*User, error) {
 		s = newAutoCloseModelsSession()
 	}
 
-	res := make([]*User, 0)
+	var res []*User
 	if err := s.OrderBy("name desc").Limit(count, (page-1)*count).Find(&res); err != nil {
 		return nil, err
 	}
@@ -96,7 +96,7 @@ func GetAllApps(s *Session) ([]*App, error) {
 		s = newAutoCloseModelsSession()
 	}
 
-	res := make([]*App, 0)
+	var res []*App
 	if err := s.Find(&res); err != nil {
 		return nil, err
 	}
@@ -109,7 +109,7 @@ func GetAppsByUserKey(s *Session, userKey string) ([]*App, error) {
 		s = newAutoCloseModelsSession()
 	}
 
-	res := make([]*App, 0)
+	var res []*App
 	if err := s.Where("user_key=?", userKey).OrderBy("last_update_utc desc").Find(&res); err != nil {
 		return nil, err
 	}
@@ -122,7 +122,7 @@ func GetAllAppsPage(s *Session, page int, count int) ([]*App, error) {
 		s = newAutoCloseModelsSession()
 	}
 
-	res := make([]*App, 0)
+	var res []*App
 	if err := s.OrderBy("last_update_utc desc").Limit(count, (page-1)*count).Find(&res); err != nil {
 		return nil, err
 	}
@@ -185,7 +185,7 @@ func GetAllConfig(s *Session) ([]*Config, error) {
 		s = newAutoCloseModelsSession()
 	}
 
-	res := make([]*Config, 0)
+	var res []*Config
 	if err := s.Find(&res); err != nil {
 		return nil, err
 	}
@@ -198,7 +198,7 @@ func GetConfigsByAppKey(s *Session, appKey string) ([]*Config, error) {
 		s = newAutoCloseModelsSession()
 	}
 
-	res := make([]*Config, 0)
+	var res []*Config
 	if err := s.Where("app_key=?", appKey).Find(&res); err != nil {
 		return nil, err
 	}
@@ -248,7 +248,7 @@ func GetAllNode(s *Session) ([]*Node, error) {
 		s = newAutoCloseModelsSession()
 	}
 
-	res := make([]*Node, 0)
+	var res []*Node
 	if err := s.Find(&res); err != nil {
 		return nil, err
 	}
@@ -285,7 +285,7 @@ func GetDataVersion(s *Session) (*DataVersion, error) {
 		s = newAutoCloseModelsSession()
 	}
 
-	res := make([]*DataVersion, 0)
+	var res []*DataVersion
 	err := s.Find(&res)
 	if err != nil {
 		return nil, err
@@ -348,7 +348,7 @@ func GetConfigUpdateHistory(s *Session, configKey string) ([]*ConfigUpdateHistor
 		s = newAutoCloseModelsSession()
 	}
 
-	res := make([]*ConfigUpdateHistory, 0)
+	var res []*ConfigUpdateHistory
 	err := s.Where("config_key=?", configKey).OrderBy("created_utc desc").Find(&res)
 
 	return res, err
@@ -359,7 +359,7 @@ func GetAllConfigUpdateHistory(s *Session) ([]*ConfigUpdateHistory, error) {
 		s = newAutoCloseModelsSession()
 	}
 
-	res := make([]*ConfigUpdateHistory, 0)
+	var res []*ConfigUpdateHistory
 	err := s.Find(&res)
 
 	return res, err

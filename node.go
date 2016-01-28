@@ -200,7 +200,7 @@ func syncData2SlaveIfNeed(data interface{}, opUserKey string) []map[string]inter
 	nodes := memConfNodes
 	memConfMux.RUnlock()
 
-	failedNodes := make([]map[string]interface{}, 0)
+	var failedNodes []map[string]interface{}
 	for _, node := range nodes {
 		if node.Type == models.NODE_TYPE_MASTER {
 			continue
@@ -315,11 +315,11 @@ func slaveCheckMaster() error {
 		return fmt.Errorf("bad response data format: %s < %s >", err.Error(), data.(string))
 	}
 
-	users := make([]*models.User, 0)
-	apps := make([]*models.App, 0)
-	configs := make([]*models.Config, 0)
-	conHistories := make([]*models.ConfigUpdateHistory, 0)
-	nodes := make([]*models.Node, 0)
+	var users []*models.User
+	var apps []*models.App
+	var configs []*models.Config
+	var conHistories []*models.ConfigUpdateHistory
+	var nodes []*models.Node
 
 	bs, _ := json.Marshal(resData.DataVersion)
 	localNode.DataVersion = resData.DataVersion

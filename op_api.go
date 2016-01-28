@@ -66,7 +66,6 @@ func Logout(c *gin.Context) {
 	Success(c, nil)
 }
 
-
 type newUserData struct {
 	Name     string `json:"name" binding:"required"`
 	PassCode string `json:"pass_code" binding:"required"`
@@ -608,7 +607,7 @@ func UpdateConfig(c *gin.Context) {
 
 	config := &models.Config{}
 	*config = *oldConfig
-	config.UpdateTimes += 1
+	config.UpdateTimes++
 	config.V = data.V
 	config.VType = data.VType
 	config.Des = data.Des
@@ -676,10 +675,10 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 			return nil, err
 		}
 
-		temApp.KeyCount += 1
+		temApp.KeyCount++
 		temApp.LastUpdateUTC = configHistory.CreatedUTC
 		temApp.LastUpdateId = configHistory.Id
-		temApp.UpdateTimes += 1
+		temApp.UpdateTimes++
 	} else {
 		kind := models.CONFIG_UPDATE_KIND_UPDATE
 		if config.Status != oldConfig.Status {
@@ -707,7 +706,7 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 			return nil, err
 		}
 
-		config.UpdateTimes += 1
+		config.UpdateTimes++
 		config.LastUpdateId = configHistory.Id
 		if err := models.UpdateDBModel(s, config); err != nil {
 			s.Rollback()
@@ -716,7 +715,7 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 
 		temApp.LastUpdateUTC = configHistory.CreatedUTC
 		temApp.LastUpdateId = configHistory.Id
-		temApp.UpdateTimes += 1
+		temApp.UpdateTimes++
 	}
 
 	if err := models.UpdateDBModel(s, &temApp); err != nil {
@@ -724,7 +723,7 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 		return nil, err
 	}
 
-	toUpdateApps := make([]*models.App, 0)
+	var toUpdateApps []*models.App
 	if app.Type == models.APP_TYPE_REAL {
 		toUpdateApps = append(toUpdateApps, app)
 	} else {
@@ -824,7 +823,7 @@ func GetConfigUpdateHistory(c *gin.Context) {
 }
 
 func GetNodes(c *gin.Context) {
-	nodes := make([]*models.Node, 0)
+	var nodes []*models.Node
 
 	memConfMux.RLock()
 	for _, node := range memConfNodes {
