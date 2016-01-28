@@ -70,6 +70,7 @@ func main() {
 	opAPIGroup := ginIns.Group("/op")
 	{
 		opAPIGroup.POST("/login", Login)
+		opAPIGroup.POST("/logout", Logout)
 
 		opAPIGroup.GET("/users/:page/:count", InitUserCheck, OpAuth, GetUsers)
 		opAPIGroup.POST("/user", OpAuth, ConfWriteCheck, NewUser)

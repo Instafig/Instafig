@@ -61,6 +61,12 @@ func Login(c *gin.Context) {
 	Success(c, nil)
 }
 
+func Logout(c *gin.Context) {
+	deleteUserKeyCookie(c)
+	Success(c, nil)
+}
+
+
 type newUserData struct {
 	Name     string `json:"name" binding:"required"`
 	PassCode string `json:"pass_code" binding:"required"`
@@ -906,7 +912,12 @@ func setUserKeyCookie(c *gin.Context, userKey string) {
 	cookie.Name = "op_user"
 	cookie.Expires = time.Now().Add(time.Duration(30*86400) * time.Second)
 	cookie.Value = encStr
-	//	cookie.Path = "/"
-	//	cookie.Domain = ""
+	http.SetCookie(c.Writer, cookie)
+}
+
+func deleteUserKeyCookie(c *gin.Context) {
+	cookie := new(http.Cookie)
+	cookie.Name = "op_user"
+	cookie.Value = ""
 	http.SetCookie(c.Writer, cookie)
 }
