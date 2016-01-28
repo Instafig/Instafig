@@ -112,6 +112,11 @@ func init() {
 	}
 
 	Mode, _ = config.GetValue("", "mode")
+	if !IsEasyDeployMode() {
+		log.Println("only easy_deploy mode supported")
+		os.Exit(1)
+	}
+
 	HttpAddr, _ = config.GetValue("", "addr")
 
 	if IsEasyDeployMode() {
