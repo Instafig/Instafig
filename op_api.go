@@ -880,6 +880,18 @@ func InitUserCheck(c *gin.Context) {
 	}
 }
 
+func GetLoginUserInfo(c *gin.Context) {
+	key := getOpUserKey(c)
+	memConfMux.RLock()
+	user := *memConfUsers[key]
+	user.CreatorName = memConfUsers[user.CreatorKey].Name
+	memConfMux.RUnlock()
+
+	user.PassCode = ""
+
+	Success(c, user)
+}
+
 func encryptUserPassCode(code string) string {
 	s := sha1.Sum([]byte(code))
 	return string(s[:sha1.Size])
