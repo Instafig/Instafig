@@ -53,7 +53,11 @@ func init() {
 	dbEngineDefault.ShowSQL = conf.DebugMode
 
 	if conf.IsEasyDeployMode() {
-		if err = dbEngineDefault.Sync2(&User{}, &App{}, &Config{}, &Node{}, &DataVersion{}, &ConfigUpdateHistory{}); err != nil {
+		if err = dbEngineDefault.Sync2(
+			&User{}, &App{},
+			&Config{}, &ConfigUpdateHistory{},
+			&Node{}, &DataVersion{}, &WebHook{},
+		); err != nil {
 			log.Panicf("Failed to sync db scheme: %s", err.Error())
 		}
 

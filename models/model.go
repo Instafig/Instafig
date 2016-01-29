@@ -377,3 +377,90 @@ func ClearModeData(s *Session) error {
 
 	return err
 }
+
+const (
+	WEBHOOK_SCOPE_GLOBAL = 0
+	WEBHOOK_SCOPE_APP    = 1
+
+	WEBHOOK_AUTH_NONE  = 0
+	WEBHOOK_AUTH_BASIC = 1
+
+	WEBHOOK_STATUS_INACTIVE = 0
+	WEBHOOK_STATUS_ACTIVE   = 1
+
+	WEBHOOK_TARGET_PUBU  = "pubu"
+	WEBHOOK_TARGET_SLACK = "slack"
+)
+
+type WebHook struct {
+	Key      string `xorm:"key TEXT PK " json:"key"`
+	AppKey   string `xorm:"app_key TEXT " json:"app_key"`
+	Scope    int    `xorm:"scope INT" json:"scope"`
+	Target   string `xorm:"target TEXT " json:"target"`
+	URL      string `xorm:"url TEXT " json:"url"`
+	AuthType int    `xorm:"auth_type TEXT " json:"auth_type"`
+	AuthInfo string `xorm:"auth_info TEXT " json:"auth_info"`
+	Status   int    `xorm:"status INT" json:"status"`
+}
+
+func (*WebHook) TableName() string {
+	return "web_hook"
+}
+
+func (m *WebHook) UniqueCond() (string, []interface{}) {
+	return "key=?", []interface{}{m.Key}
+}
+
+func GetAllWebHooks(s *Session) ([]*WebHook, error) {
+	if s == nil {
+		s = newAutoCloseModelsSession()
+	}
+
+	var res []*WebHook
+	if err := s.Find(&res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func GetGlobalWebHooks(s *Session) ([]*WebHook, error) {
+	if s == nil {
+		s = newAutoCloseModelsSession()
+	}
+
+	var res []*WebHook
+	if err := s.Where("scope =?", WEBHOOK_SCOPE_GLOBAL).Find(&res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func GetWebHooksByAppKey(s *Session, appKey string) ([]*WebHook, error) {
+	if s == nil {
+		s = newAutoCloseModelsSession()
+	}
+
+	var res []*WebHook
+	if err := s.Where("scope =? and app_key=?", WEBHOOK_SCOPE_APP, appKey).Find(&res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (m *ConfigUpdateHistory) TriggerWebHooks(appKey string) {
+	var hooks []*WebHook
+	hooks, err := GetWebHooksByAppKey(nil, appKey)
+	if err != nil || len(hooks) == 0 {
+		hooks, err = GetGlobalWebHooks(nil)
+		if err != nil {
+			return
+		}
+	}
+	//TODO
+	for hook := range hooks {
+		print(hook)
+	}
+}

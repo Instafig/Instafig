@@ -714,6 +714,8 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 			return nil, err
 		}
 
+		defer configHistory.TriggerWebHooks(app.Key)
+
 		temApp.KeyCount++
 		temApp.LastUpdateUTC = configHistory.CreatedUTC
 		temApp.LastUpdateId = configHistory.Id
@@ -751,6 +753,8 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 			s.Rollback()
 			return nil, err
 		}
+
+		defer configHistory.TriggerWebHooks(app.Key)
 
 		temApp.LastUpdateUTC = configHistory.CreatedUTC
 		temApp.LastUpdateId = configHistory.Id
