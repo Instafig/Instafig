@@ -1,12 +1,14 @@
 package main
 
 import (
+	"net/http"
+
 	"github.com/appwilldev/Instafig/conf"
 	"github.com/appwilldev/Instafig/utils"
 	"github.com/gin-gonic/gin"
 )
 
-func ClientReqData(c *gin.Context) {
+func ClientConf(c *gin.Context) {
 	clientData := &ClientData{
 		AppKey:     c.Query("app_key"),
 		OSType:     c.Query("os_type"),
@@ -16,6 +18,24 @@ func ClientReqData(c *gin.Context) {
 		Lang:       c.Query("lang"),
 		DeviceId:   c.Query("device_id"),
 		DataSign:   c.Query("data_sign"),
+	}
+
+	if clientData.AppKey == "" {
+		memConfMux.RLock()
+		app := memConfAppsByName[c.Query("app")]
+		memConfMux.RUnlock()
+
+		if app != nil {
+			clientData.AppKey = app.Key
+			clientData.OSType = "ios"
+			clientData.OSVersion = c.Query("osv")
+			clientData.AppVersion = c.Query("v")
+			clientData.DeviceId = c.Query("ida")
+			clientData.Ip = c.Request.RemoteAddr
+		}
+
+		c.JSON(http.StatusOK, getAppMatchConf(clientData.AppKey, clientData))
+		return
 	}
 
 	if conf.IsEasyDeployMode() {
@@ -42,8 +62,9 @@ func ClientReqData(c *gin.Context) {
 
 		if needConf {
 			configs := getAppMatchConf(clientData.AppKey, clientData)
+
+			var dataSign string
 			memConfMux.RLock()
-			dataSign := ""
 			if len(configs) > 0 {
 				dataSign = memConfApps[clientData.AppKey].DataSign
 			}

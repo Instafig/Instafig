@@ -83,8 +83,10 @@ func main() {
 	// client api
 	clientAPIGroup := ginIns.Group("/client")
 	{
-		clientAPIGroup.GET("/config", ClientReqData)
+		clientAPIGroup.GET("/config", ClientConf)
 	}
+	// compatible with old awconfig
+	ginIns.GET("/conf", ClientConf)
 
 	// op api
 	opAPIGroup := ginIns.Group("/op")
