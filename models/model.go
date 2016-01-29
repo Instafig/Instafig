@@ -14,6 +14,7 @@ type User struct {
 	Name       string `xorm:"name TEXT  UNIQUE" json:"name"`
 	CreatorKey string `xorm:"creator_key TEXT " json:"creator_key"`
 	CreatedUTC int    `xorm:"created_utc INT " json:"created_utc"`
+	AuxInfo    string `xorm:"aux_info TEXT" json:"aux_info"`
 
 	CreatorName string `xorm:"-" json:"creator_name"`
 }
@@ -78,6 +79,7 @@ type App struct {
 	LastUpdateUTC int    `xorm:"last_update_utc INT " json:"last_update_utc"`
 	KeyCount      int    `xorm:"key_count INT " json:"key_count"`
 	UpdateTimes   int    `xorm:"update_times INT " json:"update_times"`
+	AuxInfo       string `xorm:"aux_info TEXT" json:"aux_info"`
 
 	UserName       string               `xorm:"-" json:"creator_name"`
 	LastUpdateInfo *ConfigUpdateHistory `xorm:"-" json:"last_update_info"`

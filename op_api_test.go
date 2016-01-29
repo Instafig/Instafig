@@ -40,6 +40,31 @@ func TestNewUser(t *testing.T) {
 	_clearModelData()
 }
 
+func TestUpdateUser(t *testing.T) {
+	err := _clearModelData()
+	assert.True(t, err == nil, "must correctly clear data")
+	loadAllData()
+	initNodeData()
+
+	confWriteMux.Lock()
+	defer confWriteMux.Unlock()
+
+	user, err := updateUser(&models.User{
+		Name: "rahuahua",
+		Key:  utils.GenerateKey()}, nil)
+
+	user, err = updateUser(&models.User{
+		Name:    "rahuahua2",
+		Key:     user.Key,
+		AuxInfo: "guaji"}, nil)
+	assert.True(t, err == nil, "must correctly add new user")
+	assert.True(t, len(memConfUsers) == 1, "must only one user")
+	assert.True(t, memConfUsersByName["rahuahua"] == nil, "old-name user must not exist")
+	assert.True(t, memConfUsersByName["rahuahua2"].AuxInfo == "guaji", "aux_info must be updated")
+
+	_clearModelData()
+}
+
 func TestNewApp(t *testing.T) {
 	err := _clearModelData()
 	assert.True(t, err == nil, "must correctly clear data")
@@ -69,6 +94,38 @@ func TestNewApp(t *testing.T) {
 		Type:    models.APP_TYPE_REAL}, nil)
 	assert.True(t, err == nil, "must correctly add new app")
 	assert.True(t, len(memConfApps) == 2, "must two apps")
+
+	_clearModelData()
+}
+
+func TestUpdateApp(t *testing.T) {
+	err := _clearModelData()
+	assert.True(t, err == nil, "must correctly clear data")
+	loadAllData()
+	initNodeData()
+
+	confWriteMux.Lock()
+	defer confWriteMux.Unlock()
+
+	user, err := updateUser(&models.User{
+		Name: "rahuahua",
+		Key:  utils.GenerateKey()}, nil)
+	app, err := updateApp(&models.App{
+		Key:     utils.GenerateKey(),
+		UserKey: user.Key,
+		Name:    "iconfreecn",
+		Type:    models.APP_TYPE_REAL}, nil)
+
+	app, err = updateApp(&models.App{
+		Key:     app.Key,
+		UserKey: user.Key,
+		Name:    "hdfreecn",
+		Type:    models.APP_TYPE_REAL,
+		AuxInfo: "guaji"}, nil)
+	assert.True(t, err == nil, "must correctly add new app")
+	assert.True(t, len(memConfApps) == 1, "must only one app")
+	assert.True(t, memConfAppsByName["iconfreecn"] == nil, "old-name app must not exist")
+	assert.True(t, memConfAppsByName["hdfreecn"].AuxInfo == "guaji", "aux_info must be updated")
 
 	_clearModelData()
 }

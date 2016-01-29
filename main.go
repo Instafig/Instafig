@@ -96,6 +96,7 @@ func main() {
 
 		opAPIGroup.GET("/users/:page/:count", InitUserCheck, OpAuth, GetUsers)
 		opAPIGroup.POST("/user", OpAuth, ConfWriteCheck, NewUser)
+		opAPIGroup.PUT("/user", OpAuth, ConfWriteCheck, UpdateUser)
 		opAPIGroup.POST("/user/init", ConfWriteCheck, InitUser)
 		opAPIGroup.GET("/user/info", OpAuth, GetLoginUserInfo)
 

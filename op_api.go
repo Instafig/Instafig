@@ -69,6 +69,7 @@ func Logout(c *gin.Context) {
 type newUserData struct {
 	Name     string `json:"name" binding:"required"`
 	PassCode string `json:"pass_code" binding:"required"`
+	AuxInfo  string `json:"aux_info"`
 }
 
 func InitUser(c *gin.Context) {
@@ -95,6 +96,7 @@ func InitUser(c *gin.Context) {
 		PassCode:   encryptUserPassCode(data.PassCode),
 		CreatorKey: key,
 		CreatedUTC: utils.GetNowSecond(),
+		AuxInfo:    data.AuxInfo,
 		Key:        key}
 	if _, err := updateUser(user, nil); err != nil {
 		Error(c, SERVER_ERROR, err.Error())
@@ -133,6 +135,7 @@ func NewUser(c *gin.Context) {
 		PassCode:   encryptUserPassCode(data.PassCode),
 		CreatorKey: getOpUserKey(c),
 		CreatedUTC: utils.GetNowSecond(),
+		AuxInfo:    data.AuxInfo,
 		Key:        utils.GenerateKey()}
 
 	if _, err := updateUser(user, nil); err != nil {
@@ -141,6 +144,43 @@ func NewUser(c *gin.Context) {
 	}
 
 	failedNodes := syncData2SlaveIfNeed(user, getOpUserKey(c))
+	if len(failedNodes) > 0 {
+		Success(c, map[string]interface{}{"failed_nodes": failedNodes})
+	} else {
+		Success(c, nil)
+	}
+}
+
+func UpdateUser(c *gin.Context) {
+	confWriteMux.Lock()
+	defer confWriteMux.Unlock()
+
+	var data struct {
+		Name    string `json:"name" binding:"required"`
+		AuxInfo string `json:"aux_info"`
+	}
+	if err := c.BindJSON(&data); err != nil {
+		Error(c, BAD_POST_DATA, err.Error())
+		return
+	}
+
+	memConfMux.RLock()
+	user := *memConfUsers[getOpUserKey(c)]
+	if memConfUsersByName[data.Name] != nil && memConfUsersByName[data.Name].Key != user.Key {
+		Error(c, BAD_REQUEST, "user name already exists: "+data.Name)
+		memConfMux.RUnlock()
+		return
+	}
+	memConfMux.RUnlock()
+
+	user.AuxInfo = data.AuxInfo
+	user.Name = data.Name
+	if _, err := updateUser(&user, nil); err != nil {
+		Error(c, SERVER_ERROR, err.Error())
+		return
+	}
+
+	failedNodes := syncData2SlaveIfNeed(&user, getOpUserKey(c))
 	if len(failedNodes) > 0 {
 		Success(c, map[string]interface{}{"failed_nodes": failedNodes})
 	} else {
@@ -239,18 +279,16 @@ func GetUsers(c *gin.Context) {
 	})
 }
 
-type newAppData struct {
-	//	UserKey string `json:"user_key" binding:"required"`
-	Name string `json:"name" binding:"required"`
-	Type string `json:"type" binding:"required"`
-}
-
 func NewApp(c *gin.Context) {
 	confWriteMux.Lock()
 	defer confWriteMux.Unlock()
 
-	data := &newAppData{}
-	if err := c.BindJSON(data); err != nil {
+	var data struct {
+		Name    string `json:"name" binding:"required"`
+		Type    string `json:"type" binding:"required"`
+		AuxInfo string `json:"aux_info"`
+	}
+	if err := c.BindJSON(&data); err != nil {
 		Error(c, BAD_POST_DATA, err.Error())
 		return
 	}
@@ -272,6 +310,7 @@ func NewApp(c *gin.Context) {
 		Name:       data.Name,
 		UserKey:    getOpUserKey(c),
 		Type:       data.Type,
+		AuxInfo:    data.AuxInfo,
 		CreatedUTC: utils.GetNowSecond(),
 	}
 	if _, err := updateApp(app, nil); err != nil {
@@ -287,17 +326,16 @@ func NewApp(c *gin.Context) {
 	}
 }
 
-type updateAppData struct {
-	Key  string `json:"key" binding:"required"`
-	Name string `json:"name" binding:"required"`
-	Type string `json:"type" binding:"required"`
-}
-
 func UpdateApp(c *gin.Context) {
 	confWriteMux.Lock()
 	defer confWriteMux.Unlock()
 
-	data := &updateAppData{}
+	var data struct {
+		Key     string `json:"key" binding:"required"`
+		Name    string `json:"name" binding:"required"`
+		Type    string `json:"type" binding:"required"`
+		AuxInfo string `json:"aux_info"`
+	}
 	if err := c.BindJSON(data); err != nil {
 		Error(c, BAD_POST_DATA, err.Error())
 		return
@@ -330,6 +368,7 @@ func UpdateApp(c *gin.Context) {
 
 	app := *oldApp
 	app.Name = data.Name
+	app.AuxInfo = data.AuxInfo
 	if _, err := updateApp(&app, nil); err != nil {
 		Error(c, SERVER_ERROR, err.Error())
 		return
