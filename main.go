@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"strings"
+
 	"github.com/appwilldev/Instafig/conf"
 	"github.com/facebookgo/grace/gracehttp"
 	"github.com/gin-gonic/gin"
@@ -53,6 +55,24 @@ func main() {
 
 	// static
 	ginIns.Static("web", "./web")
+	// bin static
+	ginIns.GET("/web-bin/*file",
+		func(c *gin.Context) {
+			fileName := c.Param("file")
+			data, err := Asset("web-bin" + fileName)
+			if err != nil {
+				c.String(http.StatusNotFound, "")
+				return
+			}
+
+			switch {
+			case strings.LastIndex(fileName, ".html") == len(fileName)-5:
+				c.Header("Content-Type", "text/html; charset=utf-8")
+			case strings.LastIndex(fileName, ".css") == len(fileName)-4:
+				c.Header("Content-Type", "text/css")
+			}
+			c.String(http.StatusOK, string(data))
+		})
 
 	// misc api
 	miscAPIGroup := ginIns.Group("/misc")
