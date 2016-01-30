@@ -449,18 +449,3 @@ func GetWebHooksByAppKey(s *Session, appKey string) ([]*WebHook, error) {
 
 	return res, nil
 }
-
-func (m *ConfigUpdateHistory) TriggerWebHooks(appKey string) {
-	var hooks []*WebHook
-	hooks, err := GetWebHooksByAppKey(nil, appKey)
-	if err != nil || len(hooks) == 0 {
-		hooks, err = GetGlobalWebHooks(nil)
-		if err != nil {
-			return
-		}
-	}
-	//TODO
-	for hook := range hooks {
-		print(hook)
-	}
-}
