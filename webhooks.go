@@ -1,9 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/appwilldev/Instafig/models"
 	"io/ioutil"
 	"net/http"
@@ -12,6 +12,11 @@ import (
 
 func configUpdateHistoryToNotificationText(m *models.ConfigUpdateHistory, app *models.App) string {
 	text := "Unkown Action"
+	if m.UserName == "" {
+		memConfMux.RLock()
+		m.UserName = memConfUsers[m.UserKey].Name
+		memConfMux.RUnlock()
+	}
 	switch m.Kind {
 	case models.CONFIG_UPDATE_KIND_NEW:
 		text = fmt.Sprintf(
