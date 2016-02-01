@@ -44,7 +44,7 @@ type syncAllDataT struct {
 	Nodes       map[string]*models.Node       `json:"nodes"`
 	Users       map[string]*models.User       `json:"users"`
 	Apps        map[string]*models.App        `json:"apps"`
-	WebHooks    []*models.WebHook             `json: web_hooks`
+	WebHooks    []*models.WebHook             `json:"web_hooks"`
 	Configs     map[string]*models.Config     `json:"configs"`
 	ConfHistory []*models.ConfigUpdateHistory `json:"conf_history"`
 	DataVersion *models.DataVersion           `json:"data_version"`
