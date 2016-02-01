@@ -56,8 +56,10 @@ func TestMatch(t *testing.T) {
 		//		},
 	}
 
+	webhooks := []*models.WebHook{}
+
 	_clearModelData()
-	fillMemConfData(users, apps, configs, nil, nil)
+	fillMemConfData(users, apps, webhooks, configs, nil, nil)
 
 	res := getAppMatchConf("app1", clientData)
 	assert.True(t, res["time_out"].(int) == 1)
@@ -133,8 +135,10 @@ func TestTemplateConf(t *testing.T) {
 		},
 	}
 
+	webhooks := []*models.WebHook{}
+
 	_clearModelData()
-	fillMemConfData(users, apps, configs, nil, nil)
+	fillMemConfData(users, apps, webhooks, configs, nil, nil)
 
 	res := getAppMatchConf("app1", clientData)
 	mapConf := res["template_conf"]

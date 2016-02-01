@@ -21,10 +21,11 @@ const (
 	NODE_REQUEST_TYPE_CHECKMASTER = "CHECKMASTER"
 	NODE_REQUEST_TYPE_SYNCMASTER  = "SYNCMASTER"
 
-	NODE_REQUEST_SYNC_TYPE_USER   = "USER"
-	NODE_REQUEST_SYNC_TYPE_APP    = "APP"
-	NODE_REQUEST_SYNC_TYPE_CONFIG = "CONFIG"
-	NODE_REQUEST_SYNC_TYPE_NODE   = "NODE"
+	NODE_REQUEST_SYNC_TYPE_USER    = "USER"
+	NODE_REQUEST_SYNC_TYPE_APP     = "APP"
+	NODE_REQUEST_SYNC_TYPE_WEBHOOK = "WEBHOOK"
+	NODE_REQUEST_SYNC_TYPE_CONFIG  = "CONFIG"
+	NODE_REQUEST_SYNC_TYPE_NODE    = "NODE"
 )
 
 var (
@@ -43,6 +44,7 @@ type syncAllDataT struct {
 	Nodes       map[string]*models.Node       `json:"nodes"`
 	Users       map[string]*models.User       `json:"users"`
 	Apps        map[string]*models.App        `json:"apps"`
+	WebHooks    []*models.WebHook             `json: web_hooks`
 	Configs     map[string]*models.Config     `json:"configs"`
 	ConfHistory []*models.ConfigUpdateHistory `json:"conf_history"`
 	DataVersion *models.DataVersion           `json:"data_version"`
@@ -227,6 +229,8 @@ func syncData2Slave(node *models.Node, data interface{}, dataVer *models.DataVer
 		kind = NODE_REQUEST_SYNC_TYPE_USER
 	case *models.App:
 		kind = NODE_REQUEST_SYNC_TYPE_APP
+	case *models.WebHook:
+		kind = NODE_REQUEST_SYNC_TYPE_WEBHOOK
 	case *models.Config:
 		kind = NODE_REQUEST_SYNC_TYPE_CONFIG
 	case *models.Node:
@@ -353,6 +357,11 @@ func slaveCheckMaster() error {
 		return err
 	}
 
+	if err = models.InsertMultiRows(s, resData.WebHooks); err != nil {
+		s.Rollback()
+		return err
+	}
+
 	for _, config := range resData.Configs {
 		configs = append(configs, config)
 	}
@@ -401,7 +410,7 @@ func slaveCheckMaster() error {
 		return err
 	}
 
-	fillMemConfData(users, apps, configs, nodes, nil)
+	fillMemConfData(users, apps, resData.WebHooks, configs, nodes, nil)
 
 	memConfMux.Lock()
 	memConfDataVersion = resData.DataVersion
@@ -561,6 +570,19 @@ func handleSlaveSyncUpdateData(c *gin.Context, data string) {
 
 		Success(c, nil)
 
+	case NODE_REQUEST_SYNC_TYPE_WEBHOOK:
+		hook := &models.WebHook{}
+		if err = json.Unmarshal([]byte(syncData.Data), hook); err != nil {
+			Error(c, BAD_REQUEST, "bad data format for webhook model")
+			return
+		}
+		if _, err = updateWebHook(hook, syncData.DataVersion); err != nil {
+			Error(c, SERVER_ERROR, err.Error())
+			return
+		}
+
+		Success(c, nil)
+
 	case NODE_REQUEST_SYNC_TYPE_CONFIG:
 		config := &models.Config{}
 		if err = json.Unmarshal([]byte(syncData.Data), config); err != nil {
@@ -668,10 +690,15 @@ func handleSyncMaster(c *gin.Context, data string) {
 	}
 
 	memConfMux.RLock()
+	webhooks := memConfGlobalWebhooks
+	for _, hooks := range memConfAppWebhooks {
+		webhooks = append(webhooks, hooks...)
+	}
 	resData, _ := json.Marshal(syncAllDataT{
 		Nodes:       memConfNodes,
 		Users:       memConfUsers,
 		Apps:        memConfApps,
+		WebHooks:    webhooks,
 		Configs:     memConfRawConfigs,
 		DataVersion: memConfDataVersion,
 		ConfHistory: history,

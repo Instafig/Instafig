@@ -495,6 +495,78 @@ func GetAllApps(c *gin.Context) {
 	})
 }
 
+func updateWebHook(hook *models.WebHook, newDataVersion *models.DataVersion) (*models.WebHook, error) {
+	s := models.NewSession()
+	defer s.Close()
+	if err := s.Begin(); err != nil {
+		s.Rollback()
+		return nil, err
+	}
+
+	memConfMux.RLock()
+	node := memConfNodes[conf.ClientAddr]
+	oldHookIdx := -1
+	var hooks []*models.WebHook
+	if hook.Scope == models.WEBHOOK_SCOPE_GLOBAL {
+		hooks = memConfGlobalWebhooks
+	} else if hook.Scope == models.WEBHOOK_SCOPE_GLOBAL {
+		hooks = memConfAppWebhooks[hook.AppKey]
+	}
+	for idx, oldHook := range hooks {
+		if hook.Key == oldHook.Key {
+			oldHookIdx = idx
+			break
+		}
+	}
+	dataVer := memConfDataVersion
+	memConfMux.RUnlock()
+
+	if newDataVersion == nil {
+		newDataVersion = genNewDataVersion(dataVer)
+	}
+	if err := updateNodeDataVersion(s, node, newDataVersion); err != nil {
+		s.Rollback()
+		return nil, err
+	}
+
+	if oldHookIdx == -1 {
+		if err := models.InsertRow(s, hook); err != nil {
+			s.Rollback()
+			return nil, err
+		}
+	} else {
+		if err := models.UpdateDBModel(s, hook); err != nil {
+			s.Rollback()
+			return nil, err
+		}
+	}
+
+	if err := s.Commit(); err != nil {
+		s.Rollback()
+		return nil, err
+	}
+
+	memConfMux.Lock()
+	defer memConfMux.Unlock()
+
+	memConfDataVersion = newDataVersion
+	if oldHookIdx == -1 {
+		if hook.Scope == models.WEBHOOK_SCOPE_GLOBAL {
+			memConfGlobalWebhooks = append(memConfGlobalWebhooks, hook)
+		} else if hook.Scope == models.WEBHOOK_SCOPE_GLOBAL {
+			memConfAppWebhooks[hook.AppKey] = append(memConfAppWebhooks[hook.AppKey], hook)
+		}
+
+	} else {
+		if hook.Scope == models.WEBHOOK_SCOPE_GLOBAL {
+			memConfGlobalWebhooks[oldHookIdx] = hook
+		} else if hook.Scope == models.WEBHOOK_SCOPE_GLOBAL {
+			memConfAppWebhooks[hook.AppKey][oldHookIdx] = hook
+		}
+	}
+	return hook, nil
+}
+
 type newConfigData struct {
 	AppKey string `json:"app_key" binding:"required"`
 	K      string `json:"k" binding:"required"`

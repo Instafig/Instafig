@@ -31,14 +31,16 @@ type Config struct {
 }
 
 var (
-	memConfUsers       map[string]*models.User
-	memConfUsersByName map[string]*models.User
-	memConfApps        map[string]*models.App
-	memConfAppsByName  map[string]*models.App
-	memConfRawConfigs  map[string]*models.Config
-	memConfAppConfigs  map[string][]*Config
-	memConfNodes       map[string]*models.Node
-	memConfDataVersion *models.DataVersion
+	memConfUsers          map[string]*models.User
+	memConfUsersByName    map[string]*models.User
+	memConfApps           map[string]*models.App
+	memConfAppsByName     map[string]*models.App
+	memConfGlobalWebhooks []*models.WebHook
+	memConfAppWebhooks    map[string][]*models.WebHook
+	memConfRawConfigs     map[string]*models.Config
+	memConfAppConfigs     map[string][]*Config
+	memConfNodes          map[string]*models.Node
+	memConfDataVersion    *models.DataVersion
 
 	memConfMux = sync.RWMutex{}
 )
@@ -80,6 +82,11 @@ func loadAllData() {
 		log.Panicf("Failed to load app info: %s", err.Error())
 	}
 
+	webhooks, err := models.GetAllWebHooks(nil)
+	if err != nil {
+		log.Panicf("Failed to load webhook info: %s", err.Error())
+	}
+
 	configs, err := models.GetAllConfig(nil)
 	if err != nil {
 		log.Panicf("Failed to load config info: %s", err.Error())
@@ -95,10 +102,14 @@ func loadAllData() {
 		log.Panicf("Failed to load data version info: %s", err.Error())
 	}
 
-	fillMemConfData(users, apps, configs, nodes, dataVersion)
+	fillMemConfData(users, apps, webhooks, configs, nodes, dataVersion)
 }
 
-func fillMemConfData(users []*models.User, apps []*models.App, configs []*models.Config, nodes []*models.Node, dataVersion *models.DataVersion) {
+func fillMemConfData(
+	users []*models.User, apps []*models.App, webhooks []*models.WebHook,
+	configs []*models.Config,
+	nodes []*models.Node, dataVersion *models.DataVersion,
+) {
 	memConfMux.Lock()
 	defer memConfMux.Unlock()
 
@@ -109,6 +120,7 @@ func fillMemConfData(users []*models.User, apps []*models.App, configs []*models
 	memConfRawConfigs = make(map[string]*models.Config)
 	memConfAppConfigs = make(map[string][]*Config)
 	memConfNodes = make(map[string]*models.Node)
+	memConfAppWebhooks = make(map[string][]*models.WebHook)
 	memConfDataVersion = dataVersion
 
 	for _, user := range users {
@@ -120,6 +132,15 @@ func fillMemConfData(users []*models.User, apps []*models.App, configs []*models
 		memConfApps[app.Key] = app
 		memConfAppsByName[app.Name] = app
 		memConfAppConfigs[app.Key] = make([]*Config, 0)
+	}
+
+	for _, hook := range webhooks {
+		switch hook.Scope {
+		case models.WEBHOOK_SCOPE_GLOBAL:
+			memConfGlobalWebhooks = append(memConfGlobalWebhooks, hook)
+		case models.WEBHOOK_SCOPE_APP:
+			memConfAppWebhooks[hook.AppKey] = append(memConfAppWebhooks[hook.AppKey], hook)
+		}
 	}
 
 	for _, config := range configs {
