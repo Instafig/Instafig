@@ -508,9 +508,9 @@ func updateWebHook(hook *models.WebHook, newDataVersion *models.DataVersion) (*m
 	oldHookIdx := -1
 	var hooks []*models.WebHook
 	if hook.Scope == models.WEBHOOK_SCOPE_GLOBAL {
-		hooks = memConfGlobalWebhooks
+		hooks = memConfGlobalWebHooks
 	} else if hook.Scope == models.WEBHOOK_SCOPE_GLOBAL {
-		hooks = memConfAppWebhooks[hook.AppKey]
+		hooks = memConfAppWebHooks[hook.AppKey]
 	}
 	for idx, oldHook := range hooks {
 		if hook.Key == oldHook.Key {
@@ -552,16 +552,16 @@ func updateWebHook(hook *models.WebHook, newDataVersion *models.DataVersion) (*m
 	memConfDataVersion = newDataVersion
 	if oldHookIdx == -1 {
 		if hook.Scope == models.WEBHOOK_SCOPE_GLOBAL {
-			memConfGlobalWebhooks = append(memConfGlobalWebhooks, hook)
+			memConfGlobalWebHooks = append(memConfGlobalWebHooks, hook)
 		} else if hook.Scope == models.WEBHOOK_SCOPE_GLOBAL {
-			memConfAppWebhooks[hook.AppKey] = append(memConfAppWebhooks[hook.AppKey], hook)
+			memConfAppWebHooks[hook.AppKey] = append(memConfAppWebHooks[hook.AppKey], hook)
 		}
 
 	} else {
 		if hook.Scope == models.WEBHOOK_SCOPE_GLOBAL {
-			memConfGlobalWebhooks[oldHookIdx] = hook
+			memConfGlobalWebHooks[oldHookIdx] = hook
 		} else if hook.Scope == models.WEBHOOK_SCOPE_GLOBAL {
-			memConfAppWebhooks[hook.AppKey][oldHookIdx] = hook
+			memConfAppWebHooks[hook.AppKey][oldHookIdx] = hook
 		}
 	}
 	return hook, nil

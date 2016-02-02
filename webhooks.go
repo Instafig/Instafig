@@ -148,16 +148,16 @@ func NewWebHook(c *gin.Context) {
 	}
 
 	if data.Scope != models.WEBHOOK_SCOPE_GLOBAL && data.Scope != models.WEBHOOK_SCOPE_APP {
-		Error(c, BAD_REQUEST, "unknown webhook scope: "+string(data.Scope))
+		Error(c, BAD_REQUEST, "unknown webHook scope: "+string(data.Scope))
 		return
 	}
 
 	if data.Target != models.WEBHOOK_TARGET_PUBU && data.Target != models.WEBHOOK_TARGET_SLACK {
-		Error(c, BAD_REQUEST, "unsupported webhook target: "+data.Target)
+		Error(c, BAD_REQUEST, "unsupported webHook target: "+data.Target)
 		return
 	}
 
-	webhook := &models.WebHook{
+	webHook := &models.WebHook{
 		Key:    utils.GenerateKey(),
 		AppKey: data.AppKey,
 		Scope:  data.Scope,
@@ -165,12 +165,12 @@ func NewWebHook(c *gin.Context) {
 		URL:    data.URL,
 		Status: data.Status,
 	}
-	if _, err := updateWebHook(webhook, nil); err != nil {
+	if _, err := updateWebHook(webHook, nil); err != nil {
 		Error(c, SERVER_ERROR, err.Error())
 		return
 	}
 
-	failedNodes := syncData2SlaveIfNeed(webhook, getOpUserKey(c))
+	failedNodes := syncData2SlaveIfNeed(webHook, getOpUserKey(c))
 	if len(failedNodes) > 0 {
 		Success(c, map[string]interface{}{"failed_nodes": failedNodes})
 	} else {
@@ -197,12 +197,12 @@ func UpdateWebHook(c *gin.Context) {
 	}
 
 	if data.Scope != models.WEBHOOK_SCOPE_GLOBAL && data.Scope != models.WEBHOOK_SCOPE_APP {
-		Error(c, BAD_REQUEST, "unknown webhook scope: "+string(data.Scope))
+		Error(c, BAD_REQUEST, "unknown webHook scope: "+string(data.Scope))
 		return
 	}
 
 	if data.Target != models.WEBHOOK_TARGET_PUBU && data.Target != models.WEBHOOK_TARGET_SLACK {
-		Error(c, BAD_REQUEST, "unsupported webhook target: "+data.Target)
+		Error(c, BAD_REQUEST, "unsupported webHook target: "+data.Target)
 		return
 	}
 
@@ -210,20 +210,20 @@ func UpdateWebHook(c *gin.Context) {
 
 	var oldHook *models.WebHook = nil
 	if data.Scope == models.WEBHOOK_SCOPE_GLOBAL {
-		for _, hook := range memConfGlobalWebhooks {
+		for _, hook := range memConfGlobalWebHooks {
 			if hook.Key == data.Key {
 				oldHook = hook
 				break
 			}
 		}
 	} else if data.Scope == models.WEBHOOK_SCOPE_APP {
-		_, ok := memConfAppWebhooks[data.AppKey]
+		_, ok := memConfAppWebHooks[data.AppKey]
 		if !ok {
 			Error(c, BAD_REQUEST, "app key not exists: "+data.AppKey)
 			memConfMux.RUnlock()
 			return
 		}
-		for _, hook := range memConfAppWebhooks[data.AppKey] {
+		for _, hook := range memConfAppWebHooks[data.AppKey] {
 			if hook.Key == data.Key {
 				oldHook = hook
 				break
@@ -231,22 +231,22 @@ func UpdateWebHook(c *gin.Context) {
 		}
 	}
 	if oldHook == nil {
-		Error(c, BAD_REQUEST, "webhook key not exists: "+data.Key)
+		Error(c, BAD_REQUEST, "webHook key not exists: "+data.Key)
 		memConfMux.RUnlock()
 		return
 	}
 	memConfMux.RUnlock()
 
-	webhook := *oldHook
-	webhook.Target = data.Target
-	webhook.URL = data.URL
-	webhook.Status = data.Status
-	if _, err := updateWebHook(&webhook, nil); err != nil {
+	webHook := *oldHook
+	webHook.Target = data.Target
+	webHook.URL = data.URL
+	webHook.Status = data.Status
+	if _, err := updateWebHook(&webHook, nil); err != nil {
 		Error(c, SERVER_ERROR, err.Error())
 		return
 	}
 
-	failedNodes := syncData2SlaveIfNeed(&webhook, getOpUserKey(c))
+	failedNodes := syncData2SlaveIfNeed(&webHook, getOpUserKey(c))
 	if len(failedNodes) > 0 {
 		Success(c, map[string]interface{}{"failed_nodes": failedNodes})
 	} else {
