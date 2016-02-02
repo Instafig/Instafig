@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/appwilldev/Instafig/models"
+	"github.com/appwilldev/Instafig/utils"
+	"github.com/gin-gonic/gin"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -104,5 +106,150 @@ func TriggerWebHooks(m *models.ConfigUpdateHistory, app *models.App) {
 		case models.WEBHOOK_TARGET_SLACK:
 			sendNotificationToSlack(hook.URL, m, app)
 		}
+	}
+}
+
+// Rest API
+
+func GetGlobalWebHooks(c *gin.Context) {
+	hooks, err := models.GetGlobalWebHooks(nil)
+	if err != nil {
+		Error(c, SERVER_ERROR, err.Error())
+		return
+	}
+
+	Success(c, hooks)
+}
+
+func GetAppWebHooks(c *gin.Context) {
+	appKey := c.Param("app_key")
+	apps, err := models.GetWebHooksByAppKey(nil, appKey)
+	if err != nil {
+		Error(c, SERVER_ERROR, err.Error())
+		return
+	}
+	Success(c, apps)
+}
+
+func NewWebHook(c *gin.Context) {
+	confWriteMux.Lock()
+	defer confWriteMux.Unlock()
+
+	var data struct {
+		AppKey string `json:"app_key" binding:"required"`
+		Scope  int    `json:"scope" binding:"required"`
+		Target string `json:"target" binding:"required"`
+		URL    string `json:"url" binding:"required"`
+		Status int    `json:"status" binding:"required"`
+	}
+	if err := c.BindJSON(&data); err != nil {
+		Error(c, BAD_POST_DATA, err.Error())
+		return
+	}
+
+	if data.Scope != models.WEBHOOK_SCOPE_GLOBAL && data.Scope != models.WEBHOOK_SCOPE_APP {
+		Error(c, BAD_REQUEST, "unknown webhook scope: "+string(data.Scope))
+		return
+	}
+
+	if data.Target != models.WEBHOOK_TARGET_PUBU && data.Target != models.WEBHOOK_TARGET_SLACK {
+		Error(c, BAD_REQUEST, "unsupported webhook target: "+data.Target)
+		return
+	}
+
+	webhook := &models.WebHook{
+		Key:    utils.GenerateKey(),
+		AppKey: data.AppKey,
+		Scope:  data.Scope,
+		Target: data.Target,
+		URL:    data.URL,
+		Status: data.Status,
+	}
+	if _, err := updateWebHook(webhook, nil); err != nil {
+		Error(c, SERVER_ERROR, err.Error())
+		return
+	}
+
+	failedNodes := syncData2SlaveIfNeed(webhook, getOpUserKey(c))
+	if len(failedNodes) > 0 {
+		Success(c, map[string]interface{}{"failed_nodes": failedNodes})
+	} else {
+		Success(c, nil)
+	}
+}
+
+func UpdateWebHook(c *gin.Context) {
+	confWriteMux.Lock()
+	defer confWriteMux.Unlock()
+
+	var data struct {
+		Key    string `json:"key" binding:"required"`
+		AppKey string `json:"app_key" binding:"required"`
+		Scope  int    `json:"scope" binding:"required"`
+		Target string `json:"target" binding:"required"`
+		URL    string `json:"url" binding:"required"`
+		Status int    `json:"status" binding:"required"`
+	}
+
+	if err := c.BindJSON(data); err != nil {
+		Error(c, BAD_POST_DATA, err.Error())
+		return
+	}
+
+	if data.Scope != models.WEBHOOK_SCOPE_GLOBAL && data.Scope != models.WEBHOOK_SCOPE_APP {
+		Error(c, BAD_REQUEST, "unknown webhook scope: "+string(data.Scope))
+		return
+	}
+
+	if data.Target != models.WEBHOOK_TARGET_PUBU && data.Target != models.WEBHOOK_TARGET_SLACK {
+		Error(c, BAD_REQUEST, "unsupported webhook target: "+data.Target)
+		return
+	}
+
+	memConfMux.RLock()
+
+	var oldHook *models.WebHook = nil
+	if data.Scope == models.WEBHOOK_SCOPE_GLOBAL {
+		for _, hook := range memConfGlobalWebhooks {
+			if hook.Key == data.Key {
+				oldHook = hook
+				break
+			}
+		}
+	} else if data.Scope == models.WEBHOOK_SCOPE_APP {
+		_, ok := memConfAppWebhooks[data.AppKey]
+		if !ok {
+			Error(c, BAD_REQUEST, "app key not exists: "+data.AppKey)
+			memConfMux.RUnlock()
+			return
+		}
+		for _, hook := range memConfAppWebhooks[data.AppKey] {
+			if hook.Key == data.Key {
+				oldHook = hook
+				break
+			}
+		}
+	}
+	if oldHook == nil {
+		Error(c, BAD_REQUEST, "webhook key not exists: "+data.Key)
+		memConfMux.RUnlock()
+		return
+	}
+	memConfMux.RUnlock()
+
+	webhook := *oldHook
+	webhook.Target = data.Target
+	webhook.URL = data.URL
+	webhook.Status = data.Status
+	if _, err := updateWebHook(&webhook, nil); err != nil {
+		Error(c, SERVER_ERROR, err.Error())
+		return
+	}
+
+	failedNodes := syncData2SlaveIfNeed(&webhook, getOpUserKey(c))
+	if len(failedNodes) > 0 {
+		Success(c, map[string]interface{}{"failed_nodes": failedNodes})
+	} else {
+		Success(c, nil)
 	}
 }

@@ -105,6 +105,11 @@ func main() {
 		opAPIGroup.POST("/app", OpAuth, ConfWriteCheck, NewApp)
 		opAPIGroup.PUT("/app", OpAuth, ConfWriteCheck, UpdateApp)
 
+		opAPIGroup.GET("/webhooks/global", OpAuth, GetGlobalWebHooks)
+		opAPIGroup.GET("/webhooks/app/:app_key", OpAuth, GetAppWebHooks)
+		opAPIGroup.POST("/webhook", OpAuth, ConfWriteCheck, NewWebHook)
+		opAPIGroup.PUT("/webhook", OpAuth, ConfWriteCheck, UpdateWebHook)
+
 		opAPIGroup.GET("/configs/:app_key", OpAuth, GetConfigs)
 		opAPIGroup.POST("/config", OpAuth, ConfWriteCheck, NewConfig)
 		opAPIGroup.PUT("/config", OpAuth, ConfWriteCheck, UpdateConfig)
