@@ -53,26 +53,29 @@ func main() {
 		ginIns.Use(gin.Logger())
 	}
 
-	// static
-	ginIns.Static("web", "./web")
-	// bin static
-	ginIns.GET("/web-bin/*file",
-		func(c *gin.Context) {
-			fileName := c.Param("file")
-			data, err := Asset("web-bin" + fileName)
-			if err != nil {
-				c.String(http.StatusNotFound, "")
-				return
-			}
+	if conf.WebDebugMode {
+		// static
+		ginIns.Static("/web", "./web")
+	} else {
+		// bin static
+		ginIns.GET("/web/*file",
+			func(c *gin.Context) {
+				fileName := c.Param("file")
+				data, err := Asset("web" + fileName)
+				if err != nil {
+					c.String(http.StatusNotFound, "")
+					return
+				}
 
-			switch {
-			case strings.LastIndex(fileName, ".html") == len(fileName)-5:
-				c.Header("Content-Type", "text/html; charset=utf-8")
-			case strings.LastIndex(fileName, ".css") == len(fileName)-4:
-				c.Header("Content-Type", "text/css")
-			}
-			c.String(http.StatusOK, string(data))
-		})
+				switch {
+				case strings.LastIndex(fileName, ".html") == len(fileName)-5:
+					c.Header("Content-Type", "text/html; charset=utf-8")
+				case strings.LastIndex(fileName, ".css") == len(fileName)-4:
+					c.Header("Content-Type", "text/css")
+				}
+				c.String(http.StatusOK, string(data))
+			})
+	}
 
 	// misc api
 	miscAPIGroup := ginIns.Group("/misc")

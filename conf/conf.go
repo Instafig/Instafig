@@ -36,12 +36,14 @@ var (
 	CheckMasterInerval int
 	DataExpires        int
 
-	DebugMode bool
-	LogLevel  string
+	WebDebugMode bool
+	DebugMode    bool
+	LogLevel     string
 
 	configFile   = flag.String("config", "__unset__", "service config file")
 	maxThreadNum = flag.Int("max-thread", 0, "max threads of service")
 	debugMode    = flag.Bool("debug", false, "debug mode")
+	webDebugMode = flag.Bool("web-debug", false, "web debug mode")
 	logLevel     = flag.String("log-level", "INFO", "DEBUG | INFO | WARN | ERROR | FATAL | PANIC")
 	versionInfo  = flag.Bool("version", false, "show version info")
 )
@@ -51,6 +53,7 @@ func init() {
 
 	DebugMode = *debugMode
 	LogLevel = *logLevel
+	WebDebugMode = *webDebugMode
 
 	if *versionInfo {
 		fmt.Printf("%s\n", VersionString())

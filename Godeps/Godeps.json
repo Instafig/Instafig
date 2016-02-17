@@ -75,6 +75,10 @@
 			"Rev": "3dac7b4f76f6e17fb39b768b89e3783d16e237fe"
 		},
 		{
+			"ImportPath": "github.com/mattn/go-isatty",
+			"Rev": "56b76bdf51f7708750eac80fa38b952bb9f32639"
+		},
+		{
 			"ImportPath": "github.com/mattn/go-sqlite3",
 			"Comment": "v1.1.0-30-g5510da3",
 			"Rev": "5510da399572b4962c020184bb291120c0a412e2"
@@ -96,6 +100,10 @@
 		{
 			"ImportPath": "golang.org/x/net/context",
 			"Rev": "4fd4a9fed55e5bdee4a89d6406c2eabe38b60300"
+		},
+		{
+			"ImportPath": "golang.org/x/sys/unix",
+			"Rev": "833a04a10549a95dc34458c195cbad61bbb6cb4d"
 		},
 		{
 			"ImportPath": "gopkg.in/bluesuncorp/validator.v5",
