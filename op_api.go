@@ -750,6 +750,7 @@ func UpdateConfig(c *gin.Context) {
 	config := &models.Config{}
 	*config = *oldConfig
 	config.UpdateTimes++
+	config.K = data.K
 	config.V = data.V
 	config.VType = data.VType
 	config.Des = data.Des
