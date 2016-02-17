@@ -35,8 +35,8 @@ var (
 	memConfUsersByName    map[string]*models.User
 	memConfApps           map[string]*models.App
 	memConfAppsByName     map[string]*models.App
-	memConfGlobalWebhooks []*models.WebHook
-	memConfAppWebhooks    map[string][]*models.WebHook
+	memConfGlobalWebHooks []*models.WebHook
+	memConfAppWebHooks    map[string][]*models.WebHook
 	memConfRawConfigs     map[string]*models.Config
 	memConfAppConfigs     map[string][]*Config
 	memConfNodes          map[string]*models.Node
@@ -82,9 +82,9 @@ func loadAllData() {
 		log.Panicf("Failed to load app info: %s", err.Error())
 	}
 
-	webhooks, err := models.GetAllWebHooks(nil)
+	webHooks, err := models.GetAllWebHooks(nil)
 	if err != nil {
-		log.Panicf("Failed to load webhook info: %s", err.Error())
+		log.Panicf("Failed to load webHook info: %s", err.Error())
 	}
 
 	configs, err := models.GetAllConfig(nil)
@@ -102,11 +102,11 @@ func loadAllData() {
 		log.Panicf("Failed to load data version info: %s", err.Error())
 	}
 
-	fillMemConfData(users, apps, webhooks, configs, nodes, dataVersion)
+	fillMemConfData(users, apps, webHooks, configs, nodes, dataVersion)
 }
 
 func fillMemConfData(
-	users []*models.User, apps []*models.App, webhooks []*models.WebHook,
+	users []*models.User, apps []*models.App, webHooks []*models.WebHook,
 	configs []*models.Config,
 	nodes []*models.Node, dataVersion *models.DataVersion,
 ) {
@@ -120,7 +120,7 @@ func fillMemConfData(
 	memConfRawConfigs = make(map[string]*models.Config)
 	memConfAppConfigs = make(map[string][]*Config)
 	memConfNodes = make(map[string]*models.Node)
-	memConfAppWebhooks = make(map[string][]*models.WebHook)
+	memConfAppWebHooks = make(map[string][]*models.WebHook)
 	memConfDataVersion = dataVersion
 
 	for _, user := range users {
@@ -134,12 +134,12 @@ func fillMemConfData(
 		memConfAppConfigs[app.Key] = make([]*Config, 0)
 	}
 
-	for _, hook := range webhooks {
+	for _, hook := range webHooks {
 		switch hook.Scope {
 		case models.WEBHOOK_SCOPE_GLOBAL:
-			memConfGlobalWebhooks = append(memConfGlobalWebhooks, hook)
+			memConfGlobalWebHooks = append(memConfGlobalWebHooks, hook)
 		case models.WEBHOOK_SCOPE_APP:
-			memConfAppWebhooks[hook.AppKey] = append(memConfAppWebhooks[hook.AppKey], hook)
+			memConfAppWebHooks[hook.AppKey] = append(memConfAppWebHooks[hook.AppKey], hook)
 		}
 	}
 

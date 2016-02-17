@@ -573,7 +573,7 @@ func handleSlaveSyncUpdateData(c *gin.Context, data string) {
 	case NODE_REQUEST_SYNC_TYPE_WEBHOOK:
 		hook := &models.WebHook{}
 		if err = json.Unmarshal([]byte(syncData.Data), hook); err != nil {
-			Error(c, BAD_REQUEST, "bad data format for webhook model")
+			Error(c, BAD_REQUEST, "bad data format for webHook model")
 			return
 		}
 		if _, err = updateWebHook(hook, syncData.DataVersion); err != nil {
@@ -690,15 +690,15 @@ func handleSyncMaster(c *gin.Context, data string) {
 	}
 
 	memConfMux.RLock()
-	webhooks := memConfGlobalWebhooks
-	for _, hooks := range memConfAppWebhooks {
-		webhooks = append(webhooks, hooks...)
+	webHooks := memConfGlobalWebHooks
+	for _, hooks := range memConfAppWebHooks {
+		webHooks = append(webHooks, hooks...)
 	}
 	resData, _ := json.Marshal(syncAllDataT{
 		Nodes:       memConfNodes,
 		Users:       memConfUsers,
 		Apps:        memConfApps,
-		WebHooks:    webhooks,
+		WebHooks:    webHooks,
 		Configs:     memConfRawConfigs,
 		DataVersion: memConfDataVersion,
 		ConfHistory: history,
