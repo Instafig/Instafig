@@ -279,6 +279,25 @@ func GetUsers(c *gin.Context) {
 	})
 }
 
+func GetApp(c *gin.Context) {
+	memConfMux.RLock()
+	app := memConfApps[c.Param("app_key")]
+	memConfMux.RUnlock()
+
+	if app == nil {
+		Success(c, nil)
+		return
+	}
+
+	returnApp := *app
+	returnApp.LastUpdateInfo, _ = models.GetConfigUpdateHistoryById(nil, returnApp.LastUpdateId)
+	memConfMux.RLock()
+	returnApp.UserName = memConfUsers[returnApp.UserKey].Name
+	memConfMux.RUnlock()
+
+	Success(c, &returnApp)
+}
+
 func NewApp(c *gin.Context) {
 	confWriteMux.Lock()
 	defer confWriteMux.Unlock()

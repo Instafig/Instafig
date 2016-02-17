@@ -2,7 +2,7 @@
 # -*- mode: sh -*-
 
 TEST_DIRS=(./    models conf utils)
-TEST_COVR=(25    0      0    90)
+TEST_COVR=(20    0      0    90)
 
 
 for (( i=0; i<${#TEST_DIRS[*]}; i++)); do

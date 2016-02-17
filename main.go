@@ -108,6 +108,7 @@ func main() {
 
 		opAPIGroup.GET("/apps/user/:user_key", OpAuth, GetApps)
 		opAPIGroup.GET("/apps/all/:page/:count", OpAuth, GetAllApps)
+		opAPIGroup.GET("/app/:app_key", OpAuth, GetApp)
 		opAPIGroup.POST("/app", OpAuth, ConfWriteCheck, NewApp)
 		opAPIGroup.PUT("/app", OpAuth, ConfWriteCheck, UpdateApp)
 
