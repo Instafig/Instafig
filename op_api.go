@@ -379,9 +379,14 @@ func UpdateApp(c *gin.Context) {
 		return
 	}
 
-	if conf.IsEasyDeployMode() && memConfAppsByName[data.Name].Key != data.Key {
-		Error(c, BAD_REQUEST, "appname already exists: "+data.Name)
-		return
+	if conf.IsEasyDeployMode() && memConfApps[data.Key].Name != data.Key {
+		for _, app := range memConfApps {
+			if app.Name == data.Name {
+				Error(c, BAD_REQUEST, "appname already exists: "+data.Name)
+				memConfMux.RUnlock()
+				return
+			}
+		}
 	}
 	memConfMux.RUnlock()
 
