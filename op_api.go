@@ -731,8 +731,15 @@ func UpdateConfig(c *gin.Context) {
 		return
 	}
 	if oldConfig.K != data.K {
-		Error(c, BAD_REQUEST, "can not change config's key")
-		return
+		memConfMux.RLock()
+		for _, config := range memConfAppConfigs[oldConfig.AppKey] {
+			if config.K == data.K {
+				memConfMux.RUnlock()
+				Error(c, BAD_REQUEST, fmt.Sprintf("config [%s] already exists", data.K))
+				return
+			}
+		}
+		memConfMux.RUnlock()
 	}
 
 	config := &models.Config{}
