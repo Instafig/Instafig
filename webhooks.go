@@ -191,7 +191,7 @@ func UpdateWebHook(c *gin.Context) {
 		Status int    `json:"status" binding:"required"`
 	}
 
-	if err := c.BindJSON(data); err != nil {
+	if err := c.BindJSON(&data); err != nil {
 		Error(c, BAD_POST_DATA, err.Error())
 		return
 	}
