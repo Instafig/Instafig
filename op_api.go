@@ -336,7 +336,7 @@ func UpdateApp(c *gin.Context) {
 		Type    string `json:"type" binding:"required"`
 		AuxInfo string `json:"aux_info"`
 	}
-	if err := c.BindJSON(data); err != nil {
+	if err := c.BindJSON(&data); err != nil {
 		Error(c, BAD_POST_DATA, err.Error())
 		return
 	}
