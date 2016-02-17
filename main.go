@@ -61,9 +61,12 @@ func main() {
 		ginIns.GET("/web/*file",
 			func(c *gin.Context) {
 				fileName := c.Param("file")
+				if fileName == "/" {
+					fileName = "/index.html"
+				}
 				data, err := Asset("web" + fileName)
 				if err != nil {
-					c.String(http.StatusNotFound, "")
+					c.String(http.StatusNotFound, err.Error())
 					return
 				}
 
