@@ -226,6 +226,148 @@ func TestUpdateConfig(t *testing.T) {
 	_clearModelData()
 }
 
+func TestVerifyNewConfigData(t *testing.T) {
+	err := _clearModelData()
+	assert.True(t, err == nil, "must correctly clear data")
+	loadAllData()
+	initNodeData()
+
+	_, app, _, err := initOneConfig("rahuahua", "iconfreecn", models.APP_TYPE_REAL, "config1", "1", models.CONF_V_TYPE_INT)
+	assert.True(t, err == nil, "must correctly add new config")
+
+	newData := &newConfigData{
+		K:      "float_conf",
+		V:      "1.2",
+		VType:  models.CONF_V_TYPE_FLOAT,
+		AppKey: app.Key,
+	}
+	err = verifyNewConfigData(newData)
+	assert.True(t, err == nil)
+
+	badData := *newData
+	badData.AppKey = "non-exist-app-key"
+	err = verifyNewConfigData(&badData)
+	assert.True(t, err != nil)
+
+	badData = *newData
+	badData.K = "config1"
+	err = verifyNewConfigData(&badData)
+	assert.True(t, err != nil)
+
+	badData = *newData
+	badData.V = "12"
+	badData.VType = models.CONF_V_TYPE_INT
+	err = verifyNewConfigData(&badData)
+	assert.True(t, err == nil)
+
+	badData = *newData
+	badData.V = "1.2"
+	badData.VType = models.CONF_V_TYPE_INT
+	err = verifyNewConfigData(&badData)
+	assert.True(t, err != nil)
+
+	badData = *newData
+	badData.V = "1.223324"
+	badData.VType = models.CONF_V_TYPE_FLOAT
+	err = verifyNewConfigData(&badData)
+	assert.True(t, err == nil)
+
+	badData = *newData
+	badData.V = "1.2a"
+	badData.VType = models.CONF_V_TYPE_FLOAT
+	err = verifyNewConfigData(&badData)
+	assert.True(t, err != nil)
+
+	badData = *newData
+	badData.V = "non-exist-template-app-key"
+	badData.VType = models.CONF_V_TYPE_TEMPLATE
+	err = verifyNewConfigData(&badData)
+	assert.True(t, err != nil)
+
+	badData = *newData
+	badData.V = "INVALID_CODE_VALUE"
+	badData.VType = models.CONF_V_TYPE_CODE
+	err = verifyNewConfigData(&badData)
+	assert.True(t, err != nil)
+
+	_clearModelData()
+}
+
+func TestVerifyUpdateConfigData(t *testing.T) {
+	err := _clearModelData()
+	assert.True(t, err == nil, "must correctly clear data")
+	loadAllData()
+	initNodeData()
+
+	user, app, config, err := initOneConfig("rahuahua", "iconfreecn", models.APP_TYPE_REAL, "config1", "1", models.CONF_V_TYPE_INT)
+	assert.True(t, err == nil, "must correctly add new config")
+
+	newData := &updateConfigData{
+		K:      "float_conf",
+		V:      "1.2",
+		VType:  models.CONF_V_TYPE_FLOAT,
+		Key: config.Key,
+	}
+	err = verifyUpdateConfigData(newData)
+	assert.True(t, err == nil)
+
+	badData := *newData
+	badData.Key = "non-exist-config-key"
+	err = verifyUpdateConfigData(&badData)
+	assert.True(t, err != nil)
+
+
+	_, err = newConfigWithNewConfigData(
+		&newConfigData{
+			K:      "already-exist-config-key",
+			V:      "1.2",
+			VType:  models.CONF_V_TYPE_FLOAT,
+			AppKey: app.Key}, user.Key)
+	assert.True(t, err == nil)
+	badData = *newData
+	badData.K = "already-exist-config-key"
+	err = verifyUpdateConfigData(&badData)
+	assert.True(t, err != nil)
+
+	badData = *newData
+	badData.V = "12"
+	badData.VType = models.CONF_V_TYPE_INT
+	err = verifyUpdateConfigData(&badData)
+	assert.True(t, err == nil)
+
+	badData = *newData
+	badData.V = "1.2"
+	badData.VType = models.CONF_V_TYPE_INT
+	err = verifyUpdateConfigData(&badData)
+	assert.True(t, err != nil)
+
+	badData = *newData
+	badData.V = "1.223324"
+	badData.VType = models.CONF_V_TYPE_FLOAT
+	err = verifyUpdateConfigData(&badData)
+	assert.True(t, err == nil)
+
+	badData = *newData
+	badData.V = "1.2a"
+	badData.VType = models.CONF_V_TYPE_FLOAT
+	err = verifyUpdateConfigData(&badData)
+	assert.True(t, err != nil)
+
+	badData = *newData
+	badData.V = "non-exist-template-app-key"
+	badData.VType = models.CONF_V_TYPE_TEMPLATE
+	err = verifyUpdateConfigData(&badData)
+	assert.True(t, err != nil)
+
+	badData = *newData
+	badData.V = "INVALID_CODE_VALUE"
+	badData.VType = models.CONF_V_TYPE_CODE
+	err = verifyUpdateConfigData(&badData)
+	assert.True(t, err != nil)
+
+	_clearModelData()
+}
+
 func TestDataVersion(t *testing.T) {
 	err := _clearModelData()
 	assert.True(t, err == nil, "must correctly clear data")

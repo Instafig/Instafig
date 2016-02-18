@@ -663,13 +663,11 @@ func verifyNewConfigData(data *newConfigData) error {
 		return fmt.Errorf("unknown config value type: " + data.VType)
 	}
 
-	app := memConfApps[data.AppKey]
-	configs := memConfAppConfigs[data.AppKey]
-
-	if app == nil {
+	if memConfApps[data.AppKey] == nil {
 		return fmt.Errorf("app key not exists: " + data.AppKey)
 	}
-	for _, config := range configs {
+
+	for _, config := range memConfAppConfigs[data.AppKey] {
 		if config.K == data.K {
 			return fmt.Errorf("config key has existed: " + data.K)
 		}
