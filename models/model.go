@@ -142,6 +142,17 @@ func GetAppCount(s *Session) (int, error) {
 	return int(count), err
 }
 
+func SearchAppByName(s *Session, q string) ([]*App, error) {
+	if s == nil {
+		s = newAutoCloseModelsSession()
+	}
+
+	var res []*App
+	err := s.Where("like(?, name)=1", "%"+q+"%").OrderBy("").Find(&res)
+
+	return res, err
+}
+
 func IsValidAppType(typ string) bool {
 	return typ == APP_TYPE_REAL || typ == APP_TYPE_TEMPLATE
 }

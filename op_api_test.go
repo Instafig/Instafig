@@ -172,6 +172,56 @@ func TestUpdateApp(t *testing.T) {
 	_clearModelData()
 }
 
+func TestSearchApps(t *testing.T) {
+	user, err := updateUser(&models.User{
+		Name: "rahuahua",
+		Key:  utils.GenerateKey()}, nil)
+
+	_, err = updateApp(&models.App{
+		Key:     utils.GenerateKey(),
+		UserKey: user.Key,
+		Name:    "iconfreecn",
+		Type:    models.APP_TYPE_REAL}, nil)
+	assert.True(t, err == nil, "must correctly add new app")
+
+	_, err = updateApp(&models.App{
+		Key:     utils.GenerateKey(),
+		UserKey: user.Key,
+		Name:    "xianyouvideo",
+		Type:    models.APP_TYPE_REAL}, nil)
+	assert.True(t, err == nil, "must correctly add new app")
+
+	_, err = updateApp(&models.App{
+		Key:     utils.GenerateKey(),
+		UserKey: user.Key,
+		Name:    "hdfreecn",
+		Type:    models.APP_TYPE_REAL}, nil)
+	assert.True(t, err == nil, "must correctly add new app")
+
+	_, err = updateApp(&models.App{
+		Key:     utils.GenerateKey(),
+		UserKey: user.Key,
+		Name:    "phoneplay",
+		Type:    models.APP_TYPE_REAL}, nil)
+	assert.True(t, err == nil, "must correctly add new app")
+
+	apps, err := searchApps("free")
+	assert.True(t, err == nil)
+	assert.True(t, len(apps) == 2)
+
+	apps, err = searchApps("video")
+	assert.True(t, err == nil)
+	assert.True(t, len(apps) == 1)
+
+	apps, err = searchApps("phoneplay")
+	assert.True(t, err == nil)
+	assert.True(t, len(apps) == 1)
+
+	apps, err = searchApps("non-exist")
+	assert.True(t, err == nil)
+	assert.True(t, len(apps) == 0)
+}
+
 func initOneConfig(userName, appName, appType, configK, configV, configVType string) (*models.User, *models.App, *models.Config, error) {
 	user, err := updateUser(&models.User{
 		Name: userName,

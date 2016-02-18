@@ -332,6 +332,30 @@ func GetApp(c *gin.Context) {
 	Success(c, &returnApp)
 }
 
+func SearchApps(c *gin.Context) {
+	apps, err := searchApps(c.Query("q"))
+	if err != nil {
+		Error(c, SERVER_ERROR, err.Error())
+		return
+	}
+
+	memConfMux.RLock()
+	for _, app := range apps {
+		app.UserName = memConfUsers[app.UserKey].Name
+		app.LastUpdateInfo, _ = models.GetConfigUpdateHistoryById(nil, app.LastUpdateId)
+		if app.LastUpdateInfo != nil {
+			app.LastUpdateInfo.UserName = memConfUsers[app.LastUpdateInfo.UserKey].Name
+		}
+	}
+	memConfMux.RUnlock()
+
+	Success(c, apps)
+}
+
+func searchApps(q string) ([]*models.App, error) {
+	return models.SearchAppByName(nil, q)
+}
+
 func NewApp(c *gin.Context) {
 	confWriteMux.Lock()
 	defer confWriteMux.Unlock()
