@@ -135,12 +135,17 @@ func NewUser(c *gin.Context) {
 func verifyNewUserData(data *newUserData) error {
 	memConfMux.RLock()
 	defer memConfMux.RUnlock()
+
 	if len(memConfUsersByName) > 0 {
 		return fmt.Errorf("user [%s] already exists", data.Name)
 	}
 
+	if len(data.Name) < 3 {
+		return fmt.Errorf("user name too short, length must bigger than 2")
+	}
+
 	if len(data.PassCode) < 6 {
-		return fmt.Errorf("passcode too short, length must bigger than 6")
+		return fmt.Errorf("user passcode too short, length must bigger than 6")
 	}
 
 	return nil
@@ -158,41 +163,63 @@ func newUserWithNewUserData(data *newUserData, userKey, creatorKey string) (*mod
 	return updateUser(user, nil)
 }
 
+type updateUserData struct {
+	Name    string `json:"name" binding:"required"`
+	AuxInfo string `json:"aux_info"`
+}
+
 func UpdateUser(c *gin.Context) {
 	confWriteMux.Lock()
 	defer confWriteMux.Unlock()
 
-	var data struct {
-		Name    string `json:"name" binding:"required"`
-		AuxInfo string `json:"aux_info"`
-	}
-	if err := c.BindJSON(&data); err != nil {
+	data := &updateUserData{}
+	if err := c.BindJSON(data); err != nil {
 		Error(c, BAD_POST_DATA, err.Error())
 		return
 	}
 
-	memConfMux.RLock()
-	user := *memConfUsers[getOpUserKey(c)]
-	if memConfUsersByName[data.Name] != nil && memConfUsersByName[data.Name].Key != user.Key {
-		Error(c, BAD_REQUEST, "user name already exists: "+data.Name)
-		memConfMux.RUnlock()
+	if err := verifyUpdateUserData(data, getOpUserKey(c)); err != nil {
+		Error(c, BAD_REQUEST, err.Error())
 		return
 	}
-	memConfMux.RUnlock()
 
-	user.AuxInfo = data.AuxInfo
-	user.Name = data.Name
-	if _, err := updateUser(&user, nil); err != nil {
+	user, err := updateUserWithUpdateData(data, getOpUserKey(c))
+	if err != nil {
 		Error(c, SERVER_ERROR, err.Error())
 		return
 	}
 
-	failedNodes := syncData2SlaveIfNeed(&user, getOpUserKey(c))
+	failedNodes := syncData2SlaveIfNeed(user, getOpUserKey(c))
 	if len(failedNodes) > 0 {
 		Success(c, map[string]interface{}{"failed_nodes": failedNodes})
 	} else {
 		Success(c, nil)
 	}
+}
+
+func verifyUpdateUserData(data *updateUserData, userKey string) error {
+	memConfMux.RLock()
+	defer memConfMux.RUnlock()
+
+	if memConfUsersByName[data.Name] != nil && memConfUsersByName[data.Name].Key != memConfUsers[userKey].Key {
+		return fmt.Errorf("user name [%s] already exists", data.Name)
+	}
+
+	if len(data.Name) < 3 {
+		return fmt.Errorf("user name too short, length must bigger than 2")
+	}
+
+	return nil
+}
+
+func updateUserWithUpdateData(data *updateUserData, userKey string) (*models.User, error) {
+	memConfMux.RLock()
+	user := *memConfUsers[userKey]
+	memConfMux.RUnlock()
+
+	user.AuxInfo = data.AuxInfo
+	user.Name = data.Name
+	return updateUser(&user, nil)
 }
 
 func updateUser(user *models.User, newDataVersion *models.DataVersion) (*models.User, error) {

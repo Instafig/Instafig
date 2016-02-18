@@ -25,12 +25,11 @@ func TestNewUser(t *testing.T) {
 	defer confWriteMux.Unlock()
 
 	userData := &newUserData{
-		Name: "rahuahua",
+		Name:     "rahuahua",
 		PassCode: "huahua",
 	}
 
-	err = verifyNewUserData(userData)
-	assert.True(t, err == nil)
+	assert.True(t, verifyNewUserData(userData) == nil)
 
 	user, err := newUserWithNewUserData(userData, "1234567", "1234567")
 	assert.True(t, err == nil, "must correctly add new user")
@@ -38,19 +37,20 @@ func TestNewUser(t *testing.T) {
 	assert.True(t, user.Key == memConfUsersByName["rahuahua"].Key, "must the same user")
 
 	badUserData := &newUserData{
-		Name: "rahuahua",
+		Name:     "rahuahua",
 		PassCode: "huahua",
 	}
-	err = verifyNewUserData(badUserData)
-	assert.True(t, err != nil)
+	assert.True(t, verifyNewUserData(badUserData) != nil)
+
+	badUserData.Name = "12"
+	assert.True(t, verifyNewUserData(badUserData) != nil)
 
 	badUserData.Name = "non-exists"
 	badUserData.PassCode = "12"
-	err = verifyNewUserData(badUserData)
-	assert.True(t, err != nil)
+	assert.True(t, verifyNewUserData(badUserData) != nil)
 
 	userData = &newUserData{
-		Name: "rahuahua2",
+		Name:     "rahuahua2",
 		PassCode: "huahua22",
 	}
 	user, err = newUserWithNewUserData(userData, "12345678", "1234567")
@@ -69,18 +69,40 @@ func TestUpdateUser(t *testing.T) {
 	confWriteMux.Lock()
 	defer confWriteMux.Unlock()
 
-	user, err := updateUser(&models.User{
-		Name: "rahuahua",
-		Key:  utils.GenerateKey()}, nil)
-
-	user, err = updateUser(&models.User{
-		Name:    "rahuahua2",
-		Key:     user.Key,
-		AuxInfo: "guaji"}, nil)
+	userData := &newUserData{
+		Name:     "rahuahua",
+		PassCode: "huahua",
+	}
+	user, err := newUserWithNewUserData(userData, "1234567", "1234567")
 	assert.True(t, err == nil, "must correctly add new user")
-	assert.True(t, len(memConfUsers) == 1, "must only one user")
-	assert.True(t, memConfUsersByName["rahuahua"] == nil, "old-name user must not exist")
-	assert.True(t, memConfUsersByName["rahuahua2"].AuxInfo == "guaji", "aux_info must be updated")
+
+	userData = &newUserData{
+		Name:     "rahuahua2",
+		PassCode: "huahua",
+	}
+	newUser, err := newUserWithNewUserData(userData, utils.GenerateKey(), user.Key)
+	assert.True(t, err == nil, "must correctly add new user")
+	assert.True(t, newUser.CreatorKey == user.Key && newUser.CreatedUTC >= user.CreatedUTC)
+
+	updateData := &updateUserData{
+		Name:    "rahuahua333",
+		AuxInfo: "1234",
+	}
+
+	assert.True(t, verifyUpdateUserData(updateData, user.Key) == nil)
+
+	oldUser := *user
+	user, err = updateUserWithUpdateData(updateData, user.Key)
+	assert.True(t, err == nil)
+	assert.True(t, user.Key == oldUser.Key)
+	assert.True(t, user.Name == "rahuahua333")
+
+	badData := &updateUserData{
+		Name: "rahuahua2",
+	}
+	assert.True(t, verifyUpdateUserData(badData, user.Key) != nil)
+	badData.Name = "12"
+	assert.True(t, verifyUpdateUserData(badData, user.Key) != nil)
 
 	_clearModelData()
 }
@@ -323,10 +345,10 @@ func TestVerifyUpdateConfigData(t *testing.T) {
 	assert.True(t, err == nil, "must correctly add new config")
 
 	newData := &updateConfigData{
-		K:      "float_conf",
-		V:      "1.2",
-		VType:  models.CONF_V_TYPE_FLOAT,
-		Key: config.Key,
+		K:     "float_conf",
+		V:     "1.2",
+		VType: models.CONF_V_TYPE_FLOAT,
+		Key:   config.Key,
 	}
 	err = verifyUpdateConfigData(newData)
 	assert.True(t, err == nil)
@@ -335,7 +357,6 @@ func TestVerifyUpdateConfigData(t *testing.T) {
 	badData.Key = "non-exist-config-key"
 	err = verifyUpdateConfigData(&badData)
 	assert.True(t, err != nil)
-
 
 	_, err = newConfigWithNewConfigData(
 		&newConfigData{
