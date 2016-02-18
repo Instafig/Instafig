@@ -19,7 +19,7 @@ const (
 	NOT_LOGIN
 	USER_NOT_EXIST
 	USER_NOT_INIT
-	PASS_CODE_ERR
+	PASS_CODE_ERROR
 )
 
 var (
@@ -34,7 +34,7 @@ var (
 		NOT_LOGIN:          [2]string{"not_login", "need login"},
 		USER_NOT_EXIST:     [2]string{"user_not_exist", "user not exist"},
 		USER_NOT_INIT:      [2]string{"user_not_init", "need init user first"},
-		PASS_CODE_ERR:      [2]string{"pass_code_err", "user passcode wrong"},
+		PASS_CODE_ERROR:    [2]string{"pass_code_error", "user passcode wrong"},
 	}
 )
 

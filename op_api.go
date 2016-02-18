@@ -53,7 +53,7 @@ func Login(c *gin.Context) {
 		return
 	}
 	if user.PassCode != encryptUserPassCode(data.PassCode) {
-		Error(c, PASS_CODE_ERR)
+		Error(c, PASS_CODE_ERROR)
 		return
 	}
 
