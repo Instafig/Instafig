@@ -322,7 +322,6 @@ func slaveCheckMaster() error {
 	var users []*models.User
 	var apps []*models.App
 	var configs []*models.Config
-	var conHistories []*models.ConfigUpdateHistory
 	var nodes []*models.Node
 
 	bs, _ := json.Marshal(resData.DataVersion)
@@ -341,52 +340,75 @@ func slaveCheckMaster() error {
 		return err
 	}
 
-	for _, user := range resData.Users {
-		users = append(users, user)
-	}
-	if err = models.InsertMultiRows(s, users); err != nil {
-		s.Rollback()
-		return err
-	}
-
-	for _, app := range resData.Apps {
-		apps = append(apps, app)
-	}
-	if err = models.InsertMultiRows(s, apps); err != nil {
-		s.Rollback()
-		return err
-	}
-
-	if err = models.InsertMultiRows(s, resData.WebHooks); err != nil {
-		s.Rollback()
-		return err
-	}
-
-	for _, config := range resData.Configs {
-		configs = append(configs, config)
-	}
-	if err = models.InsertMultiRows(s, configs); err != nil {
-		s.Rollback()
-		return err
-	}
-
-	for _, history := range resData.ConfHistory {
-		conHistories = append(conHistories, history)
-	}
-	if err = models.InsertMultiRows(s, conHistories); err != nil {
-		s.Rollback()
-		return err
-	}
-
+	toInsertModels := make([]interface{}, len(resData.Nodes))
+	ix := 0
 	for _, node := range resData.Nodes {
 		if node.URL == conf.ClientAddr {
 			node.DataVersion = localNode.DataVersion
 			node.DataVersionStr = localNode.DataVersionStr
 			node.LastCheckUTC = utils.GetNowSecond()
 		}
+		toInsertModels[ix] = node
 		nodes = append(nodes, node)
+		ix++
 	}
-	if err := models.InsertMultiRows(s, nodes); err != nil {
+	if err := models.InsertMultiRows(s, toInsertModels); err != nil {
+		s.Rollback()
+		return err
+	}
+
+	toInsertModels = make([]interface{}, len(resData.Users))
+	ix = 0
+	for _, user := range resData.Users {
+		users = append(users, user)
+		toInsertModels[ix] = user
+		ix++
+	}
+	if err = models.InsertMultiRows(s, toInsertModels); err != nil {
+		s.Rollback()
+		return err
+	}
+
+	toInsertModels = make([]interface{}, len(resData.Apps))
+	ix = 0
+	for _, app := range resData.Apps {
+		toInsertModels[ix] = app
+		apps = append(apps, app)
+		ix++
+	}
+	if err = models.InsertMultiRows(s, toInsertModels); err != nil {
+		s.Rollback()
+		return err
+	}
+
+	toInsertModels = make([]interface{}, len(resData.WebHooks))
+	for ix, hook := range resData.WebHooks {
+		toInsertModels[ix] = hook
+	}
+	if err = models.InsertMultiRows(s, toInsertModels); err != nil {
+		s.Rollback()
+		return err
+	}
+
+	toInsertModels = make([]interface{}, len(resData.Configs))
+	ix = 0
+	for _, config := range resData.Configs {
+		toInsertModels[ix] = config
+		configs = append(configs, config)
+		ix++
+	}
+	if err = models.InsertMultiRows(s, toInsertModels); err != nil {
+		s.Rollback()
+		return err
+	}
+
+	toInsertModels = make([]interface{}, len(resData.ConfHistory))
+	ix = 0
+	for ix, history := range resData.ConfHistory {
+		toInsertModels[ix] = history
+		ix++
+	}
+	if err = models.InsertMultiRows(s, toInsertModels); err != nil {
 		s.Rollback()
 		return err
 	}

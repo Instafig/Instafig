@@ -104,11 +104,44 @@ func InsertRow(s *Session, m DBModel) (err error) {
 	return
 }
 
-func InsertMultiRows(s *Session, m ...interface{}) (err error) {
-	if s == nil {
-		s = newAutoCloseModelsSession()
+func InsertMultiRows(_s *Session, m []interface{}) (err error) {
+	var s *Session
+
+	if _s == nil {
+		s = NewSession()
+		defer s.Close()
+
+		if err = s.Begin(); err != nil {
+			return err
+		}
+	} else {
+		s = _s
 	}
-	_, err = s.AllCols().Insert(m...)
+
+	length := len(m)
+	if length > 100 {
+		for i := 0; 100*i < length; i++ {
+			endIndex := 100 * (i + 1)
+			if endIndex > length {
+				endIndex = length
+			}
+			gg := m[100*i : endIndex]
+			_, err = s.AllCols().Insert(gg...)
+			if err != nil {
+				break
+			}
+		}
+	} else {
+		_, err = s.AllCols().Insert(m...)
+	}
+
+	if _s == nil {
+		if err != nil {
+			s.Rollback()
+		} else {
+			err = s.Commit()
+		}
+	}
 
 	return
 }
