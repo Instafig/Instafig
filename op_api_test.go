@@ -7,6 +7,7 @@ import (
 
 	"github.com/appwilldev/Instafig/models"
 	"github.com/appwilldev/Instafig/utils"
+	"github.com/labstack/gommon/log"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -130,6 +131,34 @@ func TestUpdateApp(t *testing.T) {
 	_clearModelData()
 }
 
+func initOneConfig(userName, appName, appType, configK, configV, configVType string) (*models.User, *models.App, *models.Config, error) {
+	user, err := updateUser(&models.User{
+		Name: userName,
+		Key:  utils.GenerateKey()}, nil)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	app, err := updateApp(&models.App{
+		Key:     utils.GenerateKey(),
+		UserKey: user.Key,
+		Name:    appName,
+		Type:    appType}, nil)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	config, err := updateConfig(&models.Config{
+		Key:    utils.GenerateKey(),
+		AppKey: app.Key,
+		K:      configK,
+		V:      configV,
+		VType:  configVType,
+		Status: models.CONF_STATUS_ACTIVE}, "", nil)
+
+	return user, app, config, err
+}
+
 func TestNewConfig(t *testing.T) {
 	err := _clearModelData()
 	assert.True(t, err == nil, "must correctly clear data")
@@ -139,23 +168,7 @@ func TestNewConfig(t *testing.T) {
 	confWriteMux.Lock()
 	defer confWriteMux.Unlock()
 
-	user, err := updateUser(&models.User{
-		Name: "rahuahua",
-		Key:  utils.GenerateKey()}, nil)
-
-	app, err := updateApp(&models.App{
-		Key:     utils.GenerateKey(),
-		UserKey: user.Key,
-		Name:    "iconfreecn",
-		Type:    models.APP_TYPE_REAL}, nil)
-
-	config, err := updateConfig(&models.Config{
-		Key:    utils.GenerateKey(),
-		AppKey: app.Key,
-		K:      "int_conf",
-		V:      "1",
-		VType:  models.CONF_V_TYPE_INT,
-		Status: models.CONF_STATUS_ACTIVE}, "", nil)
+	_, app, config, err := initOneConfig("rahuahua", "iconfreecn", models.APP_TYPE_REAL, "config1", "1", models.CONF_V_TYPE_INT)
 	assert.True(t, err == nil, "must correctly add new config")
 	assert.True(t, memConfAppConfigs[app.Key][0].Key == config.Key, "must the same config")
 	assert.True(t, len(memConfAppConfigs[app.Key]) == 1, "must one config for app")
@@ -171,6 +184,43 @@ func TestNewConfig(t *testing.T) {
 	assert.True(t, err == nil, "must correctly add new config")
 	assert.True(t, len(memConfAppConfigs[app.Key]) == 2, "must two configs for app")
 	assert.True(t, oldAppDataSign != memConfApps[app.Key].DataSign, "app's data_sign must update when update app config")
+
+	_clearModelData()
+}
+
+func TestUpdateConfig(t *testing.T) {
+	err := _clearModelData()
+	assert.True(t, err == nil, "must correctly clear data")
+	loadAllData()
+	initNodeData()
+
+	confWriteMux.Lock()
+	defer confWriteMux.Unlock()
+
+	user, _, config, err := initOneConfig("rahuahua", "iconfreecn", models.APP_TYPE_REAL, "config1", "1", models.CONF_V_TYPE_INT)
+	assert.True(t, err == nil, "must correctly add new config")
+
+	updateData := &updateConfigData{
+		Key:    config.Key,
+		K:      "new_config1",
+		V:      "2",
+		VType:  models.CONF_V_TYPE_STRING,
+		Status: models.CONF_STATUS_INACTIVE,
+	}
+	err = verifyUpdateConfigData(updateData)
+	assert.True(t, err == nil, "all update data is valid")
+
+	oldConfig := *config
+	config, err = updateConfigWithUpdateData(updateData, user.Key)
+	assert.True(t, err == nil, "all update data is valid")
+	assert.True(t, config.K == "new_config1")
+	assert.True(t, config.V == "2")
+	assert.True(t, config.VType == models.CONF_V_TYPE_STRING)
+	assert.True(t, config.Status == models.CONF_STATUS_INACTIVE)
+	log.Println("=========", config.UpdateTimes)
+	log.Println("=========", oldConfig.UpdateTimes)
+	assert.True(t, config.UpdateTimes == oldConfig.UpdateTimes+1)
+	assert.True(t, config.LastUpdateId != oldConfig.LastUpdateId)
 
 	_clearModelData()
 }
