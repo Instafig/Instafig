@@ -24,16 +24,36 @@ func TestNewUser(t *testing.T) {
 	confWriteMux.Lock()
 	defer confWriteMux.Unlock()
 
-	user, err := updateUser(&models.User{
+	userData := &newUserData{
 		Name: "rahuahua",
-		Key:  utils.GenerateKey()}, nil)
+		PassCode: "huahua",
+	}
+
+	err = verifyNewUserData(userData)
+	assert.True(t, err == nil)
+
+	user, err := newUserWithNewUserData(userData, "1234567", "1234567")
 	assert.True(t, err == nil, "must correctly add new user")
 	assert.True(t, len(memConfUsers) == 1, "must only one user")
 	assert.True(t, user.Key == memConfUsersByName["rahuahua"].Key, "must the same user")
 
-	_, err = updateUser(&models.User{
+	badUserData := &newUserData{
+		Name: "rahuahua",
+		PassCode: "huahua",
+	}
+	err = verifyNewUserData(badUserData)
+	assert.True(t, err != nil)
+
+	badUserData.Name = "non-exists"
+	badUserData.PassCode = "12"
+	err = verifyNewUserData(badUserData)
+	assert.True(t, err != nil)
+
+	userData = &newUserData{
 		Name: "rahuahua2",
-		Key:  utils.GenerateKey()}, nil)
+		PassCode: "huahua22",
+	}
+	user, err = newUserWithNewUserData(userData, "12345678", "1234567")
 	assert.True(t, err == nil, "must correctly add new user")
 	assert.True(t, len(memConfUsers) == 2, "must two users")
 

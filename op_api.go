@@ -82,23 +82,14 @@ func InitUser(c *gin.Context) {
 		return
 	}
 
-	memConfMux.RLock()
-	if len(memConfUsersByName) > 0 {
-		Error(c, NOT_PERMITTED, "some users already exists: ")
-		memConfMux.RUnlock()
+	if err := verifyNewUserData(data); err != nil {
+		Error(c, BAD_REQUEST, err.Error())
 		return
 	}
-	memConfMux.RUnlock()
 
 	key := utils.GenerateKey()
-	user := &models.User{
-		Name:       data.Name,
-		PassCode:   encryptUserPassCode(data.PassCode),
-		CreatorKey: key,
-		CreatedUTC: utils.GetNowSecond(),
-		AuxInfo:    data.AuxInfo,
-		Key:        key}
-	if _, err := updateUser(user, nil); err != nil {
+	user, err := newUserWithNewUserData(data, key, key)
+	if err != nil {
 		Error(c, SERVER_ERROR, err.Error())
 		return
 	}
@@ -122,23 +113,13 @@ func NewUser(c *gin.Context) {
 		return
 	}
 
-	memConfMux.RLock()
-	if memConfUsersByName[data.Name] != nil {
-		Error(c, BAD_REQUEST, "user name already exists: "+data.Name)
-		memConfMux.RUnlock()
+	if err := verifyNewUserData(data); err != nil {
+		Error(c, BAD_REQUEST, err.Error())
 		return
 	}
-	memConfMux.RUnlock()
 
-	user := &models.User{
-		Name:       data.Name,
-		PassCode:   encryptUserPassCode(data.PassCode),
-		CreatorKey: getOpUserKey(c),
-		CreatedUTC: utils.GetNowSecond(),
-		AuxInfo:    data.AuxInfo,
-		Key:        utils.GenerateKey()}
-
-	if _, err := updateUser(user, nil); err != nil {
+	user, err := newUserWithNewUserData(data, utils.GenerateKey(), getOpUserKey(c))
+	if err != nil {
 		Error(c, SERVER_ERROR, err.Error())
 		return
 	}
@@ -149,6 +130,32 @@ func NewUser(c *gin.Context) {
 	} else {
 		Success(c, nil)
 	}
+}
+
+func verifyNewUserData(data *newUserData) error {
+	memConfMux.RLock()
+	defer memConfMux.RUnlock()
+	if len(memConfUsersByName) > 0 {
+		return fmt.Errorf("user [%s] already exists", data.Name)
+	}
+
+	if len(data.PassCode) < 6 {
+		return fmt.Errorf("passcode too short, length must bigger than 6")
+	}
+
+	return nil
+}
+
+func newUserWithNewUserData(data *newUserData, userKey, creatorKey string) (*models.User, error) {
+	user := &models.User{
+		Name:       data.Name,
+		PassCode:   encryptUserPassCode(data.PassCode),
+		CreatorKey: creatorKey,
+		CreatedUTC: utils.GetNowSecond(),
+		AuxInfo:    data.AuxInfo,
+		Key:        userKey}
+
+	return updateUser(user, nil)
 }
 
 func UpdateUser(c *gin.Context) {
