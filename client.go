@@ -39,17 +39,15 @@ func ClientConf(c *gin.Context) {
 	}
 
 	if conf.IsEasyDeployMode() {
+		memConfMux.RLock()
 		if !conf.IsMasterNode() && conf.DataExpires > 0 {
-			memConfMux.RLock()
 			if memConfNodes[conf.ClientAddr].LastCheckUTC < utils.GetNowSecond()-conf.DataExpires {
 				memConfMux.RUnlock()
 				Error(c, DATA_EXPIRED)
 				return
 			}
-			memConfMux.RUnlock()
 		}
 
-		memConfMux.RLock()
 		nodes := make([]string, len(memConfNodes))
 		ix := 0
 		for _, node := range memConfNodes {

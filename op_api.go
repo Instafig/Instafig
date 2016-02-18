@@ -78,6 +78,7 @@ func InitUser(c *gin.Context) {
 
 	memConfMux.RLock()
 	if len(memConfUsers) > 0 {
+		memConfMux.RUnlock()
 		Error(c, BAD_REQUEST, "users already exists")
 		return
 	}
@@ -384,6 +385,7 @@ func NewApp(c *gin.Context) {
 
 	memConfMux.RLock()
 	if conf.IsEasyDeployMode() && memConfAppsByName[data.Name] != nil {
+		memConfMux.RUnlock()
 		Error(c, BAD_REQUEST, "appname already exists: "+data.Name)
 		return
 	}

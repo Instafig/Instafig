@@ -1,11 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"strconv"
 	"sync"
-
-	"encoding/json"
 
 	"github.com/appwilldev/Instafig/models"
 )
