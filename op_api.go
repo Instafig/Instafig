@@ -76,6 +76,13 @@ func InitUser(c *gin.Context) {
 	confWriteMux.Lock()
 	defer confWriteMux.Unlock()
 
+	memConfMux.RLock()
+	if len(memConfUsers) > 0 {
+		Error(c, BAD_REQUEST, "users already exists")
+		return
+	}
+	memConfMux.RUnlock()
+
 	data := &newUserData{}
 	if err := c.BindJSON(data); err != nil {
 		Error(c, BAD_POST_DATA, err.Error())
@@ -136,7 +143,7 @@ func verifyNewUserData(data *newUserData) error {
 	memConfMux.RLock()
 	defer memConfMux.RUnlock()
 
-	if len(memConfUsersByName) > 0 {
+	if memConfUsersByName[data.Name] != nil {
 		return fmt.Errorf("user [%s] already exists", data.Name)
 	}
 
