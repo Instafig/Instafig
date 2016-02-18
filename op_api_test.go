@@ -167,19 +167,23 @@ func TestNewConfig(t *testing.T) {
 	confWriteMux.Lock()
 	defer confWriteMux.Unlock()
 
-	_, app, config, err := initOneConfig("rahuahua", "iconfreecn", models.APP_TYPE_REAL, "config1", "1", models.CONF_V_TYPE_INT)
+	user, app, config, err := initOneConfig("rahuahua", "iconfreecn", models.APP_TYPE_REAL, "config1", "1", models.CONF_V_TYPE_INT)
 	assert.True(t, err == nil, "must correctly add new config")
 	assert.True(t, memConfAppConfigs[app.Key][0].Key == config.Key, "must the same config")
 	assert.True(t, len(memConfAppConfigs[app.Key]) == 1, "must one config for app")
 
 	oldAppDataSign := memConfApps[app.Key].DataSign
-	_, err = updateConfig(&models.Config{
-		Key:    utils.GenerateKey(),
-		AppKey: app.Key,
+	newData := &newConfigData{
 		K:      "float_conf",
 		V:      "1.2",
 		VType:  models.CONF_V_TYPE_FLOAT,
-		Status: models.CONF_STATUS_ACTIVE}, "", nil)
+		AppKey: app.Key,
+	}
+
+	err = verifyNewConfigData(newData)
+	assert.True(t, err == nil)
+
+	config, err = newConfigWithNewConfigData(newData, user.Key)
 	assert.True(t, err == nil, "must correctly add new config")
 	assert.True(t, len(memConfAppConfigs[app.Key]) == 2, "must two configs for app")
 	assert.True(t, oldAppDataSign != memConfApps[app.Key].DataSign, "app's data_sign must update when update app config")

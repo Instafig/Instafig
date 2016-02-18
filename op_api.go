@@ -609,62 +609,12 @@ func NewConfig(c *gin.Context) {
 		return
 	}
 
-	if !models.IsValidConfValueType(data.VType) {
-		Error(c, BAD_REQUEST, "unknown conf type: "+data.VType)
+	if err := verifyNewConfigData(data); err != nil {
+		Error(c, BAD_REQUEST, err.Error())
 		return
 	}
 
-	if data.VType == models.APP_TYPE_TEMPLATE {
-		memConfMux.RLock()
-		app := memConfApps[data.V]
-		memConfMux.RUnlock()
-		if app == nil {
-			Error(c, BAD_REQUEST, "template not found for: "+data.V)
-			return
-		}
-		if app.Type != models.APP_TYPE_TEMPLATE {
-			Error(c, BAD_REQUEST, "can not set a template conf that is a real app")
-			return
-		}
-	}
-
-	if data.VType == models.CONF_V_TYPE_CODE {
-		if _, err := JsonToSexpString(data.V); err != nil {
-			Error(c, BAD_REQUEST, "syntax error for code type value: "+err.Error())
-			return
-		}
-	}
-
-	memConfMux.RLock()
-	app := memConfApps[data.AppKey]
-	configs := getAppMemConfig(data.AppKey)
-	memConfMux.RUnlock()
-
-	if app == nil {
-		Error(c, BAD_REQUEST, "app key not exists: "+data.AppKey)
-		return
-	}
-	for _, config := range configs {
-		if config.K == data.K {
-			Error(c, BAD_REQUEST, "config key has existed: "+data.K)
-			return
-		}
-	}
-
-	config := &models.Config{
-		Key:         utils.GenerateKey(),
-		AppKey:      data.AppKey,
-		K:           data.K,
-		V:           data.V,
-		VType:       data.VType,
-		CreatedUTC:  utils.GetNowSecond(),
-		CreatorKey:  getOpUserKey(c),
-		Des:         data.Des,
-		UpdateTimes: 1,
-		Status:      models.CONF_STATUS_ACTIVE,
-	}
-
-	config, err := updateConfig(config, getOpUserKey(c), nil)
+	config, err := newConfigWithNewConfigData(data, getOpUserKey(c))
 	if err != nil {
 		Error(c, SERVER_ERROR, err.Error())
 		return
@@ -676,6 +626,72 @@ func NewConfig(c *gin.Context) {
 	} else {
 		Success(c, nil)
 	}
+}
+
+func verifyNewConfigData(data *newConfigData) error {
+	memConfMux.RLock()
+	defer memConfMux.RUnlock()
+
+	if !models.IsValidConfValueType(data.VType) {
+		return fmt.Errorf("unknown conf type: " + data.VType)
+	}
+
+	switch data.VType {
+	case models.CONF_V_TYPE_CODE:
+		if _, err := JsonToSexpString(data.V); err != nil {
+			return fmt.Errorf("syntax error for code type value: " + err.Error())
+		}
+	case models.CONF_V_TYPE_FLOAT:
+		if _, err := strconv.ParseFloat(data.V, 64); err != nil {
+			return fmt.Errorf("config Value not float")
+		}
+	case models.CONF_V_TYPE_INT:
+		if _, err := strconv.ParseInt(data.V, 10, 64); err != nil {
+			return fmt.Errorf("config Value not int")
+		}
+	case models.APP_TYPE_TEMPLATE:
+		app := memConfApps[data.V]
+		if app == nil {
+			return fmt.Errorf("template not found for: " + data.V)
+		}
+		if app.Type != models.APP_TYPE_TEMPLATE {
+			return fmt.Errorf("can not set a template conf that is a real app")
+		}
+	case models.CONF_V_TYPE_STRING:
+	// no need check
+	default:
+		return fmt.Errorf("unknown config value type: " + data.VType)
+	}
+
+	app := memConfApps[data.AppKey]
+	configs := memConfAppConfigs[data.AppKey]
+
+	if app == nil {
+		return fmt.Errorf("app key not exists: " + data.AppKey)
+	}
+	for _, config := range configs {
+		if config.K == data.K {
+			return fmt.Errorf("config key has existed: " + data.K)
+		}
+	}
+
+	return nil
+}
+
+func newConfigWithNewConfigData(data *newConfigData, userKey string) (*models.Config, error) {
+	config := &models.Config{
+		Key:        utils.GenerateKey(),
+		AppKey:     data.AppKey,
+		K:          data.K,
+		V:          data.V,
+		VType:      data.VType,
+		CreatedUTC: utils.GetNowSecond(),
+		CreatorKey: userKey,
+		Des:        data.Des,
+		Status:     models.CONF_STATUS_ACTIVE,
+	}
+
+	return updateConfig(config, userKey, nil)
 }
 
 type updateConfigData struct {
@@ -779,12 +795,8 @@ func updateConfigWithUpdateData(data *updateConfigData, userKey string) (*models
 	config.VType = data.VType
 	config.Des = data.Des
 	config.Status = data.Status
-	newConfig, err := updateConfig(&config, userKey, nil)
-	if err != nil {
-		return nil, err
-	}
 
-	return newConfig, nil
+	return updateConfig(&config, userKey, nil)
 }
 
 func updateConfig(config *models.Config, userKey string, newDataVersion *models.DataVersion) (*models.Config, error) {
