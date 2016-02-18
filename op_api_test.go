@@ -7,7 +7,6 @@ import (
 
 	"github.com/appwilldev/Instafig/models"
 	"github.com/appwilldev/Instafig/utils"
-	"github.com/labstack/gommon/log"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -217,8 +216,6 @@ func TestUpdateConfig(t *testing.T) {
 	assert.True(t, config.V == "2")
 	assert.True(t, config.VType == models.CONF_V_TYPE_STRING)
 	assert.True(t, config.Status == models.CONF_STATUS_INACTIVE)
-	log.Println("=========", config.UpdateTimes)
-	log.Println("=========", oldConfig.UpdateTimes)
 	assert.True(t, config.UpdateTimes == oldConfig.UpdateTimes+1)
 	assert.True(t, config.LastUpdateId != oldConfig.LastUpdateId)
 
