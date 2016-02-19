@@ -887,9 +887,11 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 		return nil, err
 	}
 
+	var configHistory *models.ConfigUpdateHistory
 	temApp := *app
+
 	if oldConfig == nil {
-		configHistory := &models.ConfigUpdateHistory{
+		configHistory = &models.ConfigUpdateHistory{
 			Id:         utils.GenerateKey(),
 			ConfigKey:  config.Key,
 			K:          config.K,
@@ -912,8 +914,6 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 			return nil, err
 		}
 
-		go TriggerWebHooks(configHistory, app)
-
 		temApp.KeyCount++
 		temApp.LastUpdateUTC = configHistory.CreatedUTC
 		temApp.LastUpdateId = configHistory.Id
@@ -928,7 +928,7 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 			}
 		}
 
-		configHistory := &models.ConfigUpdateHistory{
+		configHistory = &models.ConfigUpdateHistory{
 			Id:         utils.GenerateKey(),
 			ConfigKey:  config.Key,
 			K:          config.K,
@@ -951,8 +951,6 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 			s.Rollback()
 			return nil, err
 		}
-
-		go TriggerWebHooks(configHistory, app)
 
 		temApp.LastUpdateUTC = configHistory.CreatedUTC
 		temApp.LastUpdateId = configHistory.Id
@@ -1003,6 +1001,8 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 		s.Rollback()
 		return nil, err
 	}
+
+	go TriggerWebHooks(configHistory, app)
 
 	memConfMux.Lock()
 	defer memConfMux.Unlock()
