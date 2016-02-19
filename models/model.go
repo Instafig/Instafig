@@ -212,7 +212,7 @@ func GetConfigsByAppKey(s *Session, appKey string) ([]*Config, error) {
 	}
 
 	var res []*Config
-	if err := s.Where("app_key=?", appKey).Find(&res); err != nil {
+	if err := s.Where("app_key=?", appKey).OrderBy("k").Find(&res); err != nil {
 		return nil, err
 	}
 
