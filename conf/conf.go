@@ -36,6 +36,8 @@ var (
 	CheckMasterInerval int
 	DataExpires        int
 
+	UserPassCodeEncryptKey string
+
 	WebDebugMode bool
 	DebugMode    bool
 	LogLevel     string
@@ -121,10 +123,39 @@ func init() {
 	}
 
 	HttpAddr, _ = config.GetValue("", "addr")
+	UserPassCodeEncryptKey, _ = config.GetValue("", "user_passcode_encrypt_key")
 
 	if IsEasyDeployMode() {
 		SqliteDir, _ = config.GetValue("sqlite", "dir")
 		SqliteFileName, _ = config.GetValue("sqlite", "filename")
+		NodeType, _ = config.GetValue("node", "type")
+		NodeAddr, _ = config.GetValue("node", "node_addr")
+		ClientAddr, _ = config.GetValue("node", "client_addr")
+		NodeAuth, _ = config.GetValue("node", "node_auth")
+		if !IsMasterNode() {
+			MasterAddr, _ = config.GetValue("node", "master_addr")
+		}
+
+		if !IsMasterNode() {
+			intervalStr, _ := config.GetValue("node", "check_master_interval")
+			if CheckMasterInerval, err = strconv.Atoi(intervalStr); err != nil {
+				log.Printf("No correct expires: %s - %s", intervalStr, err.Error())
+				os.Exit(1)
+			}
+
+			expiresStr, _ := config.GetValue("node", "data_expires")
+			if expiresStr != "" {
+				if DataExpires, err = strconv.Atoi(expiresStr); err != nil {
+					log.Printf("No correct expires: %s - %s", expiresStr, err.Error())
+					os.Exit(1)
+				}
+				if DataExpires <= CheckMasterInerval {
+					DataExpires = CheckMasterInerval * 2
+				}
+			} else {
+				DataExpires = -1
+			}
+		}
 	} else {
 		DatabaseConfig.Driver, _ = config.GetValue("db", "driver")
 		DatabaseConfig.DBName, _ = config.GetValue("db", "db_name")
@@ -137,35 +168,6 @@ func init() {
 		}
 		DatabaseConfig.PassWd, _ = config.GetValue("db", "passwd")
 		DatabaseConfig.User, _ = config.GetValue("db", "user")
-	}
-
-	NodeType, _ = config.GetValue("node", "type")
-	NodeAddr, _ = config.GetValue("node", "node_addr")
-	ClientAddr, _ = config.GetValue("node", "client_addr")
-	NodeAuth, _ = config.GetValue("node", "node_auth")
-	if !IsMasterNode() {
-		MasterAddr, _ = config.GetValue("node", "master_addr")
-	}
-
-	if !IsMasterNode() {
-		intervalStr, _ := config.GetValue("node", "check_master_interval")
-		if CheckMasterInerval, err = strconv.Atoi(intervalStr); err != nil {
-			log.Printf("No correct expires: %s - %s", intervalStr, err.Error())
-			os.Exit(1)
-		}
-
-		expiresStr, _ := config.GetValue("node", "data_expires")
-		if expiresStr != "" {
-			if DataExpires, err = strconv.Atoi(expiresStr); err != nil {
-				log.Printf("No correct expires: %s - %s", expiresStr, err.Error())
-				os.Exit(1)
-			}
-			if DataExpires <= CheckMasterInerval {
-				DataExpires = CheckMasterInerval * 2
-			}
-		} else {
-			DataExpires = -1
-		}
 	}
 
 	if !DebugMode {

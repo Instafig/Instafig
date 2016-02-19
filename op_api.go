@@ -1,12 +1,13 @@
 package main
 
 import (
-	"crypto/sha1"
 	"fmt"
 	"net/http"
 	"strconv"
 	"sync"
 	"time"
+	"crypto/hmac"
+	"crypto/sha256"
 
 	"github.com/appwilldev/Instafig/conf"
 	"github.com/appwilldev/Instafig/models"
@@ -1139,8 +1140,9 @@ func GetLoginUserInfo(c *gin.Context) {
 }
 
 func encryptUserPassCode(code string) string {
-	s := sha1.Sum([]byte(code))
-	return string(s[:sha1.Size])
+	hash := hmac.New(sha256.New, []byte(conf.UserPassCodeEncryptKey))
+	hash.Write([]byte(code))
+	return fmt.Sprintf("%x", hash.Sum(nil))
 }
 
 func setUserKeyCookie(c *gin.Context, userKey string) {
@@ -1152,6 +1154,7 @@ func setUserKeyCookie(c *gin.Context, userKey string) {
 	cookie.Name = "op_user"
 	cookie.Expires = time.Now().Add(time.Duration(30*86400) * time.Second)
 	cookie.Value = encStr
+	cookie.Path = "/op"
 	http.SetCookie(c.Writer, cookie)
 }
 
