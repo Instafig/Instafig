@@ -62,32 +62,30 @@ func init() {
 		os.Exit(0)
 	}
 
-	if len(os.Args) == 2 {
-		if os.Args[1] == "reload" {
-			wd, _ := os.Getwd()
-			pidFile, err := os.Open(filepath.Join(wd, "instafig.pid"))
-			if err != nil {
-				log.Printf("Failed to open pid file: %s", err.Error())
-				os.Exit(1)
-			}
-			pids := make([]byte, 10)
-			n, err := pidFile.Read(pids)
-			if err != nil {
-				log.Printf("Failed to read pid file: %s", err.Error())
-				os.Exit(1)
-			}
-			if n == 0 {
-				log.Printf("No pid in pid file: %s", err.Error())
-				os.Exit(1)
-			}
-			_, err = exec.Command("kill", "-USR2", string(pids[:n])).Output()
-			if err != nil {
-				log.Printf("Failed to restart Instafig service: %s", err.Error())
-				os.Exit(1)
-			}
-			pidFile.Close()
-			os.Exit(0)
+	if len(os.Args) == 2 && os.Args[1] == "reload" {
+		wd, _ := os.Getwd()
+		pidFile, err := os.Open(filepath.Join(wd, "instafig.pid"))
+		if err != nil {
+			log.Printf("Failed to open pid file: %s", err.Error())
+			os.Exit(1)
 		}
+		pids := make([]byte, 10)
+		n, err := pidFile.Read(pids)
+		if err != nil {
+			log.Printf("Failed to read pid file: %s", err.Error())
+			os.Exit(1)
+		}
+		if n == 0 {
+			log.Printf("No pid in pid file: %s", err.Error())
+			os.Exit(1)
+		}
+		_, err = exec.Command("kill", "-USR2", string(pids[:n])).Output()
+		if err != nil {
+			log.Printf("Failed to restart Instafig service: %s", err.Error())
+			os.Exit(1)
+		}
+		pidFile.Close()
+		os.Exit(0)
 	}
 
 	if DebugMode {

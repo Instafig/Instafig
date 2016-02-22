@@ -3,14 +3,11 @@ package main
 import (
 	"log"
 	"net/http"
-
-	"time"
-
 	"os"
 	"path/filepath"
 	"strconv"
-
 	"strings"
+	"time"
 
 	"github.com/appwilldev/Instafig/conf"
 	"github.com/facebookgo/grace/gracehttp"
@@ -134,10 +131,16 @@ func main() {
 		ginInsNode.Use(gin.Recovery())
 		ginInsNode.POST("/node/req/:req_type", NodeRequestHandler)
 
-		gracehttp.Serve(
+		err = gracehttp.Serve(
 			&http.Server{Addr: conf.HttpAddr, Handler: ginIns},
 			&http.Server{Addr: conf.NodeAddr, Handler: ginInsNode})
+		if err != nil {
+			log.Printf("fatal error: %s", err.Error())
+		}
 	} else {
-		gracehttp.Serve(&http.Server{Addr: conf.HttpAddr, Handler: ginIns})
+		err = gracehttp.Serve(&http.Server{Addr: conf.HttpAddr, Handler: ginIns})
+		if err != nil {
+			log.Printf("fatal error: %s", err.Error())
+		}
 	}
 }
