@@ -662,7 +662,7 @@ func updateWebHook(hook *models.WebHook, newDataVersion *models.DataVersion) (*m
 type newConfigData struct {
 	AppKey string `json:"app_key" binding:"required"`
 	K      string `json:"k" binding:"required"`
-	V      string `json:"v" binding:"required"`
+	V      string `json:"v"`
 	VType  string `json:"v_type" binding:"required"`
 	Des    string `json:"des"`
 }
@@ -763,7 +763,7 @@ func newConfigWithNewConfigData(data *newConfigData, userKey string) (*models.Co
 type updateConfigData struct {
 	Key    string `json:"key" binding:"required"`
 	K      string `json:"k" binding:"required"`
-	V      string `json:"v" binding:"required"`
+	V      string `json:"v"`
 	VType  string `json:"v_type" binding:"required"`
 	Des    string `json:"des"`
 	Status int    `json:"status"`
