@@ -1,13 +1,13 @@
 package main
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
 	"fmt"
 	"net/http"
 	"strconv"
 	"sync"
 	"time"
-	"crypto/hmac"
-	"crypto/sha256"
 
 	"github.com/appwilldev/Instafig/conf"
 	"github.com/appwilldev/Instafig/models"
@@ -889,7 +889,7 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 	}
 
 	var configHistory *models.ConfigUpdateHistory
-	temApp := *app
+	tempApp := *app
 
 	if oldConfig == nil {
 		configHistory = &models.ConfigUpdateHistory{
@@ -915,10 +915,10 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 			return nil, err
 		}
 
-		temApp.KeyCount++
-		temApp.LastUpdateUTC = configHistory.CreatedUTC
-		temApp.LastUpdateId = configHistory.Id
-		temApp.UpdateTimes++
+		tempApp.KeyCount++
+		tempApp.LastUpdateUTC = configHistory.CreatedUTC
+		tempApp.LastUpdateId = configHistory.Id
+		tempApp.UpdateTimes++
 	} else {
 		kind := models.CONFIG_UPDATE_KIND_UPDATE
 		if config.Status != oldConfig.Status {
@@ -953,12 +953,12 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 			return nil, err
 		}
 
-		temApp.LastUpdateUTC = configHistory.CreatedUTC
-		temApp.LastUpdateId = configHistory.Id
-		temApp.UpdateTimes++
+		tempApp.LastUpdateUTC = configHistory.CreatedUTC
+		tempApp.LastUpdateId = configHistory.Id
+		tempApp.UpdateTimes++
 	}
 
-	if err := models.UpdateDBModel(s, &temApp); err != nil {
+	if err := models.UpdateDBModel(s, &tempApp); err != nil {
 		s.Rollback()
 		return nil, err
 	}
@@ -987,9 +987,9 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 	newDataSign := utils.GenerateKey()
 	for _, app := range toUpdateApps {
 		_app := *app
-		if app.Key == temApp.Key {
-			_app = temApp
-			temApp.DataSign = newDataSign
+		if app.Key == tempApp.Key {
+			_app = tempApp
+			tempApp.DataSign = newDataSign
 		}
 		_app.DataSign = newDataSign
 		if err := models.UpdateDBModel(s, &_app); err != nil {
@@ -1009,7 +1009,7 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 	defer memConfMux.Unlock()
 
 	memConfDataVersion = newDataVersion
-	memConfApps[config.AppKey] = &temApp
+	memConfApps[config.AppKey] = &tempApp
 	memConfRawConfigs[config.Key] = config
 	for _, app := range toUpdateApps {
 		app.DataSign = newDataSign

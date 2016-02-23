@@ -10,6 +10,8 @@ import (
 	"runtime"
 	"strconv"
 
+	"strings"
+
 	"github.com/gpmgo/gopm/modules/goconfig"
 )
 
@@ -24,7 +26,7 @@ type DBConfig struct {
 
 var (
 	Mode               string
-	HttpAddr           string
+	Port               int
 	SqliteDir          string
 	SqliteFileName     string
 	DatabaseConfig     = &DBConfig{}
@@ -120,7 +122,21 @@ func init() {
 		os.Exit(1)
 	}
 
-	HttpAddr, _ = config.GetValue("", "addr")
+	ClientAddr, _ = config.GetValue("", "http_addr")
+	s := strings.Split(ClientAddr, ":")
+	if len(s) != 1 && len(s) != 2 {
+		log.Printf("No correct http_addr(%s)", ClientAddr)
+		os.Exit(1)
+	}
+	port := "80"
+	if len(s) == 2 {
+		port = s[1]
+	}
+	if Port, err = strconv.Atoi(port); err != nil {
+		log.Printf("No correct port(%s): %s", port, err.Error())
+		os.Exit(1)
+	}
+
 	UserPassCodeEncryptKey, _ = config.GetValue("", "user_passcode_encrypt_key")
 
 	if IsEasyDeployMode() {
@@ -128,7 +144,6 @@ func init() {
 		SqliteFileName, _ = config.GetValue("sqlite", "filename")
 		NodeType, _ = config.GetValue("node", "type")
 		NodeAddr, _ = config.GetValue("node", "node_addr")
-		ClientAddr, _ = config.GetValue("node", "client_addr")
 		NodeAuth, _ = config.GetValue("node", "node_auth")
 		if !IsMasterNode() {
 			MasterAddr, _ = config.GetValue("node", "master_addr")

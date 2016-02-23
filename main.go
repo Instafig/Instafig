@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -132,13 +133,13 @@ func main() {
 		ginInsNode.POST("/node/req/:req_type", NodeRequestHandler)
 
 		err = gracehttp.Serve(
-			&http.Server{Addr: conf.HttpAddr, Handler: ginIns},
+			&http.Server{Addr: fmt.Sprintf(":%d", conf.Port), Handler: ginIns},
 			&http.Server{Addr: conf.NodeAddr, Handler: ginInsNode})
 		if err != nil {
 			log.Printf("fatal error: %s", err.Error())
 		}
 	} else {
-		err = gracehttp.Serve(&http.Server{Addr: conf.HttpAddr, Handler: ginIns})
+		err = gracehttp.Serve(&http.Server{Addr: fmt.Sprintf(":%d", conf.Port), Handler: ginIns})
 		if err != nil {
 			log.Printf("fatal error: %s", err.Error())
 		}
