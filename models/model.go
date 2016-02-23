@@ -244,7 +244,8 @@ type Node struct {
 	LastCheckUTC   int    `xorm:"last_check_utc INT " json:"last_check_utc"`
 	DataVersionStr string `xorm:"data_version TEXT " json:"data_version_str"` // json string to store DataVersion in db
 
-	DataVersion   *DataVersion `xorm:"-" json:"data_version"`
+	DataVersion *DataVersion `xorm:"-" json:"data_version"`
+	AppVersion  string       `xorm:"-" json:"app_version"`
 	//SchemeVersion string       `xorm:"-"`
 }
 

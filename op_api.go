@@ -1088,6 +1088,7 @@ func GetNodes(c *gin.Context) {
 	memConfMux.RLock()
 	for _, node := range memConfNodes {
 		node.DataVersionStr = ""
+		node.AppVersion = conf.VersionString()
 		nodes = append(nodes, node)
 	}
 	memConfMux.RUnlock()
