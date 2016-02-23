@@ -32,7 +32,6 @@ const (
 
 var (
 	nodeAuthString string
-	nodeSyncChan   = make(chan models.Node, 10)
 )
 
 type syncDataT struct {
@@ -69,14 +68,7 @@ func init() {
 		loadAllData()
 		initNodeData()
 
-		if conf.IsMasterNode() {
-			go func() {
-				for {
-					node := <-nodeSyncChan
-					go masterSyncNodeToSlave(&node)
-				}
-			}()
-		} else {
+		if !conf.IsMasterNode() {
 			if err = slaveCheckMaster(); err != nil {
 				log.Printf("slave node failed to check master: %s", err.Error())
 				os.Exit(1)
@@ -85,7 +77,7 @@ func init() {
 			go func() {
 				for {
 					time.Sleep(time.Duration(conf.CheckMasterInerval) * time.Second)
-					slaveCheckMaster()
+					go slaveCheckMaster()
 				}
 			}()
 		}
@@ -688,7 +680,7 @@ func handleSlaveCheckMaster(c *gin.Context, data string) {
 	bs, _ := json.Marshal(memConfDataVersion)
 	memConfMux.Unlock()
 
-	nodeSyncChan <- *node
+	go masterSyncNodeToSlave(node)
 
 	Success(c, string(bs))
 }
