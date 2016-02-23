@@ -341,6 +341,7 @@ func slaveCheckMaster() error {
 	bs, _ := json.Marshal(resData.DataVersion)
 	localNode.DataVersion = resData.DataVersion
 	localNode.DataVersionStr = string(bs)
+	localNode.LastCheckUTC = utils.GetNowSecond()
 
 	s := models.NewSession()
 	defer s.Close()
@@ -360,7 +361,7 @@ func slaveCheckMaster() error {
 		if node.URL == conf.ClientAddr {
 			node.DataVersion = localNode.DataVersion
 			node.DataVersionStr = localNode.DataVersionStr
-			node.LastCheckUTC = utils.GetNowSecond()
+			node.LastCheckUTC = localNode.LastCheckUTC
 		}
 		toInsertModels[ix] = node
 		nodes = append(nodes, node)
