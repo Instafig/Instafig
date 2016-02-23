@@ -437,15 +437,7 @@ func slaveCheckMaster() error {
 		return err
 	}
 
-	fillMemConfData(users, apps, resData.WebHooks, configs, nodes, nil)
-
-	memConfMux.Lock()
-	memConfDataVersion = resData.DataVersion
-	memConfNodes = map[string]*models.Node{}
-	for _, node := range nodes {
-		memConfNodes[node.URL] = node
-	}
-	memConfMux.Unlock()
+	fillMemConfData(users, apps, resData.WebHooks, configs, nodes, resData.DataVersion)
 
 	nodeString, _ = json.Marshal(&localNode)
 	reqData = nodeRequestDataT{

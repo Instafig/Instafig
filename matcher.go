@@ -105,10 +105,9 @@ func loadAllData() {
 }
 
 func fillMemConfData(
-	users []*models.User, apps []*models.App, webHooks []*models.WebHook,
-	configs []*models.Config,
-	nodes []*models.Node, dataVersion *models.DataVersion,
-) {
+	users []*models.User, apps []*models.App,
+	webHooks []*models.WebHook, configs []*models.Config,
+	nodes []*models.Node, dataVersion *models.DataVersion) {
 	memConfMux.Lock()
 	defer memConfMux.Unlock()
 
@@ -147,12 +146,10 @@ func fillMemConfData(
 		memConfAppConfigs[config.AppKey] = append(memConfAppConfigs[config.AppKey], transConfig(config))
 	}
 
-	if dataVersion != nil {
-		for _, node := range nodes {
-			memConfNodes[node.URL] = node
-			node.DataVersion = &models.DataVersion{}
-			json.Unmarshal([]byte(node.DataVersionStr), node.DataVersion)
-		}
+	for _, node := range nodes {
+		memConfNodes[node.URL] = node
+		node.DataVersion = &models.DataVersion{}
+		json.Unmarshal([]byte(node.DataVersionStr), node.DataVersion)
 	}
 }
 
