@@ -347,41 +347,35 @@ func slaveCheckMaster() error {
 		return err
 	}
 
-	toInsertModels := make([]interface{}, len(resData.Nodes))
-	ix := 0
+	toInsertModels := make([]interface{}, 0)
 	for _, node := range resData.Nodes {
 		if node.URL == conf.ClientAddr {
 			node.DataVersion = localNode.DataVersion
 			node.DataVersionStr = localNode.DataVersionStr
 			node.LastCheckUTC = localNode.LastCheckUTC
 		}
-		toInsertModels[ix] = node
+		toInsertModels = append(toInsertModels, node)
 		nodes = append(nodes, node)
-		ix++
 	}
 	if err := models.InsertMultiRows(s, toInsertModels); err != nil {
 		s.Rollback()
 		return err
 	}
 
-	toInsertModels = make([]interface{}, len(resData.Users))
-	ix = 0
+	toInsertModels = make([]interface{}, 0)
 	for _, user := range resData.Users {
 		users = append(users, user)
-		toInsertModels[ix] = user
-		ix++
+		toInsertModels = append(toInsertModels, user)
 	}
 	if err = models.InsertMultiRows(s, toInsertModels); err != nil {
 		s.Rollback()
 		return err
 	}
 
-	toInsertModels = make([]interface{}, len(resData.Apps))
-	ix = 0
+	toInsertModels = make([]interface{}, 0)
 	for _, app := range resData.Apps {
-		toInsertModels[ix] = app
+		toInsertModels = append(toInsertModels, app)
 		apps = append(apps, app)
-		ix++
 	}
 	if err = models.InsertMultiRows(s, toInsertModels); err != nil {
 		s.Rollback()
@@ -397,12 +391,10 @@ func slaveCheckMaster() error {
 		return err
 	}
 
-	toInsertModels = make([]interface{}, len(resData.Configs))
-	ix = 0
+	toInsertModels = make([]interface{}, 0)
 	for _, config := range resData.Configs {
-		toInsertModels[ix] = config
+		toInsertModels = append(toInsertModels, config)
 		configs = append(configs, config)
-		ix++
 	}
 	if err = models.InsertMultiRows(s, toInsertModels); err != nil {
 		s.Rollback()
@@ -410,10 +402,8 @@ func slaveCheckMaster() error {
 	}
 
 	toInsertModels = make([]interface{}, len(resData.ConfHistory))
-	ix = 0
 	for ix, history := range resData.ConfHistory {
 		toInsertModels[ix] = history
-		ix++
 	}
 	if err = models.InsertMultiRows(s, toInsertModels); err != nil {
 		s.Rollback()
