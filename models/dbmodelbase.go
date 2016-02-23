@@ -1,13 +1,13 @@
 package models
 
 import (
-	//	"database/sql"
 	"fmt"
 	"log"
 	"path/filepath"
 
 	"github.com/appwilldev/Instafig/conf"
 	"github.com/go-xorm/xorm"
+	xormcore "github.com/go-xorm/core"
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -49,8 +49,11 @@ func init() {
 	}
 	dbEngineDefault.SetMaxOpenConns(100)
 	dbEngineDefault.SetMaxIdleConns(50)
-	dbEngineDefault.ShowErr = true
-	dbEngineDefault.ShowSQL = conf.DebugMode
+	if conf.DebugMode {
+		dbEngineDefault.Logger.SetLevel(xormcore.LOG_DEBUG)
+	} else {
+		dbEngineDefault.Logger.SetLevel(xormcore.LOG_ERR)
+	}
 
 	if conf.IsEasyDeployMode() {
 		if err = dbEngineDefault.Sync2(
