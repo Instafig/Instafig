@@ -1067,20 +1067,19 @@ func GetConfigUpdateHistory(c *gin.Context) {
 func GetConfigByKey(c *gin.Context) {
 	memConfMux.RLock()
 	configPtr := memConfRawConfigs[c.Param("config_key")]
+	memConfMux.RUnlock()
+
 	config := models.Config{}
 	if configPtr != nil {
 		config = *configPtr
-	}
-	memConfMux.RUnlock()
-
-	if configPtr != nil {
 		config.LastUpdateInfo, _ = models.GetConfigUpdateHistoryById(nil, config.LastUpdateId)
 		memConfMux.RLock()
 		config.LastUpdateInfo.UserName = memConfUsers[config.LastUpdateInfo.UserKey].Name
 		memConfMux.RUnlock()
+		Success(c, config)
+	} else {
+		Error(c, BAD_REQUEST, "config not exists")
 	}
-
-	Success(c, config)
 }
 
 func GetNodes(c *gin.Context) {
