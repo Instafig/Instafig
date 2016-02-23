@@ -7,7 +7,9 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"reflect"
+	"time"
 
 	"github.com/appwilldev/Instafig/conf"
 	"github.com/appwilldev/Instafig/models"
@@ -56,25 +58,37 @@ type nodeRequestDataT struct {
 }
 
 func init() {
+	var err error
 	if conf.IsEasyDeployMode() {
+		nodeAuthToken := jwt.New(jwt.SigningMethodHS256)
+		if nodeAuthString, err = nodeAuthToken.SignedString([]byte(conf.NodeAuth)); err != nil {
+			log.Panicf("Failed to init node auth token: %s", err.Error())
+		}
+
 		checkNodeValidity()
 		loadAllData()
 		initNodeData()
-	}
 
-	var err error
-	nodeAuthToken := jwt.New(jwt.SigningMethodHS256)
-	if nodeAuthString, err = nodeAuthToken.SignedString([]byte(conf.NodeAuth)); err != nil {
-		log.Panicf("Failed to init node auth token: %s", err.Error())
-	}
-
-	if conf.IsEasyDeployMode() && conf.IsMasterNode() {
-		go func() {
-			for {
-				node := <-nodeSyncChan
-				go masterSyncNodeToSlave(&node)
+		if conf.IsMasterNode() {
+			go func() {
+				for {
+					node := <-nodeSyncChan
+					go masterSyncNodeToSlave(&node)
+				}
+			}()
+		} else {
+			if err = slaveCheckMaster(); err != nil {
+				log.Printf("slave node failed to check master: %s", err.Error())
+				os.Exit(1)
 			}
-		}()
+
+			go func() {
+				for {
+					time.Sleep(time.Duration(conf.CheckMasterInerval) * time.Second)
+					slaveCheckMaster()
+				}
+			}()
+		}
 	}
 }
 
@@ -414,15 +428,6 @@ func slaveCheckMaster() error {
 	}
 
 	if err = models.UpdateDataVersion(s, resData.DataVersion); err != nil {
-		s.Rollback()
-		return err
-	}
-
-	// update master node info in slave
-	memConfMux.RLock()
-	masterNode := *memConfNodes[conf.MasterAddr]
-	memConfMux.RUnlock()
-	if err = models.UpdateDBModel(s, &masterNode); err != nil {
 		s.Rollback()
 		return err
 	}

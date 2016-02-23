@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/appwilldev/Instafig/conf"
 	"github.com/facebookgo/grace/gracehttp"
@@ -16,20 +15,6 @@ import (
 )
 
 func main() {
-	if conf.IsEasyDeployMode() && !conf.IsMasterNode() {
-		if err := slaveCheckMaster(); err != nil {
-			log.Printf("slave node failed to check master: %s", err.Error())
-			os.Exit(1)
-		}
-
-		go func() {
-			for {
-				time.Sleep(time.Duration(conf.CheckMasterInerval) * time.Second)
-				slaveCheckMaster()
-			}
-		}()
-	}
-
 	wd, _ := os.Getwd()
 	pidFile, err := os.OpenFile(filepath.Join(wd, "instafig.pid"), os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
