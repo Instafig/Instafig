@@ -1064,6 +1064,25 @@ func GetConfigUpdateHistory(c *gin.Context) {
 	Success(c, histories)
 }
 
+func GetConfigByKey(c *gin.Context) {
+	memConfMux.RLock()
+	configPtr := memConfRawConfigs[c.Param("config_key")]
+	config := models.Config{}
+	if configPtr != nil {
+		config = *configPtr
+	}
+	memConfMux.RUnlock()
+
+	if configPtr != nil {
+		config.LastUpdateInfo, _ = models.GetConfigUpdateHistoryById(nil, config.LastUpdateId)
+		memConfMux.RLock()
+		config.LastUpdateInfo.UserName = memConfUsers[config.LastUpdateInfo.UserKey].Name
+		memConfMux.RUnlock()
+	}
+
+	Success(c, config)
+}
+
 func GetNodes(c *gin.Context) {
 	var nodes []*models.Node
 

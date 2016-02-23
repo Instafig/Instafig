@@ -105,6 +105,7 @@ func main() {
 		opAPIGroup.POST("/config", OpAuth, ConfWriteCheck, NewConfig)
 		opAPIGroup.PUT("/config", OpAuth, ConfWriteCheck, UpdateConfig)
 		opAPIGroup.GET("/config/history/:config_key", OpAuth, GetConfigUpdateHistory)
+		opAPIGroup.GET("/config/by/:config_key", OpAuth, GetConfigByKey)
 
 		opAPIGroup.GET("/nodes", OpAuth, GetNodes)
 	}
