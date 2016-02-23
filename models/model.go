@@ -2,7 +2,7 @@ package models
 
 import "fmt"
 
-const SCHEME_VERSION = "0.1"
+//const SCHEME_VERSION = "0.1"
 
 var (
 	NoDataVerError = fmt.Errorf("no data version")
@@ -245,7 +245,7 @@ type Node struct {
 	DataVersionStr string `xorm:"data_version TEXT " json:"data_version_str"` // json string to store DataVersion in db
 
 	DataVersion   *DataVersion `xorm:"-" json:"data_version"`
-	SchemeVersion string       `xorm:"-"`
+	//SchemeVersion string       `xorm:"-"`
 }
 
 func (*Node) TableName() string {
