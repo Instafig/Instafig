@@ -203,24 +203,19 @@ func syncData2SlaveIfNeed(data interface{}, opUserKey string) []map[string]inter
 		return nil
 	}
 
-	memConfMux.RLock()
-	ver := memConfDataVersion
-	nodes := memConfNodes
-	memConfMux.RUnlock()
-
 	var failedNodes []map[string]interface{}
-	for _, node := range nodes {
+	for _, node := range memConfNodes {
 		if node.Type == models.NODE_TYPE_MASTER {
 			continue
 		}
 
-		if ver.Version != node.DataVersion.Version+1 {
-			errStr := fmt.Sprintf("data_version error: slave node's data_version [%s] is %d, master's data_version is %d", node.URL, node.DataVersion.Version, ver.Version)
+		if memConfDataVersion.Version != node.DataVersion.Version+1 {
+			errStr := fmt.Sprintf("data_version error: slave node's data_version [%s] is %d, master's data_version is %d", node.URL, node.DataVersion.Version, memConfDataVersion.Version)
 			failedNodes = append(failedNodes, map[string]interface{}{"node": node, "err": errStr})
 			continue
 		}
 
-		if err := syncData2Slave(node, data, ver, opUserKey); err != nil {
+		if err := syncData2Slave(node, data, memConfDataVersion, opUserKey); err != nil {
 			failedNodes = append(failedNodes, map[string]interface{}{"node": node, "err": err.Error()})
 		}
 	}
@@ -277,11 +272,7 @@ func slaveCheckMaster() error {
 	confWriteMux.Lock()
 	defer confWriteMux.Unlock()
 
-	memConfMux.RLock()
-	ver := memConfDataVersion
 	localNode := *memConfNodes[conf.ClientAddr]
-	memConfMux.RUnlock()
-
 	nodeString, _ := json.Marshal(localNode)
 	reqData := nodeRequestDataT{
 		Auth: nodeAuthString,
@@ -297,7 +288,7 @@ func slaveCheckMaster() error {
 		return fmt.Errorf("bad response data format: %s < %s >", err.Error(), data.(string))
 	}
 
-	if masterVersion.Version == ver.Version && masterVersion.Sign == ver.Sign {
+	if masterVersion.Version == memConfDataVersion.Version && masterVersion.Sign == memConfDataVersion.Sign {
 		localNode.LastCheckUTC = utils.GetNowSecond()
 		if err = models.UpdateDBModel(nil, &localNode); err != nil {
 			return err
@@ -530,17 +521,13 @@ func handleSlaveSyncUpdateData(c *gin.Context, data string) {
 	confWriteMux.Lock()
 	defer confWriteMux.Unlock()
 
-	memConfMux.RLock()
-	ver := memConfDataVersion
-	memConfMux.RUnlock()
-
 	if syncData.Kind != NODE_REQUEST_SYNC_TYPE_NODE {
-		if ver.Version+1 != syncData.DataVersion.Version {
-			Error(c, DATA_VERSION_ERROR, "slave node data version [%d] error for master data version [%d]", ver.Version, syncData.DataVersion.Version)
+		if memConfDataVersion.Version+1 != syncData.DataVersion.Version {
+			Error(c, DATA_VERSION_ERROR, "slave node data version [%d] error for master data version [%d]", memConfDataVersion.Version, syncData.DataVersion.Version)
 			return
 		}
-		if ver.Sign != syncData.DataVersion.OldSign {
-			Error(c, DATA_VERSION_ERROR, "slave node's data sign [%s] not equal master node's old data sign [%s]", ver.Sign, syncData.DataVersion.OldSign)
+		if memConfDataVersion.Sign != syncData.DataVersion.OldSign {
+			Error(c, DATA_VERSION_ERROR, "slave node's data sign [%s] not equal master node's old data sign [%s]", memConfDataVersion.Sign, syncData.DataVersion.OldSign)
 			return
 		}
 	}
@@ -605,11 +592,7 @@ func handleSlaveSyncUpdateData(c *gin.Context, data string) {
 			return
 		}
 
-		memConfMux.RLock()
-		oldNode := memConfNodes[node.URL]
-		memConfMux.RUnlock()
-
-		if oldNode == nil {
+		if memConfNodes[node.URL] == nil {
 			if err := models.InsertRow(nil, node); err != nil {
 				Error(c, SERVER_ERROR, err.Error())
 				return
@@ -648,10 +631,7 @@ func handleSlaveCheckMaster(c *gin.Context, data string) {
 	confWriteMux.Lock()
 	defer confWriteMux.Unlock()
 
-	memConfMux.RLock()
 	oldNode := memConfNodes[node.URL]
-	memConfMux.RUnlock()
-
 	node.LastCheckUTC = utils.GetNowSecond()
 	if oldNode == nil {
 		if err := models.InsertRow(nil, node); err != nil {
@@ -711,7 +691,14 @@ func handleSyncMaster(c *gin.Context, data string) {
 }
 
 func masterSyncNodeToSlave(node *models.Node) {
+	nodes := make([]*models.Node, 0)
+	memConfMux.RLock()
 	for _, _node := range memConfNodes {
+		nodes = append(nodes, _node)
+	}
+	memConfMux.RUnlock()
+
+	for _, _node := range nodes {
 		if _node.URL == node.URL || _node.Type == models.NODE_TYPE_MASTER {
 			continue
 		}

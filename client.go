@@ -59,14 +59,13 @@ func ClientConf(c *gin.Context) {
 		memConfMux.RUnlock()
 
 		if needConf {
-			configs := getAppMatchConf(clientData.AppKey, clientData)
-
 			var dataSign string
-			memConfMux.RLock()
+			configs := getAppMatchConf(clientData.AppKey, clientData)
 			if len(configs) > 0 {
+				memConfMux.RLock()
 				dataSign = memConfApps[clientData.AppKey].DataSign
+				memConfMux.RUnlock()
 			}
-			memConfMux.RUnlock()
 
 			Success(c, map[string]interface{}{
 				"nodes":     nodes,

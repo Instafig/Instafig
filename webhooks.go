@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/appwilldev/Instafig/models"
-	"github.com/appwilldev/Instafig/utils"
-	"github.com/gin-gonic/gin"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+
+	"github.com/appwilldev/Instafig/models"
+	"github.com/appwilldev/Instafig/utils"
+	"github.com/gin-gonic/gin"
 )
 
 func configUpdateHistoryToNotificationText(m *models.ConfigUpdateHistory, app *models.App) string {
@@ -206,8 +207,6 @@ func UpdateWebHook(c *gin.Context) {
 		return
 	}
 
-	memConfMux.RLock()
-
 	var oldHook *models.WebHook = nil
 	if data.Scope == models.WEBHOOK_SCOPE_GLOBAL {
 		for _, hook := range memConfGlobalWebHooks {
@@ -220,7 +219,6 @@ func UpdateWebHook(c *gin.Context) {
 		_, ok := memConfAppWebHooks[data.AppKey]
 		if !ok {
 			Error(c, BAD_REQUEST, "app key not exists: "+data.AppKey)
-			memConfMux.RUnlock()
 			return
 		}
 		for _, hook := range memConfAppWebHooks[data.AppKey] {
@@ -232,10 +230,8 @@ func UpdateWebHook(c *gin.Context) {
 	}
 	if oldHook == nil {
 		Error(c, BAD_REQUEST, "webHook key not exists: "+data.Key)
-		memConfMux.RUnlock()
 		return
 	}
-	memConfMux.RUnlock()
 
 	webHook := *oldHook
 	webHook.Target = data.Target

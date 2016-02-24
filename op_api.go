@@ -77,13 +77,10 @@ func InitUser(c *gin.Context) {
 	confWriteMux.Lock()
 	defer confWriteMux.Unlock()
 
-	memConfMux.RLock()
 	if len(memConfUsers) > 0 {
-		memConfMux.RUnlock()
 		Error(c, BAD_REQUEST, "users already exists")
 		return
 	}
-	memConfMux.RUnlock()
 
 	data := &newUserData{}
 	if err := c.BindJSON(data); err != nil {
@@ -142,9 +139,6 @@ func NewUser(c *gin.Context) {
 }
 
 func verifyNewUserData(data *newUserData) error {
-	memConfMux.RLock()
-	defer memConfMux.RUnlock()
-
 	if memConfUsersByName[data.Name] != nil {
 		return fmt.Errorf("user [%s] already exists", data.Name)
 	}
@@ -207,9 +201,6 @@ func UpdateUser(c *gin.Context) {
 }
 
 func verifyUpdateUserData(data *updateUserData, userKey string) error {
-	memConfMux.RLock()
-	defer memConfMux.RUnlock()
-
 	if memConfUsersByName[data.Name] != nil && memConfUsersByName[data.Name].Key != memConfUsers[userKey].Key {
 		return fmt.Errorf("user name [%s] already exists", data.Name)
 	}
@@ -222,10 +213,7 @@ func verifyUpdateUserData(data *updateUserData, userKey string) error {
 }
 
 func updateUserWithUpdateData(data *updateUserData, userKey string) (*models.User, error) {
-	memConfMux.RLock()
 	user := *memConfUsers[userKey]
-	memConfMux.RUnlock()
-
 	user.AuxInfo = data.AuxInfo
 	user.Name = data.Name
 	return updateUser(&user, nil)
@@ -239,11 +227,9 @@ func updateUser(user *models.User, newDataVersion *models.DataVersion) (*models.
 		return nil, err
 	}
 
-	memConfMux.RLock()
 	node := memConfNodes[conf.ClientAddr]
 	oldUser := memConfUsers[user.Key]
 	dataVer := memConfDataVersion
-	memConfMux.RUnlock()
 
 	if newDataVersion == nil {
 		newDataVersion = genNewDataVersion(dataVer)
@@ -384,13 +370,10 @@ func NewApp(c *gin.Context) {
 		return
 	}
 
-	memConfMux.RLock()
 	if conf.IsEasyDeployMode() && memConfAppsByName[data.Name] != nil {
-		memConfMux.RUnlock()
 		Error(c, BAD_REQUEST, "appname already exists: "+data.Name)
 		return
 	}
-	memConfMux.RUnlock()
 
 	app := &models.App{
 		Key:        utils.GenerateKey(),
@@ -433,17 +416,14 @@ func UpdateApp(c *gin.Context) {
 		return
 	}
 
-	memConfMux.RLock()
 	oldApp := memConfApps[data.Key]
 	if oldApp == nil {
 		Error(c, BAD_REQUEST, "app key not exists: "+data.Key)
-		memConfMux.RUnlock()
 		return
 	}
 
 	if oldApp.Type == models.APP_TYPE_TEMPLATE && oldApp.Type != data.Type {
 		Error(c, BAD_REQUEST, "can not change template app to real app")
-		memConfMux.RUnlock()
 		return
 	}
 
@@ -451,12 +431,10 @@ func UpdateApp(c *gin.Context) {
 		for _, app := range memConfApps {
 			if app.Name == data.Name {
 				Error(c, BAD_REQUEST, "appname already exists: "+data.Name)
-				memConfMux.RUnlock()
 				return
 			}
 		}
 	}
-	memConfMux.RUnlock()
 
 	app := *oldApp
 	app.Name = data.Name
@@ -482,11 +460,9 @@ func updateApp(app *models.App, newDataVersion *models.DataVersion) (*models.App
 		return nil, err
 	}
 
-	memConfMux.RLock()
 	node := memConfNodes[conf.ClientAddr]
 	oldApp := memConfApps[app.Key]
 	dataVer := memConfDataVersion
-	memConfMux.RUnlock()
 
 	if newDataVersion == nil {
 		newDataVersion = genNewDataVersion(dataVer)
@@ -595,7 +571,6 @@ func updateWebHook(hook *models.WebHook, newDataVersion *models.DataVersion) (*m
 		return nil, err
 	}
 
-	memConfMux.RLock()
 	node := memConfNodes[conf.ClientAddr]
 	oldHookIdx := -1
 	var hooks []*models.WebHook
@@ -611,7 +586,6 @@ func updateWebHook(hook *models.WebHook, newDataVersion *models.DataVersion) (*m
 		}
 	}
 	dataVer := memConfDataVersion
-	memConfMux.RUnlock()
 
 	if newDataVersion == nil {
 		newDataVersion = genNewDataVersion(dataVer)
@@ -697,9 +671,6 @@ func NewConfig(c *gin.Context) {
 }
 
 func verifyNewConfigData(data *newConfigData) error {
-	memConfMux.RLock()
-	defer memConfMux.RUnlock()
-
 	if !models.IsValidConfValueType(data.VType) {
 		return fmt.Errorf("unknown conf type: " + data.VType)
 	}
@@ -799,9 +770,6 @@ func UpdateConfig(c *gin.Context) {
 }
 
 func verifyUpdateConfigData(data *updateConfigData) error {
-	memConfMux.RLock()
-	defer memConfMux.RUnlock()
-
 	if !models.IsValidConfValueType(data.VType) {
 		return fmt.Errorf("unknown conf type: " + data.VType)
 	}
@@ -852,10 +820,7 @@ func verifyUpdateConfigData(data *updateConfigData) error {
 }
 
 func updateConfigWithUpdateData(data *updateConfigData, userKey string) (*models.Config, error) {
-	memConfMux.RLock()
 	config := *memConfRawConfigs[data.Key]
-	memConfMux.RUnlock()
-
 	config.K = data.K
 	config.V = data.V
 	config.VType = data.VType
@@ -873,12 +838,10 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 		return nil, err
 	}
 
-	memConfMux.RLock()
 	node := memConfNodes[conf.ClientAddr]
 	oldConfig := memConfRawConfigs[config.Key]
 	ver := memConfDataVersion
 	app := memConfApps[config.AppKey]
-	memConfMux.RUnlock()
 
 	if newDataVersion == nil {
 		newDataVersion = genNewDataVersion(ver)
@@ -967,7 +930,6 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 	if app.Type == models.APP_TYPE_REAL {
 		toUpdateApps = append(toUpdateApps, app)
 	} else {
-		memConfMux.RLock()
 		for _, app := range memConfApps {
 			if app.Key == config.AppKey {
 				toUpdateApps = append(toUpdateApps, app)
@@ -981,7 +943,6 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 				}
 			}
 		}
-		memConfMux.RUnlock()
 	}
 
 	newDataSign := utils.GenerateKey()
@@ -1147,9 +1108,8 @@ func InitUserCheck(c *gin.Context) {
 }
 
 func GetLoginUserInfo(c *gin.Context) {
-	key := getOpUserKey(c)
 	memConfMux.RLock()
-	user := *memConfUsers[key]
+	user := *memConfUsers[getOpUserKey(c)]
 	user.CreatorName = memConfUsers[user.CreatorKey].Name
 	memConfMux.RUnlock()
 
