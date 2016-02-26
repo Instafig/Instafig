@@ -138,10 +138,10 @@ func NewWebHook(c *gin.Context) {
 
 	var data struct {
 		AppKey string `json:"app_key" binding:"required"`
-		Scope  int    `json:"scope" binding:"required"`
+		Scope  int    `json:"scope"`
 		Target string `json:"target" binding:"required"`
 		URL    string `json:"url" binding:"required"`
-		Status int    `json:"status" binding:"required"`
+		Status int    `json:"status"`
 	}
 	if err := c.BindJSON(&data); err != nil {
 		Error(c, BAD_POST_DATA, err.Error())
@@ -186,10 +186,10 @@ func UpdateWebHook(c *gin.Context) {
 	var data struct {
 		Key    string `json:"key" binding:"required"`
 		AppKey string `json:"app_key" binding:"required"`
-		Scope  int    `json:"scope" binding:"required"`
+		Scope  int    `json:"scope"`
 		Target string `json:"target" binding:"required"`
 		URL    string `json:"url" binding:"required"`
-		Status int    `json:"status" binding:"required"`
+		Status int    `json:"status"`
 	}
 
 	if err := c.BindJSON(&data); err != nil {
