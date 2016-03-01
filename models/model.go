@@ -238,7 +238,7 @@ const (
 
 type Node struct {
 	URL            string `xorm:"url TEXT PK " json:"url"`
-	NodeURL        string `xorm:"node_url TEXT PK " json:"node_url"`
+	NodeURL        string `xorm:"node_url TEXT UNIQUE 'node_node_url'" json:"node_url"`
 	Type           string `xorm:"type TEXT " json:"type"`
 	CreatedUTC     int    `xorm:"created_utc INT " json:"created_utc"`
 	LastCheckUTC   int    `xorm:"last_check_utc INT " json:"last_check_utc"`
