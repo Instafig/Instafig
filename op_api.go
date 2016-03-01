@@ -347,6 +347,25 @@ func SearchApps(c *gin.Context) {
 	Success(c, apps)
 }
 
+func SearchAppsHint(c *gin.Context) {
+	apps, err := searchApps(c.Query("q"))
+	if err != nil {
+		Error(c, SERVER_ERROR, err.Error())
+		return
+	}
+
+	res := map[string]string{}
+	memConfMux.RLock()
+	for _, app := range apps {
+		res["name"] = app.Name
+		res["aux_info"] = app.AuxInfo
+		res["key"] = app.Key
+	}
+	memConfMux.RUnlock()
+
+	Success(c, res)
+}
+
 func searchApps(q string) ([]*models.App, error) {
 	return models.SearchAppByName(nil, q)
 }
