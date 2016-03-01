@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+go get -u github.com/jteeuwen/go-bindata/...
+rm -rf ./web
+git clone git@gitlab.appdao.com:ldmiao/InstafigWeb.git web
+go-bindata -o web_bin.go -ignore=\\.git* web/...
+go build
