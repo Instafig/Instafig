@@ -383,6 +383,16 @@ func GetAppConfigUpdateHistory(s *Session, appKey string) ([]*ConfigUpdateHistor
 	return res, err
 }
 
+func GetConfigUpdateHistoryOfUser(s *Session, userKey string) ([]*ConfigUpdateHistory, error) {
+	if s == nil {
+		s = newAutoCloseModelsSession()
+	}
+
+	var res []*ConfigUpdateHistory
+	err := s.Where("user_key=?", userKey).OrderBy("created_utc desc").Find(&res)
+	return res, err
+}
+
 func GetAllConfigUpdateHistory(s *Session) ([]*ConfigUpdateHistory, error) {
 	if s == nil {
 		s = newAutoCloseModelsSession()

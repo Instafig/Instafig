@@ -1041,6 +1041,28 @@ func GetAppConfigUpdateHistory(c *gin.Context) {
 	Success(c, histories)
 }
 
+func GetConfigUpdateHistoryOfUser(c *gin.Context) {
+	histories, err := models.GetConfigUpdateHistoryOfUser(nil, c.Param("user_key"))
+	if err != nil {
+		Error(c, SERVER_ERROR)
+		return
+	}
+
+	if len(histories) == 0 {
+		Success(c, histories)
+		return
+	}
+
+	memConfMux.RLock()
+	userName := memConfUsers[c.Param("user_key")].Name
+	memConfMux.RUnlock()
+	for _, history := range histories {
+		history.UserName = userName
+	}
+
+	Success(c, histories)
+}
+
 func GetConfigByKey(c *gin.Context) {
 	memConfMux.RLock()
 	configPtr := memConfRawConfigs[c.Param("config_key")]
