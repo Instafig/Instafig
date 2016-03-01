@@ -205,19 +205,19 @@ func TestSearchApps(t *testing.T) {
 		Type:    models.APP_TYPE_REAL}, nil)
 	assert.True(t, err == nil, "must correctly add new app")
 
-	apps, err := searchApps("free")
+	apps, err := searchApps("free", 0)
 	assert.True(t, err == nil)
 	assert.True(t, len(apps) == 2)
 
-	apps, err = searchApps("video")
+	apps, err = searchApps("video", 0)
 	assert.True(t, err == nil)
 	assert.True(t, len(apps) == 1)
 
-	apps, err = searchApps("phoneplay")
+	apps, err = searchApps("phoneplay", 0)
 	assert.True(t, err == nil)
 	assert.True(t, len(apps) == 1)
 
-	apps, err = searchApps("non-exist")
+	apps, err = searchApps("non-exist", 0)
 	assert.True(t, err == nil)
 	assert.True(t, len(apps) == 0)
 }

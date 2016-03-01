@@ -142,13 +142,19 @@ func GetAppCount(s *Session) (int, error) {
 	return int(count), err
 }
 
-func SearchAppByName(s *Session, q string) ([]*App, error) {
+func SearchAppByName(s *Session, q string, count int) ([]*App, error) {
 	if s == nil {
 		s = newAutoCloseModelsSession()
 	}
 
 	var res []*App
-	err := s.Where("like(?, name)=1", "%"+q+"%").OrderBy("").Find(&res)
+	var err error
+
+	if count > 0 {
+		err = s.Where("like(?, name)=1", "%"+q+"%").OrderBy("").Limit(count).Find(&res)
+	} else {
+		err = s.Where("like(?, name)=1", "%"+q+"%").OrderBy("").Find(&res)
+	}
 
 	return res, err
 }

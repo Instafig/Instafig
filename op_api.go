@@ -328,7 +328,7 @@ func GetApp(c *gin.Context) {
 }
 
 func SearchApps(c *gin.Context) {
-	apps, err := searchApps(c.Query("q"))
+	apps, err := searchApps(c.Query("q"), 0)
 	if err != nil {
 		Error(c, SERVER_ERROR, err.Error())
 		return
@@ -348,26 +348,28 @@ func SearchApps(c *gin.Context) {
 }
 
 func SearchAppsHint(c *gin.Context) {
-	apps, err := searchApps(c.Query("q"))
+	apps, err := searchApps(c.Query("q"), 10)
 	if err != nil {
 		Error(c, SERVER_ERROR, err.Error())
 		return
 	}
 
-	res := map[string]string{}
+	res := make([]map[string]string, len(apps))
 	memConfMux.RLock()
-	for _, app := range apps {
-		res["name"] = app.Name
-		res["aux_info"] = app.AuxInfo
-		res["key"] = app.Key
+	for ix, app := range apps {
+		_res := map[string]string{}
+		_res["name"] = app.Name
+		_res["aux_info"] = app.AuxInfo
+		_res["key"] = app.Key
+		res[ix] = _res
 	}
 	memConfMux.RUnlock()
 
 	Success(c, res)
 }
 
-func searchApps(q string) ([]*models.App, error) {
-	return models.SearchAppByName(nil, q)
+func searchApps(q string, count int) ([]*models.App, error) {
+	return models.SearchAppByName(nil, q, count)
 }
 
 func NewApp(c *gin.Context) {
