@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/appwilldev/Instafig",
-	"GoVersion": "go1.5",
+	"GoVersion": "go1.6",
 	"Packages": [
 		"./..."
 	],
@@ -39,14 +39,19 @@
 			"Rev": "52fcc5dbf6e94df33ad313858fb94b713e9d1b4a"
 		},
 		{
+			"ImportPath": "github.com/go-sql-driver/mysql",
+			"Comment": "v1.2-177-g71f003c",
+			"Rev": "71f003c6e927d2550713e7637affb769977ece78"
+		},
+		{
 			"ImportPath": "github.com/go-xorm/core",
-			"Comment": "v0.4.4-3-g85579d3",
-			"Rev": "85579d38adea6d9c4e01b339129ba077d98e55e8"
+			"Comment": "v0.4.5-5-g9ddf4ee",
+			"Rev": "9ddf4ee12e7a370dacf0092d9896979ae6e3fb16"
 		},
 		{
 			"ImportPath": "github.com/go-xorm/xorm",
-			"Comment": "v0.4.4-32-gfad6102",
-			"Rev": "fad61020e856d1dfe16f44e006d288713feb38fb"
+			"Comment": "v0.5.0-3-g4bcbb95",
+			"Rev": "4bcbb95688b3cdb1635915ee8aa78d7f17e31a25"
 		},
 		{
 			"ImportPath": "github.com/gorilla/feeds",

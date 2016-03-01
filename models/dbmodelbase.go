@@ -50,9 +50,9 @@ func init() {
 	dbEngineDefault.SetMaxOpenConns(100)
 	dbEngineDefault.SetMaxIdleConns(50)
 	if conf.DebugMode {
-		dbEngineDefault.Logger.SetLevel(xormcore.LOG_DEBUG)
+		dbEngineDefault.Logger().SetLevel(xormcore.LOG_DEBUG)
 	} else {
-		dbEngineDefault.Logger.SetLevel(xormcore.LOG_ERR)
+		dbEngineDefault.Logger().SetLevel(xormcore.LOG_ERR)
 	}
 
 	if conf.IsEasyDeployMode() {
