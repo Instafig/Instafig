@@ -333,6 +333,7 @@ type ConfigUpdateHistory struct {
 	CreatedUTC int    `xorm:"created_utc INT " json:"created_utc"`
 
 	UserName string `xorm:"-" json:"user_name"`
+	App      *App   `xorm:"-" json:"app"`
 }
 
 func (*ConfigUpdateHistory) TableName() string {
@@ -368,7 +369,7 @@ func GetConfigUpdateHistory(s *Session, configKey string) ([]*ConfigUpdateHistor
 	return res, err
 }
 
-func GetAppConfigUpdateHistory(s *Session, appKey string) ([]*ConfigUpdateHistory, error) {
+func GetAppConfigUpdateHistory(s *Session, appKey string, page, count int) ([]*ConfigUpdateHistory, error) {
 	if s == nil {
 		s = newAutoCloseModelsSession()
 	}
@@ -379,17 +380,18 @@ func GetAppConfigUpdateHistory(s *Session, appKey string) ([]*ConfigUpdateHistor
 		Join("INNER", "config", "config.key=config_update_history.config_key").
 		Where("config.app_key=?", appKey).
 		OrderBy("created_utc desc").
+		Limit(count, (page-1)*count).
 		Find(&res)
 	return res, err
 }
 
-func GetConfigUpdateHistoryOfUser(s *Session, userKey string) ([]*ConfigUpdateHistory, error) {
+func GetConfigUpdateHistoryOfUser(s *Session, userKey string, page, count int) ([]*ConfigUpdateHistory, error) {
 	if s == nil {
 		s = newAutoCloseModelsSession()
 	}
 
 	var res []*ConfigUpdateHistory
-	err := s.Where("user_key=?", userKey).OrderBy("created_utc desc").Find(&res)
+	err := s.Where("user_key=?", userKey).OrderBy("created_utc desc").Limit(count, (page-1)*count).Find(&res)
 	return res, err
 }
 

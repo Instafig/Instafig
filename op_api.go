@@ -1045,7 +1045,19 @@ func GetConfigUpdateHistory(c *gin.Context) {
 }
 
 func GetAppConfigUpdateHistory(c *gin.Context) {
-	histories, err := models.GetAppConfigUpdateHistory(nil, c.Param("app_key"))
+	page, err := strconv.Atoi(c.Param("page"))
+	if err != nil {
+		Error(c, BAD_REQUEST, "page not number")
+		return
+	}
+
+	count, err := strconv.Atoi(c.Param("count"))
+	if err != nil {
+		Error(c, BAD_REQUEST, "count not number")
+		return
+	}
+
+	histories, err := models.GetAppConfigUpdateHistory(nil, c.Param("app_key"), page, count)
 	if err != nil {
 		Error(c, SERVER_ERROR)
 		return
@@ -1061,7 +1073,19 @@ func GetAppConfigUpdateHistory(c *gin.Context) {
 }
 
 func GetConfigUpdateHistoryOfUser(c *gin.Context) {
-	histories, err := models.GetConfigUpdateHistoryOfUser(nil, c.Param("user_key"))
+	page, err := strconv.Atoi(c.Param("page"))
+	if err != nil {
+		Error(c, BAD_REQUEST, "page not number")
+		return
+	}
+
+	count, err := strconv.Atoi(c.Param("count"))
+	if err != nil {
+		Error(c, BAD_REQUEST, "count not number")
+		return
+	}
+
+	histories, err := models.GetConfigUpdateHistoryOfUser(nil, c.Param("user_key"), page, count)
 	if err != nil {
 		Error(c, SERVER_ERROR)
 		return
@@ -1074,10 +1098,13 @@ func GetConfigUpdateHistoryOfUser(c *gin.Context) {
 
 	memConfMux.RLock()
 	userName := memConfUsers[c.Param("user_key")].Name
-	memConfMux.RUnlock()
 	for _, history := range histories {
 		history.UserName = userName
+		app := memConfApps[memConfRawConfigs[history.ConfigKey].AppKey]
+		app.UserName = memConfUsers[app.UserKey].Name
+		history.App = app
 	}
+	memConfMux.RUnlock()
 
 	Success(c, histories)
 }
