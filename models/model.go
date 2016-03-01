@@ -368,6 +368,21 @@ func GetConfigUpdateHistory(s *Session, configKey string) ([]*ConfigUpdateHistor
 	return res, err
 }
 
+func GetAppConfigUpdateHistory(s *Session, appKey string) ([]*ConfigUpdateHistory, error) {
+	if s == nil {
+		s = newAutoCloseModelsSession()
+	}
+
+	var res []*ConfigUpdateHistory
+	err := s.
+		Table("config_update_history").
+		Join("INNER", "config", "config.key=config_update_history.config_key").
+		Where("config.app_key=?", appKey).
+		OrderBy("created_utc desc").
+		Find(&res)
+	return res, err
+}
+
 func GetAllConfigUpdateHistory(s *Session) ([]*ConfigUpdateHistory, error) {
 	if s == nil {
 		s = newAutoCloseModelsSession()
