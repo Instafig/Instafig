@@ -100,7 +100,7 @@ func checkNodeValidity() {
 				break
 			}
 		} else {
-			if node.Type == models.NODE_TYPE_MASTER && node.URL != conf.MasterAddr {
+			if node.Type == models.NODE_TYPE_MASTER && node.NodeURL != conf.MasterAddr {
 				// this node is attached to a new master, sync full data from new master
 				// just clear old-master data here, slave will sync new-master's data before serve for client
 				if err = models.ClearModeData(nil); err != nil {
