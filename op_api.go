@@ -58,7 +58,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	setUserKeyCookie(c, user.Key)
+	setUserKeyCookie(c, user.Key, user.PassCode)
 	Success(c, nil)
 }
 
@@ -101,7 +101,7 @@ func InitUser(c *gin.Context) {
 	}
 
 	failedNodes := syncData2SlaveIfNeed(user, key)
-	setUserKeyCookie(c, user.Key)
+	setUserKeyCookie(c, user.Key, user.PassCode)
 	if len(failedNodes) > 0 {
 		Success(c, map[string]interface{}{"failed_nodes": failedNodes})
 	} else {
@@ -223,6 +223,35 @@ func updateUserWithUpdateData(data *updateUserData, userKey string) (*models.Use
 	user.AuxInfo = data.AuxInfo
 	user.Name = data.Name
 	return updateUser(&user, nil)
+}
+
+func UpdateUserPassCode(c *gin.Context) {
+	confWriteMux.Lock()
+	defer confWriteMux.Unlock()
+
+	var data struct {
+		PassCode string `json:"pass_code" binding:"required"`
+	}
+	if err := c.BindJSON(&data); err != nil {
+		Error(c, BAD_POST_DATA, err.Error())
+		return
+	}
+
+	user := *memConfUsers[getOpUserKey(c)]
+	user.PassCode = encryptUserPassCode(data.PassCode)
+
+	if _, err := updateUser(&user, nil); err != nil {
+		Error(c, SERVER_ERROR, err.Error())
+		return
+	}
+
+	setUserKeyCookie(c, user.Key, user.PassCode)
+	failedNodes := syncData2SlaveIfNeed(&user, getOpUserKey(c))
+	if len(failedNodes) > 0 {
+		Success(c, map[string]interface{}{"failed_nodes": failedNodes})
+	} else {
+		Success(c, nil)
+	}
 }
 
 func updateUser(user *models.User, newDataVersion *models.DataVersion) (*models.User, error) {
@@ -1216,13 +1245,23 @@ func OpAuth(c *gin.Context) {
 
 	userKey := token.Claims["uky"].(string)
 	memConfMux.RLock()
+	defer memConfMux.RUnlock()
 	if memConfUsers[userKey] == nil {
-		memConfMux.RUnlock()
 		Error(c, NOT_LOGIN, "user not exist")
 		c.Abort()
 		return
 	}
-	memConfMux.RUnlock()
+	if token.Claims["upc"] == nil {
+		Error(c, NOT_LOGIN, "pass_code not correct")
+		c.Abort()
+		return
+	}
+	passCode := token.Claims["upc"].(string)
+	if memConfUsers[userKey].PassCode != passCode {
+		Error(c, NOT_LOGIN, "pass_code not correct")
+		c.Abort()
+		return
+	}
 
 	setOpUserKey(c, userKey)
 }
@@ -1255,9 +1294,10 @@ func encryptUserPassCode(code string) string {
 	return fmt.Sprintf("%x", hash.Sum(nil))
 }
 
-func setUserKeyCookie(c *gin.Context, userKey string) {
+func setUserKeyCookie(c *gin.Context, userkey, passCode string) {
 	jwtIns := jwt.New(jwt.SigningMethodHS256)
-	jwtIns.Claims["uky"] = userKey
+	jwtIns.Claims["uky"] = userkey
+	jwtIns.Claims["upc"] = passCode
 
 	encStr, _ := jwtIns.SignedString([]byte(conf.NodeAuth))
 	cookie := new(http.Cookie)
