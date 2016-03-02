@@ -1065,13 +1065,30 @@ func GetAppConfigUpdateHistory(c *gin.Context) {
 		return
 	}
 
+	if len(histories) == 0 {
+		Success(c, map[string]interface{}{
+			"total_count": 0,
+			"list":        []interface{}{},
+		})
+		return
+	}
+
 	memConfMux.RLock()
 	for _, history := range histories {
 		history.UserName = memConfUsers[history.UserKey].Name
 	}
 	memConfMux.RUnlock()
 
-	Success(c, histories)
+	totalCount, err := models.GetAppConfigUpdateHistoryCount(nil, c.Param("app_key"))
+	if err != nil {
+		Error(c, SERVER_ERROR)
+		return
+	}
+
+	Success(c, map[string]interface{}{
+		"total_count": totalCount,
+		"list":        histories,
+	})
 }
 
 func GetConfigUpdateHistoryOfUser(c *gin.Context) {
@@ -1094,7 +1111,10 @@ func GetConfigUpdateHistoryOfUser(c *gin.Context) {
 	}
 
 	if len(histories) == 0 {
-		Success(c, histories)
+		Success(c, map[string]interface{}{
+			"total_count": 0,
+			"list":        []interface{}{},
+		})
 		return
 	}
 
@@ -1108,7 +1128,16 @@ func GetConfigUpdateHistoryOfUser(c *gin.Context) {
 	}
 	memConfMux.RUnlock()
 
-	Success(c, histories)
+	totalCount, err := models.GetConfigUpdateHistoryCountOfUser(nil, c.Param("user_key"))
+	if err != nil {
+		Error(c, SERVER_ERROR)
+		return
+	}
+
+	Success(c, map[string]interface{}{
+		"total_count": totalCount,
+		"list":        histories,
+	})
 }
 
 func GetConfigByKey(c *gin.Context) {

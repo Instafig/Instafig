@@ -391,6 +391,18 @@ func GetAppConfigUpdateHistory(s *Session, appKey string, page, count int) ([]*C
 	return res, err
 }
 
+func GetAppConfigUpdateHistoryCount(s *Session, appKey string) (int, error) {
+	if s == nil {
+		s = newAutoCloseModelsSession()
+	}
+
+	count, err := s.
+		Join("INNER", "config", "config.key=config_update_history.config_key").
+		Where("config.app_key=?", appKey).
+		Count(&ConfigUpdateHistory{})
+	return int(count), err
+}
+
 func GetConfigUpdateHistoryOfUser(s *Session, userKey string, page, count int) ([]*ConfigUpdateHistory, error) {
 	if s == nil {
 		s = newAutoCloseModelsSession()
@@ -399,6 +411,15 @@ func GetConfigUpdateHistoryOfUser(s *Session, userKey string, page, count int) (
 	var res []*ConfigUpdateHistory
 	err := s.Where("user_key=?", userKey).OrderBy("created_utc desc").Limit(count, (page-1)*count).Find(&res)
 	return res, err
+}
+
+func GetConfigUpdateHistoryCountOfUser(s *Session, userKey string) (int, error) {
+	if s == nil {
+		s = newAutoCloseModelsSession()
+	}
+
+	count, err := s.Where("user_key=?", userKey).Count(&ConfigUpdateHistory{})
+	return int(count), err
 }
 
 func GetAllConfigUpdateHistory(s *Session) ([]*ConfigUpdateHistory, error) {
