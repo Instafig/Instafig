@@ -126,8 +126,6 @@ func getMasterNode() models.Node {
 		}
 	}
 
-	log.Panicf("No master node found")
-
 	return models.Node{}
 }
 
@@ -155,18 +153,6 @@ func initNodeData() {
 		if err := models.UpdateDBModel(nil, node); err != nil {
 			log.Panicf("Failed to update node data: %s", err.Error())
 		}
-	}
-
-	if !conf.IsMasterNode() && memConfNodes[conf.MasterAddr] == nil {
-		// fake master node
-		masterNode := &models.Node{
-			URL:  conf.MasterAddr,
-			Type: models.NODE_TYPE_MASTER,
-		}
-		if err := models.InsertRow(nil, masterNode); err != nil {
-			log.Panicf("Failed to init master node data: %s", err.Error())
-		}
-		memConfNodes[conf.MasterAddr] = masterNode
 	}
 }
 

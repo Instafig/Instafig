@@ -227,14 +227,13 @@ func updateUser(user *models.User, newDataVersion *models.DataVersion) (*models.
 		return nil, err
 	}
 
-	node := memConfNodes[conf.ClientAddr]
+	node := *memConfNodes[conf.ClientAddr]
 	oldUser := memConfUsers[user.Key]
-	dataVer := memConfDataVersion
 
 	if newDataVersion == nil {
-		newDataVersion = genNewDataVersion(dataVer)
+		newDataVersion = genNewDataVersion(memConfDataVersion)
 	}
-	if err := updateNodeDataVersion(s, node, newDataVersion); err != nil {
+	if err := updateNodeDataVersion(s, &node, newDataVersion); err != nil {
 		s.Rollback()
 		return nil, err
 	}
@@ -265,6 +264,7 @@ func updateUser(user *models.User, newDataVersion *models.DataVersion) (*models.
 	}
 	memConfUsers[user.Key] = user
 	memConfUsersByName[user.Name] = user
+	memConfNodes[node.URL] = &node
 
 	return user, nil
 }
@@ -481,14 +481,13 @@ func updateApp(app *models.App, newDataVersion *models.DataVersion) (*models.App
 		return nil, err
 	}
 
-	node := memConfNodes[conf.ClientAddr]
+	node := *memConfNodes[conf.ClientAddr]
 	oldApp := memConfApps[app.Key]
-	dataVer := memConfDataVersion
 
 	if newDataVersion == nil {
-		newDataVersion = genNewDataVersion(dataVer)
+		newDataVersion = genNewDataVersion(memConfDataVersion)
 	}
-	if err := updateNodeDataVersion(s, node, newDataVersion); err != nil {
+	if err := updateNodeDataVersion(s, &node, newDataVersion); err != nil {
 		s.Rollback()
 		return nil, err
 	}
@@ -519,6 +518,7 @@ func updateApp(app *models.App, newDataVersion *models.DataVersion) (*models.App
 	}
 	memConfApps[app.Key] = app
 	memConfAppsByName[app.Name] = app
+	memConfNodes[node.URL] = &node
 
 	return app, nil
 }
@@ -592,7 +592,7 @@ func updateWebHook(hook *models.WebHook, newDataVersion *models.DataVersion) (*m
 		return nil, err
 	}
 
-	node := memConfNodes[conf.ClientAddr]
+	node := *memConfNodes[conf.ClientAddr]
 	oldHookIdx := -1
 	var hooks []*models.WebHook
 	if hook.Scope == models.WEBHOOK_SCOPE_GLOBAL {
@@ -606,12 +606,11 @@ func updateWebHook(hook *models.WebHook, newDataVersion *models.DataVersion) (*m
 			break
 		}
 	}
-	dataVer := memConfDataVersion
 
 	if newDataVersion == nil {
-		newDataVersion = genNewDataVersion(dataVer)
+		newDataVersion = genNewDataVersion(memConfDataVersion)
 	}
-	if err := updateNodeDataVersion(s, node, newDataVersion); err != nil {
+	if err := updateNodeDataVersion(s, &node, newDataVersion); err != nil {
 		s.Rollback()
 		return nil, err
 	}
@@ -637,6 +636,7 @@ func updateWebHook(hook *models.WebHook, newDataVersion *models.DataVersion) (*m
 	defer memConfMux.Unlock()
 
 	memConfDataVersion = newDataVersion
+	memConfNodes[node.URL] = &node
 	if oldHookIdx == -1 {
 		if hook.Scope == models.WEBHOOK_SCOPE_GLOBAL {
 			memConfGlobalWebHooks = append(memConfGlobalWebHooks, hook)
@@ -859,15 +859,14 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 		return nil, err
 	}
 
-	node := memConfNodes[conf.ClientAddr]
+	node := *memConfNodes[conf.ClientAddr]
 	oldConfig := memConfRawConfigs[config.Key]
-	ver := memConfDataVersion
 	app := memConfApps[config.AppKey]
 
 	if newDataVersion == nil {
-		newDataVersion = genNewDataVersion(ver)
+		newDataVersion = genNewDataVersion(memConfDataVersion)
 	}
-	if err := updateNodeDataVersion(s, node, newDataVersion); err != nil {
+	if err := updateNodeDataVersion(s, &node, newDataVersion); err != nil {
 		s.Rollback()
 		return nil, err
 	}
@@ -993,6 +992,7 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 	memConfDataVersion = newDataVersion
 	memConfApps[config.AppKey] = &tempApp
 	memConfRawConfigs[config.Key] = config
+	memConfNodes[node.URL] = &node
 	for _, app := range toUpdateApps {
 		app.DataSign = newDataSign
 	}
@@ -1129,11 +1129,15 @@ func GetConfigByKey(c *gin.Context) {
 }
 
 func GetNodes(c *gin.Context) {
-	nodes, err := models.GetAllNode(nil)
-	if err != nil {
-		Error(c, SERVER_ERROR, err.Error())
-		return
+	memConfMux.RLock()
+	nodes := make([]*models.Node, 0)
+	for _, node := range memConfNodes {
+		_node := *node
+		_node.DataVersionStr = ""
+		_node.AppVersion = conf.VersionString()
+		nodes = append(nodes, &_node)
 	}
+	memConfMux.RUnlock()
 
 	Success(c, nodes)
 }
