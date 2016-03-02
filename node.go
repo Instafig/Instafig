@@ -112,6 +112,25 @@ func checkNodeValidity() {
 	}
 }
 
+func getMasterNode() models.Node {
+	if !conf.IsEasyDeployMode() {
+		return models.Node{}
+	}
+
+	memConfMux.RLock()
+	defer memConfMux.RUnlock()
+
+	for _, node := range memConfNodes {
+		if node.Type == models.NODE_TYPE_MASTER {
+			return *node
+		}
+	}
+
+	log.Panicf("No master node found")
+
+	return models.Node{}
+}
+
 func initNodeData() {
 	if memConfNodes[conf.ClientAddr] == nil {
 		bs, _ := json.Marshal(memConfDataVersion)
@@ -544,8 +563,6 @@ func handleSlaveSyncUpdateData(c *gin.Context, data string) {
 			return
 		}
 
-		Success(c, nil)
-
 	case NODE_REQUEST_SYNC_TYPE_APP:
 		app := &models.App{}
 		if err = json.Unmarshal([]byte(syncData.Data), app); err != nil {
@@ -556,8 +573,6 @@ func handleSlaveSyncUpdateData(c *gin.Context, data string) {
 			Error(c, SERVER_ERROR, err.Error())
 			return
 		}
-
-		Success(c, nil)
 
 	case NODE_REQUEST_SYNC_TYPE_WEBHOOK:
 		hook := &models.WebHook{}
@@ -570,8 +585,6 @@ func handleSlaveSyncUpdateData(c *gin.Context, data string) {
 			return
 		}
 
-		Success(c, nil)
-
 	case NODE_REQUEST_SYNC_TYPE_CONFIG:
 		config := &models.Config{}
 		if err = json.Unmarshal([]byte(syncData.Data), config); err != nil {
@@ -582,8 +595,6 @@ func handleSlaveSyncUpdateData(c *gin.Context, data string) {
 			Error(c, SERVER_ERROR, err.Error())
 			return
 		}
-
-		Success(c, nil)
 
 	case NODE_REQUEST_SYNC_TYPE_NODE:
 		node := &models.Node{}
@@ -609,11 +620,24 @@ func handleSlaveSyncUpdateData(c *gin.Context, data string) {
 		memConfMux.Unlock()
 
 		Success(c, nil)
+		return
 
 	default:
 		Error(c, BAD_REQUEST, "unknown node data sync type: "+syncData.Kind)
 		return
 	}
+
+	masterNode := getMasterNode()
+	masterNode.DataVersion = syncData.DataVersion
+	bs, _ := json.Marshal(syncData.DataVersion)
+	masterNode.DataVersionStr = string(bs)
+	if err = models.UpdateDBModel(nil, &masterNode); err != nil {
+		memConfMux.Lock()
+		memConfNodes[masterNode.URL] = &masterNode
+		memConfMux.Unlock()
+	}
+
+	Success(c, nil)
 }
 
 func handleSlaveCheckMaster(c *gin.Context, data string) {
