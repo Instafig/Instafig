@@ -448,7 +448,7 @@ func UpdateApp(c *gin.Context) {
 		return
 	}
 
-	if conf.IsEasyDeployMode() && memConfApps[data.Key].Name != data.Key {
+	if conf.IsEasyDeployMode() && memConfApps[data.Key].Name != data.Name {
 		for _, app := range memConfApps {
 			if app.Name == data.Name {
 				Error(c, BAD_REQUEST, "appname already exists: "+data.Name)
