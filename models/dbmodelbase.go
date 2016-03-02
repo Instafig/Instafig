@@ -51,6 +51,7 @@ func init() {
 	dbEngineDefault.SetMaxIdleConns(50)
 	if conf.DebugMode {
 		dbEngineDefault.Logger().SetLevel(xormcore.LOG_DEBUG)
+		dbEngineDefault.ShowSQL(true)
 	} else {
 		dbEngineDefault.Logger().SetLevel(xormcore.LOG_ERR)
 	}

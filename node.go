@@ -158,6 +158,7 @@ func initNodeData() {
 	}
 
 	if !conf.IsMasterNode() && memConfNodes[conf.MasterAddr] == nil {
+		// fake master node
 		masterNode := &models.Node{
 			URL:  conf.MasterAddr,
 			Type: models.NODE_TYPE_MASTER,
