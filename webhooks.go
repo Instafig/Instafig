@@ -233,6 +233,11 @@ func UpdateWebHook(c *gin.Context) {
 		return
 	}
 
+	if oldHook.AppKey == data.AppKey && oldHook.Scope == data.Scope && oldHook.Target == data.Target && oldHook.Status == data.Status && oldHook.URL == data.URL {
+		Success(c, nil)
+		return
+	}
+
 	webHook := *oldHook
 	webHook.Target = data.Target
 	webHook.URL = data.URL

@@ -186,6 +186,12 @@ func UpdateUser(c *gin.Context) {
 		return
 	}
 
+	oldUser := memConfUsers[getOpUserKey(c)]
+	if oldUser.AuxInfo == data.AuxInfo && oldUser.Name == data.Name {
+		Success(c, nil)
+		return
+	}
+
 	user, err := updateUserWithUpdateData(data, getOpUserKey(c))
 	if err != nil {
 		Error(c, SERVER_ERROR, err.Error())
@@ -440,6 +446,11 @@ func UpdateApp(c *gin.Context) {
 	oldApp := memConfApps[data.Key]
 	if oldApp == nil {
 		Error(c, BAD_REQUEST, "app key not exists: "+data.Key)
+		return
+	}
+
+	if oldApp.Name == data.Name && oldApp.AuxInfo == data.AuxInfo && oldApp.Type == data.Type {
+		Success(c, nil)
 		return
 	}
 
@@ -773,6 +784,12 @@ func UpdateConfig(c *gin.Context) {
 
 	if err := verifyUpdateConfigData(data); err != nil {
 		Error(c, BAD_REQUEST, err.Error())
+		return
+	}
+
+	oldConfig := memConfRawConfigs[data.Key]
+	if oldConfig.K == data.K && oldConfig.V == data.V && oldConfig.VType == data.VType && oldConfig.Des == data.Des && oldConfig.Status == data.Status {
+		Success(c, nil)
 		return
 	}
 
