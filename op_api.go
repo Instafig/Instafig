@@ -1116,9 +1116,8 @@ func GetConfigByKey(c *gin.Context) {
 	configPtr := memConfRawConfigs[c.Param("config_key")]
 	memConfMux.RUnlock()
 
-	config := models.Config{}
 	if configPtr != nil {
-		config = *configPtr
+		config := *configPtr
 		config.LastUpdateInfo, _ = models.GetConfigUpdateHistoryById(nil, config.LastUpdateId)
 		memConfMux.RLock()
 		config.LastUpdateInfo.UserName = memConfUsers[config.LastUpdateInfo.UserKey].Name
@@ -1130,15 +1129,11 @@ func GetConfigByKey(c *gin.Context) {
 }
 
 func GetNodes(c *gin.Context) {
-	var nodes []*models.Node
-
-	memConfMux.RLock()
-	for _, node := range memConfNodes {
-		node.DataVersionStr = ""
-		node.AppVersion = conf.VersionString()
-		nodes = append(nodes, node)
+	nodes, err := models.GetAllNode(nil)
+	if err != nil {
+		Error(c, SERVER_ERROR, err.Error())
+		return
 	}
-	memConfMux.RUnlock()
 
 	Success(c, nodes)
 }
