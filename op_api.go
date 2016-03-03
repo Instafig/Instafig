@@ -35,6 +35,24 @@ func ConfWriteCheck(c *gin.Context) {
 	}
 }
 
+func UpdateMasterLastDataUpdateUTC(c *gin.Context) {
+	if !conf.IsEasyDeployMode() || !getServiceStatus(c) ||
+		(c.Request.Method != http.MethodPost && c.Request.Method != http.MethodPut && c.Request.Method != http.MethodPatch && c.Request.Method != http.MethodDelete) {
+		return
+	}
+	memConfMux.RLock()
+	localNode := *memConfNodes[conf.ClientAddr] // must be master node
+	memConfMux.RUnlock()
+
+	// use master node's LastCheckUTC to store last update utc
+	localNode.LastCheckUTC = utils.GetNowSecond()
+	if models.UpdateDBModel(nil, &localNode) == nil {
+		memConfMux.Lock()
+		memConfNodes[localNode.URL] = &localNode
+		memConfMux.Unlock()
+	}
+}
+
 func Login(c *gin.Context) {
 	var data struct {
 		Name     string `json:"name" binding:"required"`
