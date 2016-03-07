@@ -76,6 +76,11 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	if user.Status == models.USER_STATUS_INACTIVE {
+		Error(c, USER_INACTIVE)
+		return
+	}
+
 	setUserKeyCookie(c, user.Key, user.PassCode)
 	Success(c, nil)
 }
