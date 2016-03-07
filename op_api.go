@@ -179,6 +179,7 @@ func newUserWithNewUserData(data *newUserData, userKey, creatorKey string) (*mod
 		CreatorKey: creatorKey,
 		CreatedUTC: utils.GetNowSecond(),
 		AuxInfo:    data.AuxInfo,
+		Status:     models.USER_STATUS_ACTIVE,
 		Key:        userKey}
 
 	return updateUser(user, nil)
@@ -264,6 +265,43 @@ func UpdateUserPassCode(c *gin.Context) {
 	}
 
 	setUserKeyCookie(c, user.Key, user.PassCode)
+	failedNodes := syncData2SlaveIfNeed(&user, getOpUserKey(c))
+	if len(failedNodes) > 0 {
+		Success(c, map[string]interface{}{"failed_nodes": failedNodes})
+	} else {
+		Success(c, nil)
+	}
+}
+
+func UpdateUserStatus(c *gin.Context) {
+	confWriteMux.Lock()
+	defer confWriteMux.Unlock()
+
+	var data struct {
+		Status  int    `json:"status"`
+		UserKey string `json:"user_key" binding:"required"`
+	}
+	if err := c.BindJSON(&data); err != nil {
+		Error(c, BAD_POST_DATA, err.Error())
+		return
+	}
+
+	user := *memConfUsers[data.UserKey]
+	opUser := memConfUsers[getOpUserKey(c)]
+	if opUser.CreatorKey != opUser.Key {
+		Error(c, NOT_PERMITTED, "can not update user's status as current user is non-init user")
+		return
+	}
+	if user.Key == opUser.Key {
+		Error(c, NOT_PERMITTED, "can not update current login user's status")
+		return
+	}
+
+	user.Status = data.Status
+	if _, err := updateUser(&user, nil); err != nil {
+		Error(c, SERVER_ERROR, err.Error())
+		return
+	}
 	failedNodes := syncData2SlaveIfNeed(&user, getOpUserKey(c))
 	if len(failedNodes) > 0 {
 		Success(c, map[string]interface{}{"failed_nodes": failedNodes})
@@ -1264,7 +1302,10 @@ func OpAuth(c *gin.Context) {
 	userKey := token.Claims["uky"].(string)
 	memConfMux.RLock()
 	defer memConfMux.RUnlock()
-	if memConfUsers[userKey] == nil {
+
+	user := memConfUsers[userKey]
+
+	if user == nil {
 		Error(c, NOT_LOGIN, "user not exist")
 		c.Abort()
 		return
@@ -1275,8 +1316,14 @@ func OpAuth(c *gin.Context) {
 		return
 	}
 	passCode := token.Claims["upc"].(string)
-	if memConfUsers[userKey].PassCode != passCode {
+	if user.PassCode != passCode {
 		Error(c, NOT_LOGIN, "pass_code not correct")
+		c.Abort()
+		return
+	}
+
+	if user.Status == models.USER_STATUS_INACTIVE {
+		Error(c, USER_INACTIVE)
 		c.Abort()
 		return
 	}

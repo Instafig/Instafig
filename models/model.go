@@ -11,6 +11,11 @@ var (
 	NoDataVerError = fmt.Errorf("no data version")
 )
 
+const (
+	USER_STATUS_ACTIVE   = 0
+	USER_STATUS_INACTIVE = -1
+)
+
 type User struct {
 	Key        string `xorm:"key TEXT PK " json:"key"`
 	PassCode   string `xorm:"pass_code TEXT " json:"pass_code"`
@@ -18,6 +23,7 @@ type User struct {
 	CreatorKey string `xorm:"creator_key TEXT " json:"creator_key"`
 	CreatedUTC int    `xorm:"created_utc INT " json:"created_utc"`
 	AuxInfo    string `xorm:"aux_info TEXT" json:"aux_info"`
+	Status     int    `xorm:"status INT" json:"status"`
 
 	CreatorName string `xorm:"-" json:"creator_name"`
 }
