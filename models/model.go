@@ -1,6 +1,9 @@
 package models
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 //const SCHEME_VERSION = "0.1"
 
@@ -151,9 +154,9 @@ func SearchAppByName(s *Session, q string, count int) ([]*App, error) {
 	var err error
 
 	if count > 0 {
-		err = s.Where("like(?, name)=1", "%"+q+"%").OrderBy("").Limit(count).Find(&res)
+		err = s.Where(fmt.Sprintf("instr(lower(name), '%s')>0", strings.ToLower(q))).OrderBy(fmt.Sprintf("instr(lower(name), '%s') asc", strings.ToLower(q))).Limit(count).Find(&res)
 	} else {
-		err = s.Where("like(?, name)=1", "%"+q+"%").OrderBy("").Find(&res)
+		err = s.Where(fmt.Sprintf("instr(lower(name), '%s')>0", strings.ToLower(q))).OrderBy(fmt.Sprintf("instr(lower(name), '%s') asc", strings.ToLower(q))).Find(&res)
 	}
 
 	return res, err
