@@ -34,11 +34,16 @@ func ClientConf(c *gin.Context) {
 			clientData.Ip = c.Request.RemoteAddr
 		}
 
+		if conf.IsEasyDeployMode() {
+			setClientData(c, clientData)
+		}
+
 		c.JSON(http.StatusOK, getAppMatchConf(clientData.AppKey, clientData))
 		return
 	}
 
 	if conf.IsEasyDeployMode() {
+		setClientData(c, clientData)
 		memConfMux.RLock()
 		if !conf.IsMasterNode() && conf.DataExpires > 0 {
 			if memConfNodes[conf.ClientAddr].LastCheckUTC < utils.GetNowSecond()-conf.DataExpires {

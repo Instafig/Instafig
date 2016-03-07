@@ -61,6 +61,7 @@ func Error(c *gin.Context, errorCode int, data ...interface{}) {
 	}
 
 	setServiceStatus(c, false)
+	setServiceErrorCode(c, errCodeStr)
 	c.JSON(http.StatusOK, gin.H{"status": false, "code": errCodeStr, "msg": errMsg})
 }
 
@@ -79,6 +80,21 @@ func getServiceStatus(c *gin.Context) bool {
 	return data
 }
 
+func setServiceErrorCode(c *gin.Context, code string) {
+	c.Set("_error_code_", code)
+}
+
+func getServiceErrorCode(c *gin.Context) string {
+	i, exists := c.Get("_error_code_")
+	if !exists || i == nil {
+		return ""
+	}
+
+	data := i.(string)
+
+	return data
+}
+
 func setOpUserKey(c *gin.Context, key string) {
 	c.Set("_user_key_", key)
 }
@@ -90,6 +106,21 @@ func getOpUserKey(c *gin.Context) string {
 	}
 
 	data := i.(string)
+
+	return data
+}
+
+func setClientData(c *gin.Context, data *ClientData) {
+	c.Set("_client_request_data_", data)
+}
+
+func getClientData(c *gin.Context) *ClientData {
+	i, exists := c.Get("_client_request_data_")
+	if !exists || i == nil {
+		return nil
+	}
+
+	data := i.(*ClientData)
 
 	return data
 }

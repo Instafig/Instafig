@@ -44,6 +44,12 @@ var (
 	DebugMode    bool
 	LogLevel     string
 
+	StatisticEnable bool
+	InfluxURL       string
+	InfluxDB        string
+	InfluxUser      string
+	InfluxPassword  string
+
 	configFile   = flag.String("config", "__unset__", "service config file")
 	maxThreadNum = flag.Int("max-thread", 0, "max threads of service")
 	debugMode    = flag.Bool("debug", false, "debug mode")
@@ -168,6 +174,14 @@ func init() {
 			} else {
 				DataExpires = -1
 			}
+		}
+
+		if statisticEnable, _ := config.GetValue("statistic", "enable"); statisticEnable == "on" {
+			StatisticEnable = true
+			InfluxDB, _ = config.GetValue("statistic", "influx_db")
+			InfluxURL, _ = config.GetValue("statistic", "influx_url")
+			InfluxUser, _ = config.GetValue("statistic", "influx_user")
+			InfluxPassword, _ = config.GetValue("statistic", "influx_password")
 		}
 	} else {
 		DatabaseConfig.Driver, _ = config.GetValue("db", "driver")

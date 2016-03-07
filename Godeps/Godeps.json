@@ -6,6 +6,11 @@
 	],
 	"Deps": [
 		{
+			"ImportPath": "github.com/Sirupsen/logrus",
+			"Comment": "v0.8.7-25-g23521f1",
+			"Rev": "23521f1364a267387df2b99234134003e0a4486d"
+		},
+		{
 			"ImportPath": "github.com/davecgh/go-spew/spew",
 			"Rev": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d"
 		},
@@ -39,11 +44,6 @@
 			"Rev": "52fcc5dbf6e94df33ad313858fb94b713e9d1b4a"
 		},
 		{
-			"ImportPath": "github.com/go-sql-driver/mysql",
-			"Comment": "v1.2-177-g71f003c",
-			"Rev": "71f003c6e927d2550713e7637affb769977ece78"
-		},
-		{
 			"ImportPath": "github.com/go-xorm/core",
 			"Comment": "v0.4.5-5-g9ddf4ee",
 			"Rev": "9ddf4ee12e7a370dacf0092d9896979ae6e3fb16"
@@ -67,6 +67,21 @@
 			"Rev": "2b9865f60ce11e527bd1255ba82036d465570aa3"
 		},
 		{
+			"ImportPath": "github.com/influxdata/influxdb/client/v2",
+			"Comment": "v0.10.0-444-g4e8004e",
+			"Rev": "4e8004ec83d7f6748cf3b2fc716027a7200ede56"
+		},
+		{
+			"ImportPath": "github.com/influxdata/influxdb/models",
+			"Comment": "v0.10.0-444-g4e8004e",
+			"Rev": "4e8004ec83d7f6748cf3b2fc716027a7200ede56"
+		},
+		{
+			"ImportPath": "github.com/influxdata/influxdb/pkg/escape",
+			"Comment": "v0.10.0-444-g4e8004e",
+			"Rev": "4e8004ec83d7f6748cf3b2fc716027a7200ede56"
+		},
+		{
 			"ImportPath": "github.com/lib/pq",
 			"Comment": "go1.0-cutoff-69-g2d785ad",
 			"Rev": "2d785ad24be7a038e2fc35424b993645a0025425"
@@ -85,8 +100,8 @@
 		},
 		{
 			"ImportPath": "github.com/mattn/go-sqlite3",
-			"Comment": "v1.1.0-30-g5510da3",
-			"Rev": "5510da399572b4962c020184bb291120c0a412e2"
+			"Comment": "v1.1.0-43-g0ebdb8b",
+			"Rev": "0ebdb8beadec92bf6b9935f7a8db461c68fd2c02"
 		},
 		{
 			"ImportPath": "github.com/pmezard/go-difflib/difflib",
