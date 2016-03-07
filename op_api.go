@@ -1328,6 +1328,7 @@ func OpAuth(c *gin.Context) {
 	}
 
 	if user.Status == models.USER_STATUS_INACTIVE {
+		deleteUserKeyCookie(c)
 		Error(c, USER_INACTIVE)
 		c.Abort()
 		return
