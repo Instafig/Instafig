@@ -64,11 +64,14 @@ func init() {
 }
 
 func StatisticHandler(c *gin.Context) {
+	now := time.Now()
+	c.Next()
 	clientData := getClientData(c)
 	if clientData == nil {
 		return
 	}
 
+	respTime := time.Now().Sub(now)
 	tags := map[string]string{
 		"node": conf.ClientAddr,
 		"app":  clientData.AppKey,
@@ -83,6 +86,7 @@ func StatisticHandler(c *gin.Context) {
 		"osv":        clientData.OSVersion,
 		"appv":       clientData.AppVersion,
 		"deviceid":   clientData.DeviceId,
+		"resp_time":  int(respTime / (time.Microsecond / time.Nanosecond)),
 	}
 
 	p, _ := influx.NewPoint("client_request", tags, fields, time.Now())
