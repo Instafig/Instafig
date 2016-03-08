@@ -44,11 +44,12 @@ var (
 	DebugMode    bool
 	LogLevel     string
 
-	StatisticEnable bool
-	InfluxURL       string
-	InfluxDB        string
-	InfluxUser      string
-	InfluxPassword  string
+	StatisticEnable        bool
+	InfluxURL              string
+	InfluxDB               string
+	InfluxUser             string
+	InfluxPassword         string
+	InfluxBatchPointsCount int
 
 	configFile   = flag.String("config", "__unset__", "service config file")
 	maxThreadNum = flag.Int("max-thread", 0, "max threads of service")
@@ -182,6 +183,11 @@ func init() {
 			InfluxURL, _ = config.GetValue("statistic", "influx_url")
 			InfluxUser, _ = config.GetValue("statistic", "influx_user")
 			InfluxPassword, _ = config.GetValue("statistic", "influx_password")
+			batchCount, _ := config.GetValue("statistic", "influx_batch_points_count")
+			if InfluxBatchPointsCount, err = strconv.Atoi(batchCount); err != nil {
+				log.Println("influx_batch_point_count is not number: ", batchCount)
+				os.Exit(1)
+			}
 		}
 	} else {
 		DatabaseConfig.Driver, _ = config.GetValue("db", "driver")

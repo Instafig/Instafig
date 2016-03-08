@@ -15,9 +15,9 @@ import (
 )
 
 var (
-	statisticCh      = make(chan *influx.Point, 100000)
-	influxClient     influx.Client
-	influxBatchPoint influx.BatchPoints
+	statisticCh       = make(chan *influx.Point, 100000)
+	influxClient      influx.Client
+	influxBatchPoints influx.BatchPoints
 	//logf *os.File
 
 )
@@ -51,7 +51,7 @@ func init() {
 			os.Exit(1)
 		}
 
-		influxBatchPoint, err = influx.NewBatchPoints(influx.BatchPointsConfig{
+		influxBatchPoints, err = influx.NewBatchPoints(influx.BatchPointsConfig{
 			Database:  conf.InfluxDB,
 			Precision: "s",
 		})
@@ -85,11 +85,11 @@ func StatisticHandler(c *gin.Context) {
 		"deviceid":   clientData.DeviceId,
 	}
 
-	if len(statisticCh) > 100000/2 {
-		log.Println("statistic chan is too much full: ", len(statisticCh))
-	} else {
-		p, _ := influx.NewPoint("client_request", tags, fields, time.Now())
-		statisticCh <- p
+	p, _ := influx.NewPoint("client_request", tags, fields, time.Now())
+	select {
+	case statisticCh <- p:
+	default:
+		log.Println("failed to send influx point to channel")
 	}
 }
 
@@ -108,15 +108,15 @@ func logStatisticTask() {
 }
 
 func logStatistic(p *influx.Point) {
-	influxBatchPoint.AddPoint(p)
-	if len(influxBatchPoint.Points()) < 10 {
+	influxBatchPoints.AddPoint(p)
+	if len(influxBatchPoints.Points()) < conf.InfluxBatchPointsCount {
 		return
 	}
 
-	if err := influxClient.Write(influxBatchPoint); err != nil {
+	if err := influxClient.Write(influxBatchPoints); err != nil {
 		log.Println("Failed to dump point to influxdb: ", err.Error())
 	} else {
-		influxBatchPoint, _ = influx.NewBatchPoints(influx.BatchPointsConfig{
+		influxBatchPoints, _ = influx.NewBatchPoints(influx.BatchPointsConfig{
 			Database:  conf.InfluxDB,
 			Precision: "s",
 		})
