@@ -214,3 +214,58 @@ func GetAppConfigResponseData(c *gin.Context) {
 
 	Success(c, res)
 }
+
+func GetNodeConfigResponseData(c *gin.Context) {
+	memConfMux.RLock()
+	node := memConfNodes[c.Param("node_url")]
+	memConfMux.RUnlock()
+
+	if node == nil {
+		Error(c, BAD_REQUEST, "node not found for node url "+c.Param("node_url"))
+		return
+	}
+
+	startTime, err := strconv.Atoi(c.Query("start_time"))
+	if err != nil {
+		Error(c, BAD_REQUEST, "start_time not number")
+		return
+	}
+	endTime, err := strconv.Atoi(c.Query("end_time"))
+	if err != nil {
+		Error(c, BAD_REQUEST, "end_time not number")
+		return
+	}
+	unit := c.Query("unit")
+
+	if (endTime-startTime)/(24*3600) > 30 {
+		Error(c, BAD_REQUEST, "only max 30 days duration support")
+		return
+	}
+	unitKind := unit[len(unit)-1]
+	if unitKind != 'h' && unitKind != 'd' {
+		Error(c, BAD_REQUEST, "only 'd' or 'h' unit support")
+		return
+	}
+
+	q := fmt.Sprintf(
+		"SELECT COUNT(resp_time), MEAN(resp_time) FROM client_request where node = '%s' AND time >= %d AND time <= %d GROUP BY time(%s) fill(0)",
+		node.URL, startTime*int(secondUnit), endTime*int(secondUnit), unit)
+	resp, err := queryInflux(q)
+	if err != nil {
+		Error(c, SERVER_ERROR, err.Error())
+		return
+	}
+	if resp.Error() != nil {
+		Error(c, SERVER_ERROR, resp.Error().Error())
+		return
+	}
+
+	res := make([][]interface{}, 0)
+	if len(resp.Results[0].Series) > 0 {
+		for _, val := range resp.Results[0].Series[0].Values {
+			res = append(res, []interface{}{val[0], val[1], val[2]})
+		}
+	}
+
+	Success(c, res)
+}
