@@ -5,6 +5,8 @@ import (
 	"os"
 	"time"
 
+	"fmt"
+
 	"github.com/appwilldev/Instafig/conf"
 	"github.com/gin-gonic/gin"
 	influx "github.com/influxdata/influxdb/client/v2"
@@ -15,6 +17,7 @@ var (
 	influxClient      influx.Client
 	influxBatchPoints influx.BatchPoints
 	microSecondUnit   = time.Microsecond / time.Nanosecond
+	secondUnit        = time.Second / time.Nanosecond
 )
 
 func init() {
@@ -69,7 +72,7 @@ func StatisticHandler(c *gin.Context) {
 		"resp_time":  int(respTime / microSecondUnit),
 	}
 
-	p, _ := influx.NewPoint("client_request", tags, fields, time.Now())
+	p, _ := influx.NewPoint("client_request", tags, fields, now)
 	select {
 	case statisticCh <- p:
 	default:
@@ -105,4 +108,48 @@ func logStatistic(p *influx.Point) {
 			Database:  conf.InfluxDB,
 			Precision: "s",
 		})
+}
+
+func GetDeviceCountOfAppLatestConfig(c *gin.Context) {
+	memConfMux.RLock()
+	app := memConfApps[c.Param("app_key")]
+	memConfMux.RUnlock()
+
+	if app == nil {
+		Error(c, BAD_REQUEST, "app not found for app key: "+c.Param("app_key"))
+		return
+	}
+
+	client, err := influx.NewHTTPClient(
+		influx.HTTPConfig{
+			Addr:     conf.InfluxURL,
+			Username: conf.InfluxUser,
+			Password: conf.InfluxPassword,
+		})
+	if err != nil {
+		Error(c, SERVER_ERROR, err.Error())
+		return
+	}
+
+	q := fmt.Sprintf("SELECT COUNT(DISTINCT(deviceid)) FROM client_request where app = '%s' AND time >= %d", app.Key, app.LastUpdateUTC*int(secondUnit))
+	resp, err := client.Query(
+		influx.Query{
+			Command:  q,
+			Database: conf.InfluxDB,
+		})
+	if err != nil {
+		Error(c, SERVER_ERROR, err.Error())
+		return
+	}
+	if resp.Error() != nil {
+		Error(c, SERVER_ERROR, resp.Error().Error())
+		return
+	}
+
+	if len(resp.Results) == 0 {
+		Success(c, 0)
+		return
+	}
+
+	Success(c, resp.Results[0].Series[0].Values[0][1])
 }
