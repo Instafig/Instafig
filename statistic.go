@@ -146,7 +146,7 @@ func GetDeviceCountOfAppLatestConfig(c *gin.Context) {
 		return
 	}
 
-	if len(resp.Results) == 0 {
+	if len(resp.Results[0].Series) == 0 {
 		Success(c, 0)
 		return
 	}
