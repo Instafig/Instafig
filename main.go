@@ -116,6 +116,7 @@ func main() {
 
 		// for statistics
 		opAPIGroup.GET("/stat/latest-config-device-count/:app_key", OpAuth, GetDeviceCountOfAppLatestConfig)
+		opAPIGroup.GET("/stat/app-config-response/:app_key", OpAuth, GetAppConfigResponseData)
 	}
 
 	if conf.IsEasyDeployMode() {
