@@ -137,7 +137,7 @@ func NewWebHook(c *gin.Context) {
 	defer confWriteMux.Unlock()
 
 	var data struct {
-		AppKey string `json:"app_key" binding:"required"`
+		AppKey string `json:"app_key"`
 		Scope  int    `json:"scope"`
 		Target string `json:"target" binding:"required"`
 		URL    string `json:"url" binding:"required"`
@@ -155,6 +155,11 @@ func NewWebHook(c *gin.Context) {
 
 	if data.Target != models.WEBHOOK_TARGET_PUBU && data.Target != models.WEBHOOK_TARGET_SLACK {
 		Error(c, BAD_REQUEST, "unsupported webHook target: "+data.Target)
+		return
+	}
+
+	if data.Scope == models.WEBHOOK_SCOPE_APP && memConfApps[data.AppKey] == nil {
+		Error(c, BAD_REQUEST, "app key not exists: "+data.AppKey)
 		return
 	}
 
@@ -185,7 +190,7 @@ func UpdateWebHook(c *gin.Context) {
 
 	var data struct {
 		Key    string `json:"key" binding:"required"`
-		AppKey string `json:"app_key" binding:"required"`
+		AppKey string `json:"app_key"`
 		Scope  int    `json:"scope"`
 		Target string `json:"target" binding:"required"`
 		URL    string `json:"url" binding:"required"`
