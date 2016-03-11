@@ -53,12 +53,16 @@ func ClientConf(c *gin.Context) {
 			}
 		}
 
-		nodes := make([]string, len(memConfNodes))
-		ix := 0
-		for _, node := range memConfNodes {
-			nodes[ix] = node.URL
-			ix++
+		nodes := []string{}
+		if !conf.ProxyDeployed {
+			nodes = make([]string, len(memConfNodes))
+			ix := 0
+			for _, node := range memConfNodes {
+				nodes[ix] = node.URL
+				ix++
+			}
 		}
+
 		// do not support app data_sign in server-side, always return app configs
 		needConf := true || (memConfApps[clientData.AppKey] != nil && clientData.DataSign != memConfApps[clientData.AppKey].DataSign)
 		memConfMux.RUnlock()

@@ -37,6 +37,7 @@ var (
 	MasterAddr         string
 	CheckMasterInerval int
 	DataExpires        int
+	ProxyDeployed      bool
 
 	UserPassCodeEncryptKey string
 
@@ -142,6 +143,11 @@ func init() {
 	if Port, err = strconv.Atoi(port); err != nil {
 		log.Printf("No correct port(%s): %s", port, err.Error())
 		os.Exit(1)
+	}
+
+	proxyDeployed, _ := config.GetValue("", "proxy_deployed")
+	if proxyDeployed == "yes" {
+		ProxyDeployed = true
 	}
 
 	UserPassCodeEncryptKey, _ = config.GetValue("", "user_passcode_encrypt_key")
