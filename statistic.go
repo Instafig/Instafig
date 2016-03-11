@@ -194,8 +194,8 @@ func GetAppConfigResponseData(c *gin.Context) {
 		return
 	}
 	unitKind := unit[len(unit)-1]
-	if unitKind != 'h' && unitKind != 'd' {
-		Error(c, BAD_REQUEST, "only 'd' or 'h' unit support")
+	if unitKind != 'h' && unitKind != 'd' && unitKind != 'w' {
+		Error(c, BAD_REQUEST, "only 'd' or 'h' or 'w' unit support")
 		return
 	}
 
@@ -249,8 +249,8 @@ func GetNodeConfigResponseData(c *gin.Context) {
 		return
 	}
 	unitKind := unit[len(unit)-1]
-	if unitKind != 'h' && unitKind != 'd' {
-		Error(c, BAD_REQUEST, "only 'd' or 'h' unit support")
+	if unitKind != 'h' && unitKind != 'd' && unitKind != 'w' {
+		Error(c, BAD_REQUEST, "only 'd' or 'h' or 'w' unit support")
 		return
 	}
 
