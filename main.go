@@ -115,9 +115,9 @@ func main() {
 		opAPIGroup.GET("/nodes", OpAuth, GetNodes)
 
 		// for statistics
-		opAPIGroup.GET("/stat/latest-config-device-count/:app_key", OpAuth, GetDeviceCountOfAppLatestConfig)
-		opAPIGroup.GET("/stat/app-config-response/:app_key", OpAuth, GetAppConfigResponseData)
-		opAPIGroup.GET("/stat/node-config-response/:node_url", OpAuth, GetNodeConfigResponseData)
+		opAPIGroup.GET("/stat/latest-config-device-count/:app_key", OpAuth, StatCheck, GetDeviceCountOfAppLatestConfig)
+		opAPIGroup.GET("/stat/app-config-response/:app_key", OpAuth, StatCheck, GetAppConfigResponseData)
+		opAPIGroup.GET("/stat/node-config-response/:node_url", OpAuth, StatCheck, GetNodeConfigResponseData)
 	}
 
 	if conf.IsEasyDeployMode() {

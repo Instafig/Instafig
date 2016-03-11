@@ -48,6 +48,13 @@ func init() {
 	}
 }
 
+func StatCheck(c *gin.Context) {
+	if !conf.StatisticEnable {
+		Error(c, NOT_PERMITTED, "statistic not enable on server side")
+		c.Abort()
+	}
+}
+
 func StatisticHandler(c *gin.Context) {
 	now := time.Now()
 	c.Next()
