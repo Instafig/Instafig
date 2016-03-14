@@ -9,7 +9,18 @@ import (
 	"github.com/zhemao/glisp/interpreter"
 )
 
-func defmacroCondValues(env *glisp.Glisp) {
+var (
+	glispBuffNum = 10240
+	glispCh      = make(chan *glisp.Glisp, glispBuffNum)
+)
+
+func init() {
+	for i := 0; i < glispBuffNum; i++ {
+		glispCh <- newGLisp()
+	}
+}
+
+func defMacroCondValues(env *glisp.Glisp) {
 	macro := "(defmac cond-values [ & body] `(cond ~@body))"
 	env.EvalString(macro)
 }
@@ -160,10 +171,30 @@ func defStringFunctions(env *glisp.Glisp) {
 	env.EvalString(shortcuts)
 }
 
-func NewGlisp() *glisp.Glisp {
+func newGLisp() *glisp.Glisp {
 	env := glisp.NewGlisp()
-	defmacroCondValues(env)
+	defMacroCondValues(env)
 	defVersionCompareFunctions(env)
 	defStringFunctions(env)
 	return env
+}
+
+func getGLispBuff() (env *glisp.Glisp) {
+	select {
+	case env = <-glispCh:
+		return
+	default:
+		env = newGLisp()
+	}
+
+	return
+}
+
+func putGLispBuff(env *glisp.Glisp) {
+	select {
+	case glispCh <- env:
+		return
+	default:
+		return
+	}
 }

@@ -8,13 +8,17 @@ import (
 )
 
 func TestMacroCondValues(t *testing.T) {
-	env := NewGlisp()
+	env := getGLispBuff()
+	defer putGLispBuff(env)
+
 	ret, _ := env.EvalString("(cond-values false 1 true 2 3)")
 	assert.True(t, ret == glisp.SexpInt(2))
 }
 
 func TestVersionCompareFunctions(t *testing.T) {
-	env := NewGlisp()
+	env := getGLispBuff()
+	defer putGLispBuff(env)
+
 	var ret glisp.Sexp
 	ret, _ = env.EvalString(`(ver= "1.1.1" "1.1.1")`)
 	assert.True(t, ret == glisp.SexpBool(true))
@@ -38,7 +42,9 @@ func TestVersionCompareFunctions(t *testing.T) {
 }
 
 func TestStringContainsFunctions(t *testing.T) {
-	env := NewGlisp()
+	env := getGLispBuff()
+	defer putGLispBuff(env)
+
 	var ret glisp.Sexp
 	ret, _ = env.EvalString(`(str-contains? "abc" "abc")`)
 	assert.True(t, ret == glisp.SexpBool(true))
@@ -53,7 +59,9 @@ func TestStringContainsFunctions(t *testing.T) {
 }
 
 func TestStringWildcardMatchFunctions(t *testing.T) {
-	env := NewGlisp()
+	env := getGLispBuff()
+	defer putGLispBuff(env)
+
 	var ret glisp.Sexp
 	ret, _ = env.EvalString(`(str-wcmatch? "a*c" "axyzc")`)
 	assert.True(t, ret == glisp.SexpBool(true))

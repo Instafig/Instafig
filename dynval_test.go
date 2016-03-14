@@ -7,7 +7,9 @@ import (
 )
 
 func TestDynValTruncate(t *testing.T) {
-	env := NewGlisp()
+	env := getGLispBuff()
+	defer putGLispBuff(env)
+
 	dv := NewDynValFromString("(+ 1 2)(* 4 5)", env)
 	assert.True(t, dv.SexpStr == "(+ 1 2)")
 }
@@ -51,7 +53,9 @@ func TestCondValuesExecute(t *testing.T) {
 }
 
 func TestDynValToJson(t *testing.T) {
-	env := NewGlisp()
+	env := getGLispBuff()
+	defer putGLispBuff(env)
+
 	code := `(cond
                 (and (= LANG "zh") (>= APP_VERSION "1.3.1") (< APP_VERSION "1.5")) 1
                 (and (= LANG "zh") (or (< APP_VERSION "1.3.1") (>= APP_VERSION "1.5"))) 2
@@ -72,7 +76,9 @@ func TestJsonToSexpString(t *testing.T) {
 }
 
 func TestCondValuesToJson(t *testing.T) {
-	env := NewGlisp()
+	env := getGLispBuff()
+	defer putGLispBuff(env)
+
 	code := `(cond-values
                 (and (= LANG "zh") (>= APP_VERSION "1.3.1") (< APP_VERSION "1.5")) 1
                 (and (= LANG "zh") (or (< APP_VERSION "1.3.1") (>= APP_VERSION "1.5"))) 2
