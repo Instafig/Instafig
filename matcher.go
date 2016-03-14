@@ -2,6 +2,7 @@ package main
 
 import (
 	"strconv"
+
 	"github.com/appwilldev/Instafig/models"
 )
 
@@ -42,10 +43,8 @@ func transConfig(m *models.Config) *Config {
 	case models.CONF_V_TYPE_STRING:
 		config.V = m.V
 	case models.CONF_V_TYPE_CODE:
-		// TODO: trans to callable object
 		sexp, _ := JsonToSexpString(m.V)
-		config.V = NewDynValFromStringDefault(sexp)
-		//config.V, _ = JsonToSexpString(m.V)
+		config.V = NewDynValFromSexpStringDefault(sexp)
 	case models.CONF_V_TYPE_TEMPLATE:
 		config.V = m.V
 	}

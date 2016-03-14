@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/appwilldev/Instafig/models"
-	"github.com/appwilldev/Instafig/utils"
 	"os"
 	"testing"
+
+	"github.com/appwilldev/Instafig/models"
+	"github.com/appwilldev/Instafig/utils"
 )
 
 func TestPubuNotifaction(t *testing.T) {

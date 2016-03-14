@@ -9,8 +9,8 @@ import (
 )
 
 type DynVal struct {
-	Sexp     glisp.Sexp
-	Sexp_str string
+	Sexp    glisp.Sexp
+	SexpStr string
 }
 
 func NewDynValFromString(str string, env *glisp.Glisp) *DynVal {
@@ -19,10 +19,6 @@ func NewDynValFromString(str string, env *glisp.Glisp) *DynVal {
 		return nil
 	}
 	return &DynVal{sexp[0], sexp[0].SexpString()}
-}
-
-func NewDynValFromSexp(sexp glisp.Sexp) *DynVal {
-	return &DynVal{sexp, sexp.SexpString()}
 }
 
 func SetClientData(env *glisp.Glisp, cdata *ClientData) error {
@@ -47,7 +43,7 @@ func ClearClientData(env *glisp.Glisp) error {
 	return nil
 }
 
-func  NewDynValFromStringDefault(sexp string) *DynVal {
+func NewDynValFromSexpStringDefault(sexp string) *DynVal {
 	env := NewGlisp()
 	SetClientData(env, &ClientData{})
 	return NewDynValFromString(sexp, env)
@@ -72,33 +68,6 @@ func EvalDynValToSexp(code *DynVal, cdata *ClientData) (glisp.Sexp, error) {
 
 func EvalDynVal(code *DynVal, cdata *ClientData) interface{} {
 	data, err := EvalDynValToSexp(code, cdata)
-	if err != nil {
-		return nil
-	}
-	switch val := data.(type) {
-	case glisp.SexpBool:
-		return bool(val)
-	case glisp.SexpInt:
-		return int(val)
-	case glisp.SexpFloat:
-		return float64(val)
-	case glisp.SexpStr:
-		return string(val)
-	default:
-		return data.SexpString()
-	}
-}
-
-func EvalDynValFromExpString(code string, cdata *ClientData) interface{} {
-	env := NewGlisp()
-	SetClientData(env, cdata)
-	dval := NewDynValFromString(code, env)
-	data, err := dval.Execute(env)
-
-	//env := NewGlisp()
-	//SetClientData(env, cdata)
-	//dyval := NewDynValFromString(code, env)
-	//data, err := dyval.Execute(env)
 	if err != nil {
 		return nil
 	}

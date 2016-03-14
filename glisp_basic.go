@@ -1,11 +1,12 @@
 package main
 
 import (
-	"github.com/hashicorp/go-version"
-	"github.com/zhemao/glisp/interpreter"
 	"regexp"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/hashicorp/go-version"
+	"github.com/zhemao/glisp/interpreter"
 )
 
 func defmacroCondValues(env *glisp.Glisp) {

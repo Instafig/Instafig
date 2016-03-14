@@ -1,41 +1,42 @@
 package main
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDynValTruncate(t *testing.T) {
 	env := NewGlisp()
 	dv := NewDynValFromString("(+ 1 2)(* 4 5)", env)
-	assert.True(t, dv.Sexp_str == "(+ 1 2)")
+	assert.True(t, dv.SexpStr == "(+ 1 2)")
 }
 
 func TestDynValExecute(t *testing.T) {
 	code := `(cond
-                (and (= LANG "zh") (>= APP_VERSION "1.3.1") (< APP_VERSION "1.5")) 1
-                (and (= LANG "zh") (or (< APP_VERSION "1.3.1") (>= APP_VERSION "1.5"))) 2
-                (and (not= LANG "zh") (>= APP_VERSION "1.3.1") (< APP_VERSION "1.5")) 3
-                (and (not= LANG "zh") (or (< APP_VERSION "1.3.1") (>= APP_VERSION "1.5"))) 4
+                (and (str= LANG "zh") (ver>= APP_VERSION "1.3.1") (ver< APP_VERSION "1.5")) 1
+                (and (str= LANG "zh") (or (ver< APP_VERSION "1.3.1") (ver>= APP_VERSION "1.5"))) 2
+                (and (str!= LANG "zh") (ver>= APP_VERSION "1.3.1") (ver< APP_VERSION "1.5")) 3
+                (and (str!= LANG "zh") (or (ver< APP_VERSION "1.3.1") (ver>= APP_VERSION "1.5"))) 4
                 5
              )`
 	clientData := &ClientData{
 		AppKey:     "app1",
 		OSType:     "ios",
 		OSVersion:  "9.3",
-		AppVersion: "",
+		AppVersion: "1.5",
 		Ip:         "14.32.123.23",
 		Lang:       "",
 	}
-	assert.True(t, EvalDynValFromExpString(code, clientData) == 4)
+	assert.True(t, EvalDynVal(NewDynValFromSexpStringDefault(code), clientData) == 4)
 }
 
 func TestCondValuesExecute(t *testing.T) {
 	code := `(cond-values
-                (and (= LANG "zh") (>= APP_VERSION "1.3.1") (< APP_VERSION "1.5")) 1
-                (and (= LANG "zh") (or (< APP_VERSION "1.3.1") (>= APP_VERSION "1.5"))) 2
-                (and (not= LANG "zh") (>= APP_VERSION "1.3.1") (< APP_VERSION "1.5")) 3
-                (and (not= LANG "zh") (or (< APP_VERSION "1.3.1") (>= APP_VERSION "1.5"))) 4
+                (and (str= LANG "zh") (ver>= APP_VERSION "1.3.1") (ver< APP_VERSION "1.5")) 1
+                (and (str= LANG "zh") (or (ver< APP_VERSION "1.3.1") (ver>= APP_VERSION "1.5"))) 2
+                (and (str!= LANG "zh") (ver>= APP_VERSION "1.3.1") (ver< APP_VERSION "1.5")) 3
+                (and (str!= LANG "zh") (or (ver< APP_VERSION "1.3.1") (ver>= APP_VERSION "1.5"))) 4
                 5
              )`
 	clientData := &ClientData{
@@ -46,7 +47,7 @@ func TestCondValuesExecute(t *testing.T) {
 		Ip:         "14.32.123.23",
 		Lang:       "zh",
 	}
-	assert.True(t, EvalDynValFromExpString(code, clientData) == 2)
+	assert.True(t, EvalDynVal(NewDynValFromSexpStringDefault(code), clientData) == 2)
 }
 
 func TestDynValToJson(t *testing.T) {
