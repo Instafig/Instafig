@@ -7,7 +7,6 @@ import (
 
 	"github.com/hashicorp/go-version"
 	"github.com/zhemao/glisp/interpreter"
-	"time"
 )
 
 var (
@@ -184,7 +183,7 @@ func getGLispEnv() (env *glisp.Glisp) {
 	select {
 	case env = <-glispEnvBuffer:
 		return
-	case <-time.After(0):
+	default:
 		env = newGLisp()
 	}
 	return
@@ -193,8 +192,7 @@ func getGLispEnv() (env *glisp.Glisp) {
 func putGLispEnv(env *glisp.Glisp) {
 	select {
 	case glispEnvBuffer <- env:
-		return
-	case <-time.After(0):
+	default:
 	// the buffer is full, just discard the env
 		return
 	}
