@@ -2,9 +2,10 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/zhemao/glisp/interpreter"
 	"strconv"
 	"strings"
+
+	"github.com/zhemao/glisp/interpreter"
 )
 
 type DynVal struct {
@@ -46,6 +47,12 @@ func ClearClientData(env *glisp.Glisp) error {
 	return nil
 }
 
+func  NewDynValFromStringDefault(sexp string) *DynVal {
+	env := NewGlisp()
+	SetClientData(env, &ClientData{})
+	return NewDynValFromString(sexp, env)
+}
+
 // Eval
 func (dval *DynVal) Execute(env *glisp.Glisp) (glisp.Sexp, error) {
 	env.LoadExpressions([]glisp.Sexp{dval.Sexp})
@@ -56,15 +63,42 @@ func (dval *DynVal) Execute(env *glisp.Glisp) (glisp.Sexp, error) {
 	return sexp, nil
 }
 
-func EvalDynValToSexp(code string, cdata *ClientData) (glisp.Sexp, error) {
+func EvalDynValToSexp(code *DynVal, cdata *ClientData) (glisp.Sexp, error) {
+	env := NewGlisp()
+	SetClientData(env, cdata)
+	//dval := NewDynValFromString(code, env)
+	return code.Execute(env)
+}
+
+func EvalDynVal(code *DynVal, cdata *ClientData) interface{} {
+	data, err := EvalDynValToSexp(code, cdata)
+	if err != nil {
+		return nil
+	}
+	switch val := data.(type) {
+	case glisp.SexpBool:
+		return bool(val)
+	case glisp.SexpInt:
+		return int(val)
+	case glisp.SexpFloat:
+		return float64(val)
+	case glisp.SexpStr:
+		return string(val)
+	default:
+		return data.SexpString()
+	}
+}
+
+func EvalDynValFromExpString(code string, cdata *ClientData) interface{} {
 	env := NewGlisp()
 	SetClientData(env, cdata)
 	dval := NewDynValFromString(code, env)
-	return dval.Execute(env)
-}
+	data, err := dval.Execute(env)
 
-func EvalDynVal(code string, cdata *ClientData) interface{} {
-	data, err := EvalDynValToSexp(code, cdata)
+	//env := NewGlisp()
+	//SetClientData(env, cdata)
+	//dyval := NewDynValFromString(code, env)
+	//data, err := dyval.Execute(env)
 	if err != nil {
 		return nil
 	}

@@ -2,7 +2,6 @@ package main
 
 import (
 	"strconv"
-
 	"github.com/appwilldev/Instafig/models"
 )
 
@@ -44,7 +43,9 @@ func transConfig(m *models.Config) *Config {
 		config.V = m.V
 	case models.CONF_V_TYPE_CODE:
 		// TODO: trans to callable object
-		config.V, _ = JsonToSexpString(m.V)
+		sexp, _ := JsonToSexpString(m.V)
+		config.V = NewDynValFromStringDefault(sexp)
+		//config.V, _ = JsonToSexpString(m.V)
 	case models.CONF_V_TYPE_TEMPLATE:
 		config.V = m.V
 	}
@@ -60,7 +61,7 @@ func getMatchConf(matchData *ClientData, configs []*Config) map[string]interface
 		}
 		switch config.VType {
 		case models.CONF_V_TYPE_CODE:
-			res[config.K] = EvalDynVal(config.V.(string), matchData)
+			res[config.K] = EvalDynVal(config.V.(*DynVal), matchData)
 		case models.CONF_V_TYPE_TEMPLATE:
 			res[config.K] = getAppMatchConf(config.V.(string), matchData)
 		default:

@@ -447,7 +447,7 @@ func ClearModeData(s *Session) error {
 		s = newAutoCloseModelsSession()
 	}
 
-	sql := "delete from user; delete from app; delete from config; delete from node;update data_version set version=0;delete from config_update_history"
+	sql := "delete from user; delete from app; delete from config; delete from node;update data_version set version=0;delete from config_update_history; delete from web_hook;"
 	_, err := s.Exec(sql)
 
 	return err

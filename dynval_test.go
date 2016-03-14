@@ -27,7 +27,7 @@ func TestDynValExecute(t *testing.T) {
 		Ip:         "14.32.123.23",
 		Lang:       "",
 	}
-	assert.True(t, EvalDynVal(code, clientData) == 4)
+	assert.True(t, EvalDynValFromExpString(code, clientData) == 4)
 }
 
 func TestCondValuesExecute(t *testing.T) {
@@ -46,7 +46,7 @@ func TestCondValuesExecute(t *testing.T) {
 		Ip:         "14.32.123.23",
 		Lang:       "zh",
 	}
-	assert.True(t, EvalDynVal(code, clientData) == 2)
+	assert.True(t, EvalDynValFromExpString(code, clientData) == 2)
 }
 
 func TestDynValToJson(t *testing.T) {
