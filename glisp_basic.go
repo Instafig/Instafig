@@ -7,16 +7,17 @@ import (
 
 	"github.com/hashicorp/go-version"
 	"github.com/zhemao/glisp/interpreter"
+	"time"
 )
 
 var (
-	glispBuffNum = 10240
-	glispCh      = make(chan *glisp.Glisp, glispBuffNum)
+	glispEnvBufferSize = 8192
+	glispEnvBuffer = make(chan *glisp.Glisp, glispEnvBufferSize)
 )
 
 func init() {
-	for i := 0; i < glispBuffNum; i++ {
-		glispCh <- newGLisp()
+	for i := 0; i < glispEnvBufferSize / 32; i++ {
+		glispEnvBuffer <- newGLisp()
 	}
 }
 
@@ -118,14 +119,14 @@ func stringWildcardMatchFunction(env *glisp.Glisp, name string,
 			regexp_pattern += `\E`
 			regexp_pattern += `.`
 			l = i + width
-		} else if i == len(pattern)-1 {
+		} else if i == len(pattern) - 1 {
 			regexp_pattern += `\Q`
 			regexp_pattern += pattern[l:]
 			regexp_pattern += `\E`
 		}
 		w = width
 	}
-	match, err := regexp.MatchString("^"+regexp_pattern+"$", target)
+	match, err := regexp.MatchString("^" + regexp_pattern + "$", target)
 	return glisp.SexpBool(match), err
 }
 
@@ -179,22 +180,22 @@ func newGLisp() *glisp.Glisp {
 	return env
 }
 
-func getGLispBuff() (env *glisp.Glisp) {
+func getGLispEnv() (env *glisp.Glisp) {
 	select {
-	case env = <-glispCh:
+	case env = <-glispEnvBuffer:
 		return
-	default:
+	case <-time.After(0):
 		env = newGLisp()
 	}
-
 	return
 }
 
-func putGLispBuff(env *glisp.Glisp) {
+func putGLispEnv(env *glisp.Glisp) {
 	select {
-	case glispCh <- env:
+	case glispEnvBuffer <- env:
 		return
-	default:
+	case <-time.After(0):
+	// the buffer is full, just discard the env
 		return
 	}
 }

@@ -44,8 +44,8 @@ func ClearClientData(env *glisp.Glisp) error {
 }
 
 func NewDynValFromSexpStringDefault(sexp string) *DynVal {
-	env := getGLispBuff()
-	defer putGLispBuff(env)
+	env := getGLispEnv()
+	defer putGLispEnv(env)
 
 	SetClientData(env, &ClientData{})
 	return NewDynValFromString(sexp, env)
@@ -62,8 +62,8 @@ func (dval *DynVal) Execute(env *glisp.Glisp) (glisp.Sexp, error) {
 }
 
 func EvalDynValToSexp(code *DynVal, cdata *ClientData) (glisp.Sexp, error) {
-	env := getGLispBuff()
-	defer putGLispBuff(env)
+	env := getGLispEnv()
+	defer putGLispEnv(env)
 
 	SetClientData(env, cdata)
 	//dval := NewDynValFromString(code, env)
