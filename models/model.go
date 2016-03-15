@@ -102,6 +102,19 @@ func (m *App) UniqueCond() (string, []interface{}) {
 	return "key=?", []interface{}{m.Key}
 }
 
+func GetAppByKey(s *Session, key string) (*App, error) {
+	if s == nil {
+		s = newAutoCloseModelsSession()
+	}
+
+	res := &App{}
+	if has, err := s.Where("key=?", key).Get(res); !has || err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
 func GetAllApps(s *Session) ([]*App, error) {
 	if s == nil {
 		s = newAutoCloseModelsSession()

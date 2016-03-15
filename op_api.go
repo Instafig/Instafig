@@ -351,16 +351,7 @@ func updateUser(user *models.User, newDataVersion *models.DataVersion) (*models.
 		return nil, err
 	}
 
-	memConfMux.Lock()
-	defer memConfMux.Unlock()
-
-	memConfDataVersion = newDataVersion
-	if oldUser != nil {
-		memConfUsersByName[oldUser.Name] = nil
-	}
-	memConfUsers[user.Key] = user
-	memConfUsersByName[user.Name] = user
-	memConfNodes[node.URL] = &node
+	updateMemConf(user, newDataVersion, &node)
 
 	return user, nil
 }
@@ -610,16 +601,7 @@ func updateApp(app *models.App, newDataVersion *models.DataVersion) (*models.App
 		return nil, err
 	}
 
-	memConfMux.Lock()
-	defer memConfMux.Unlock()
-
-	memConfDataVersion = newDataVersion
-	if oldApp != nil {
-		memConfAppsByName[oldApp.Name] = nil
-	}
-	memConfApps[app.Key] = app
-	memConfAppsByName[app.Name] = app
-	memConfNodes[node.URL] = &node
+	updateMemConf(app, newDataVersion, &node)
 
 	return app, nil
 }
@@ -733,25 +715,8 @@ func updateWebHook(hook *models.WebHook, newDataVersion *models.DataVersion) (*m
 		return nil, err
 	}
 
-	memConfMux.Lock()
-	defer memConfMux.Unlock()
+	updateMemConf(hook, newDataVersion, &node)
 
-	memConfDataVersion = newDataVersion
-	memConfNodes[node.URL] = &node
-	if oldHookIdx == -1 {
-		if hook.Scope == models.WEBHOOK_SCOPE_GLOBAL {
-			memConfGlobalWebHooks = append(memConfGlobalWebHooks, hook)
-		} else if hook.Scope == models.WEBHOOK_SCOPE_APP {
-			memConfAppWebHooks[hook.AppKey] = append(memConfAppWebHooks[hook.AppKey], hook)
-		}
-
-	} else {
-		if hook.Scope == models.WEBHOOK_SCOPE_GLOBAL {
-			memConfGlobalWebHooks[oldHookIdx] = hook
-		} else if hook.Scope == models.WEBHOOK_SCOPE_APP {
-			memConfAppWebHooks[hook.AppKey][oldHookIdx] = hook
-		}
-	}
 	return hook, nil
 }
 
@@ -1093,27 +1058,7 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 
 	go TriggerWebHooks(configHistory, app)
 
-	memConfMux.Lock()
-	defer memConfMux.Unlock()
-
-	memConfDataVersion = newDataVersion
-	memConfApps[config.AppKey] = &tempApp
-	memConfRawConfigs[config.Key] = config
-	memConfNodes[node.URL] = &node
-	for _, app := range toUpdateApps {
-		app.DataSign = newDataSign
-	}
-
-	if oldConfig == nil {
-		memConfAppConfigs[config.AppKey] = append(memConfAppConfigs[config.AppKey], transConfig(config))
-	} else {
-		for ix, _config := range memConfAppConfigs[config.AppKey] {
-			if config.Key == _config.Key {
-				memConfAppConfigs[config.AppKey][ix] = transConfig(config)
-				break
-			}
-		}
-	}
+	updateMemConf(config, newDataVersion, &node, toUpdateApps)
 
 	return config, nil
 }

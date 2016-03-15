@@ -113,3 +113,84 @@ func getAppMemConfig(appKey string) []*Config {
 
 	return memConfAppConfigs[appKey]
 }
+
+func updateMemConf(i interface{}, newDataVersion *models.DataVersion, node *models.Node, auxData ...interface{}) {
+	memConfMux.Lock()
+	defer memConfMux.Unlock()
+
+	switch m := i.(type) {
+	case *models.User:
+		oldUser := memConfUsers[m.Key]
+		if oldUser != nil {
+			memConfUsersByName[m.Name] = nil
+		}
+		memConfUsers[m.Key] = m
+		memConfUsersByName[m.Name] = m
+
+	case *models.App:
+		oldApp := memConfApps[m.Key]
+		if oldApp != nil {
+			memConfAppsByName[oldApp.Name] = nil
+		}
+		memConfApps[m.Key] = m
+		memConfAppsByName[m.Name] = m
+
+	case *models.Config:
+		toUpdateApps := auxData[0].([]*models.App)
+		oldConfig := memConfRawConfigs[m.Key]
+		app, err := models.GetAppByKey(nil, m.AppKey)
+		if err != nil {
+			panic("Failed to load app info from db")
+		}
+		memConfApps[m.AppKey] = app
+		memConfRawConfigs[m.Key] = m
+		for _, _app := range toUpdateApps {
+			_app.DataSign = app.DataSign
+		}
+
+		if oldConfig == nil {
+			memConfAppConfigs[m.AppKey] = append(memConfAppConfigs[m.AppKey], transConfig(m))
+		} else {
+			for ix, _config := range memConfAppConfigs[m.AppKey] {
+				if m.Key == _config.Key {
+					memConfAppConfigs[m.AppKey][ix] = transConfig(m)
+					break
+				}
+			}
+		}
+
+	case *models.WebHook:
+		oldHookIdx := -1
+		var hooks []*models.WebHook
+		if m.Scope == models.WEBHOOK_SCOPE_GLOBAL {
+			hooks = memConfGlobalWebHooks
+		} else if m.Scope == models.WEBHOOK_SCOPE_APP {
+			hooks = memConfAppWebHooks[m.AppKey]
+		}
+		for idx, oldHook := range hooks {
+			if m.Key == oldHook.Key {
+				oldHookIdx = idx
+				break
+			}
+		}
+		if oldHookIdx == -1 {
+			if m.Scope == models.WEBHOOK_SCOPE_GLOBAL {
+				memConfGlobalWebHooks = append(memConfGlobalWebHooks, m)
+			} else if m.Scope == models.WEBHOOK_SCOPE_APP {
+				memConfAppWebHooks[m.AppKey] = append(memConfAppWebHooks[m.AppKey], m)
+			}
+
+		} else {
+			if m.Scope == models.WEBHOOK_SCOPE_GLOBAL {
+				memConfGlobalWebHooks[oldHookIdx] = m
+			} else if m.Scope == models.WEBHOOK_SCOPE_APP {
+				memConfAppWebHooks[m.AppKey][oldHookIdx] = m
+			}
+		}
+	}
+
+	memConfDataVersion = newDataVersion
+	if node != nil {
+		memConfNodes[node.URL] = node
+	}
+}
