@@ -160,19 +160,7 @@ func updateMemConf(i interface{}, newDataVersion *models.DataVersion, node *mode
 		}
 
 	case *models.WebHook:
-		oldHookIdx := -1
-		var hooks []*models.WebHook
-		if m.Scope == models.WEBHOOK_SCOPE_GLOBAL {
-			hooks = memConfGlobalWebHooks
-		} else if m.Scope == models.WEBHOOK_SCOPE_APP {
-			hooks = memConfAppWebHooks[m.AppKey]
-		}
-		for idx, oldHook := range hooks {
-			if m.Key == oldHook.Key {
-				oldHookIdx = idx
-				break
-			}
-		}
+		oldHookIdx := auxData[0].(int)
 		if oldHookIdx == -1 {
 			if m.Scope == models.WEBHOOK_SCOPE_GLOBAL {
 				memConfGlobalWebHooks = append(memConfGlobalWebHooks, m)

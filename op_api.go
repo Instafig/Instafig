@@ -715,7 +715,7 @@ func updateWebHook(hook *models.WebHook, newDataVersion *models.DataVersion) (*m
 		return nil, err
 	}
 
-	updateMemConf(hook, newDataVersion, &node)
+	updateMemConf(hook, newDataVersion, &node, oldHookIdx)
 
 	return hook, nil
 }
