@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"path/filepath"
+	"strconv"
+	"strings"
 
 	"github.com/appwilldev/Instafig/conf"
 	xormcore "github.com/go-xorm/core"
@@ -16,19 +18,76 @@ var (
 	dbEngineDefault *xorm.Engine
 )
 
+func getSerialNumFromSlaveSqliteFile(fn string) int {
+	ix := strings.LastIndex(fn, ".")
+	if ix == -1 {
+		return -1
+	}
+
+	id, err := strconv.Atoi(fn[ix+1:])
+	if err != nil {
+		return -1
+	}
+
+	return id
+}
+
+func getSlaveSqliteFile() (string, error) {
+	files, err := filepath.Glob(filepath.Join(conf.SqliteDir, fmt.Sprintf("%s.%s*", conf.SqliteFileName, conf.MasterAddr)))
+	if err != nil {
+		return "", err
+	}
+
+	maxId := 1
+	for _, file := range files {
+		if id := getSerialNumFromSlaveSqliteFile(file); id > maxId {
+			maxId = id
+		}
+	}
+
+	return filepath.Join(conf.SqliteDir, fmt.Sprintf("%s.%s.%d", conf.SqliteFileName, conf.MasterAddr, maxId)), nil
+}
+
+func getSlaveNextSqliteFile() (string, error) {
+	files, err := filepath.Glob(filepath.Join(conf.SqliteDir, fmt.Sprintf("%s.%s*", conf.SqliteFileName, conf.MasterAddr)))
+	if err != nil {
+		return "", err
+	}
+
+	maxId := 1
+	for _, file := range files {
+		if id := getSerialNumFromSlaveSqliteFile(file); id >= maxId {
+			maxId = id + 1
+		}
+	}
+
+	return filepath.Join(conf.SqliteDir, fmt.Sprintf("%s.%s.%d", conf.SqliteFileName, conf.MasterAddr, maxId)), nil
+}
+
+func UpdateSqliteDBEngine() {
+	dsn, err := getSlaveNextSqliteFile()
+	if err != nil {
+		log.Panicf("Failed to generate sqlie lite file: %s", err.Error())
+	}
+	initDBEngine("sqlite3", dsn)
+}
+
 type Session struct {
 	*xorm.Session
 }
 
 func init() {
-	var err error
 	var dsn, driver string
+	var err error
 
 	if conf.IsEasyDeployMode() {
 		if conf.IsMasterNode() {
-			dsn = fmt.Sprintf(filepath.Join(conf.SqliteDir, conf.SqliteFileName))
+			dsn = filepath.Join(conf.SqliteDir, conf.SqliteFileName)
 		} else {
-			dsn = fmt.Sprintf(filepath.Join(conf.SqliteDir, conf.SqliteFileName+fmt.Sprintf(".%s", conf.MasterAddr)))
+			dsn, err = getSlaveSqliteFile()
+			if err != nil {
+				log.Panicf("Failed to generate sqlie lite file: %s", err.Error())
+			}
 		}
 		driver = "sqlite3"
 	} else {
@@ -44,6 +103,12 @@ func init() {
 		driver = conf.DatabaseConfig.Driver
 	}
 
+	initDBEngine(driver, dsn)
+}
+
+func initDBEngine(driver, dsn string) {
+	var err error
+
 	if dbEngineDefault, err = xorm.NewEngine(driver, dsn); err != nil {
 		log.Fatal("Failed to init db engine: " + err.Error())
 	}
@@ -51,7 +116,7 @@ func init() {
 	dbEngineDefault.SetMaxIdleConns(50)
 	if conf.DebugMode {
 		dbEngineDefault.Logger().SetLevel(xormcore.LOG_DEBUG)
-		dbEngineDefault.ShowSQL(true)
+		//dbEngineDefault.ShowSQL(true)
 	} else {
 		dbEngineDefault.Logger().SetLevel(xormcore.LOG_ERR)
 	}
@@ -77,7 +142,6 @@ func init() {
 			}
 		}
 	}
-
 }
 
 func NewSession() *Session {

@@ -99,15 +99,6 @@ func checkNodeValidity() {
 				}
 				break
 			}
-		} else {
-			if node.Type == models.NODE_TYPE_MASTER && node.NodeURL != conf.MasterAddr {
-				// this node is attached to a new master, sync full data from new master
-				// just clear old-master data here, slave will sync new-master's data before serve for client
-				if err = models.ClearModeData(nil); err != nil {
-					log.Panicf("failed to check node validity: %s" + err.Error())
-				}
-				break
-			}
 		}
 	}
 }
@@ -331,6 +322,9 @@ func slaveCheckMaster() error {
 	localNode.DataVersion = resData.DataVersion
 	localNode.DataVersionStr = string(bs)
 	localNode.LastCheckUTC = utils.GetNowSecond()
+
+	// let sqlite use new db file
+	models.UpdateSqliteDBEngine()
 
 	s := models.NewSession()
 	defer s.Close()

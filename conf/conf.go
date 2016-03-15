@@ -154,6 +154,11 @@ func init() {
 
 	if IsEasyDeployMode() {
 		SqliteDir, _ = config.GetValue("sqlite", "dir")
+		if SqliteDir, err = filepath.Abs(SqliteDir); err != nil {
+			log.Println("sqlite dir is not correct: " + err.Error())
+			os.Exit(1)
+		}
+
 		SqliteFileName, _ = config.GetValue("sqlite", "filename")
 		NodeType, _ = config.GetValue("node", "type")
 		NodeAddr, _ = config.GetValue("node", "node_addr")
