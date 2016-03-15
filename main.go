@@ -94,8 +94,10 @@ func main() {
 		opAPIGroup.GET("/apps/user/:user_key", OpAuth, GetApps)
 		opAPIGroup.GET("/apps/all/:page/:count", OpAuth, GetAllApps)
 		opAPIGroup.GET("/app/:app_key", OpAuth, GetApp)
-		opAPIGroup.GET("/apps/search", OpAuth, SearchApps)
-		opAPIGroup.GET("/apps/search/hint", OpAuth, SearchAppsHint)
+		if conf.IsMasterNode() {
+			opAPIGroup.GET("/apps/search", OpAuth, SearchApps)
+			opAPIGroup.GET("/apps/search/hint", OpAuth, SearchAppsHint)
+		}
 		opAPIGroup.POST("/app", OpAuth, ConfWriteCheck, NewApp, UpdateMasterLastDataUpdateUTC)
 		opAPIGroup.PUT("/app", OpAuth, ConfWriteCheck, UpdateApp, UpdateMasterLastDataUpdateUTC)
 
