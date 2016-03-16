@@ -15,6 +15,8 @@ type ClientData struct {
 	Lang       string `json:"lang" binding:"required"`
 	DeviceId   string `json:"device_id"`
 	DataSign   string `json:"data_sign"`
+	TimeZone   string `json:"time_zone"`
+	NetWork    string `json:"net_work"`
 }
 
 type Config struct {
@@ -60,7 +62,7 @@ func getMatchConf(matchData *ClientData, configs []*Config) map[string]interface
 		}
 		switch config.VType {
 		case models.CONF_V_TYPE_CODE:
-			res[config.K] = EvalDynVal(config.V.(*DynVal), matchData)
+			res[config.K], _ = EvalDynVal(config.V.(*DynVal), matchData)
 		case models.CONF_V_TYPE_TEMPLATE:
 			res[config.K] = getAppMatchConf(config.V.(string), matchData)
 		default:

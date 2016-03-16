@@ -11,11 +11,11 @@ import (
 
 var (
 	glispEnvBufferSize = 8192
-	glispEnvBuffer = make(chan *glisp.Glisp, glispEnvBufferSize)
+	glispEnvBuffer     = make(chan *glisp.Glisp, glispEnvBufferSize)
 )
 
 func init() {
-	for i := 0; i < glispEnvBufferSize / 32; i++ {
+	for i := 0; i < glispEnvBufferSize/32; i++ {
 		glispEnvBuffer <- newGLisp()
 	}
 }
@@ -118,14 +118,14 @@ func stringWildcardMatchFunction(env *glisp.Glisp, name string,
 			regexp_pattern += `\E`
 			regexp_pattern += `.`
 			l = i + width
-		} else if i == len(pattern) - 1 {
+		} else if i == len(pattern)-1 {
 			regexp_pattern += `\Q`
 			regexp_pattern += pattern[l:]
 			regexp_pattern += `\E`
 		}
 		w = width
 	}
-	match, err := regexp.MatchString("^" + regexp_pattern + "$", target)
+	match, err := regexp.MatchString("^"+regexp_pattern+"$", target)
 	return glisp.SexpBool(match), err
 }
 
@@ -193,7 +193,7 @@ func putGLispEnv(env *glisp.Glisp) {
 	select {
 	case glispEnvBuffer <- env:
 	default:
-	// the buffer is full, just discard the env
+		// the buffer is full, just discard the env
 		return
 	}
 }

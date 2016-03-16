@@ -2,10 +2,48 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/zhemao/glisp/interpreter"
+)
+
+var (
+	supportedSymbol = map[string]bool{
+		"APP_KEY":     true,
+		"OS_TYPE":     true,
+		"OS_VERSION":  true,
+		"APP_VERSION": true,
+		"LANG":        true,
+		"DEVICE_ID":   true,
+		"TIMEZONE":    true,
+		"NETWORK":     true,
+	}
+
+	// and service-defined func should added to supportedFunc
+	supportedFunc = map[string]bool{
+		// glisp built-in func
+		"and": true,
+		"or":  true,
+		// version func
+		"version-cmp": true,
+		"ver=":        true,
+		"ver>":        true,
+		"ver>=":       true,
+		"ver<":        true,
+		"ver<=":       true,
+		"ver!=":       true,
+		// str func
+		"str=":              true,
+		"str!=":             true,
+		"str-empty?":        true,
+		"str-wcmatch?":      true,
+		"str-contains?":     true,
+		"str-not-empty?":    true,
+		"str-not-contains?": true,
+		"str-not-wcmatch?":  true,
+	}
 )
 
 type DynVal struct {
@@ -29,6 +67,8 @@ func SetClientData(env *glisp.Glisp, cdata *ClientData) error {
 	env.AddGlobal("IP", glisp.SexpStr(cdata.Ip))
 	env.AddGlobal("LANG", glisp.SexpStr(cdata.Lang))
 	env.AddGlobal("DEVICE_ID", glisp.SexpStr(cdata.DeviceId))
+	env.AddGlobal("TIMEZONE", glisp.SexpStr(cdata.TimeZone))
+	env.AddGlobal("NETWORK", glisp.SexpStr(cdata.NetWork))
 	return nil
 }
 
@@ -40,6 +80,8 @@ func ClearClientData(env *glisp.Glisp) error {
 	env.AddGlobal("IP", glisp.SexpNull)
 	env.AddGlobal("LANG", glisp.SexpNull)
 	env.AddGlobal("DEVICE_ID", glisp.SexpNull)
+	env.AddGlobal("TIMEZONE", glisp.SexpNull)
+	env.AddGlobal("NETWORK", glisp.SexpNull)
 	return nil
 }
 
@@ -70,22 +112,22 @@ func EvalDynValToSexp(code *DynVal, cdata *ClientData) (glisp.Sexp, error) {
 	return code.Execute(env)
 }
 
-func EvalDynVal(code *DynVal, cdata *ClientData) interface{} {
+func EvalDynVal(code *DynVal, cdata *ClientData) (interface{}, error) {
 	data, err := EvalDynValToSexp(code, cdata)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	switch val := data.(type) {
 	case glisp.SexpBool:
-		return bool(val)
+		return bool(val), nil
 	case glisp.SexpInt:
-		return int(val)
+		return int(val), nil
 	case glisp.SexpFloat:
-		return float64(val)
+		return float64(val), nil
 	case glisp.SexpStr:
-		return string(val)
+		return string(val), nil
 	default:
-		return data.SexpString()
+		return data.SexpString(), nil
 	}
 }
 
@@ -237,45 +279,75 @@ func (dval *DynVal) ToJson() (string, error) {
 }
 
 // Unserialize from JSON to Sexp
-func plainDataToSexpString(data interface{}) string {
+func plainDataToSexpString(data interface{}) (string, error) {
 	switch data := data.(type) {
 	case bool:
-		return strconv.FormatBool(data)
+		return strconv.FormatBool(data), nil
+
 	case int:
-		return string(data)
+		return string(data), nil
+
 	case float64:
-		return strconv.FormatFloat(data, 'f', -1, 64)
+		return strconv.FormatFloat(data, 'f', -1, 64), nil
+
 	case string:
-		return `"` + data + `"` // TODO escape double quote
+		return `"` + data + `"`, nil // TODO escape double quote
+
 	case map[string]interface{}:
 		if val, ok := data["symbol"]; ok { // Symbol
-			return string(val.(string))
+			if !supportedSymbol[val.(string)] {
+				return "", fmt.Errorf("unknown symbol: " + val.(string))
+			}
+			return string(val.(string)), nil
 		}
 		if val, ok := data["func"]; ok { // cond-values style function call
+			if !supportedFunc[val.(string)] {
+				return "", fmt.Errorf("unknown func: " + val.(string))
+			}
 			ret := "(" + val.(string)
 			args := data["arguments"].([]interface{})
 			for _, argval := range args {
 				ret += " "
-				ret += plainDataToSexpString(argval)
+				s, err := plainDataToSexpString(argval)
+				if err != nil {
+					return "", err
+				}
+				ret += s
 			}
 			ret += ")"
-			return ret
+			return ret, nil
 		}
 		if val, ok := data["cond-values"]; ok { // cond-values exp
 			ret := "(cond-values"
 			conds := val.([]interface{})
 			for _, cond := range conds {
 				ret += " "
-				ret += plainDataToSexpString(cond.(map[string]interface{})["condition"])
+				s, err := plainDataToSexpString(cond.(map[string]interface{})["condition"])
+				if err != nil {
+					return "", err
+				}
+				ret += s
 				ret += " "
-				ret += plainDataToSexpString(cond.(map[string]interface{})["value"])
+				s, err = plainDataToSexpString(cond.(map[string]interface{})["value"])
+				if err != nil {
+					return "", err
+				}
+				ret += s
 			}
 			if dft, ok := data["default-value"]; ok {
 				ret += " "
-				ret += plainDataToSexpString(dft)
+				s, err := plainDataToSexpString(dft)
+				if err != nil {
+					return "", nil
+				}
+				ret += s
 			}
 			ret += ")"
-			return ret
+			return ret, nil
+		}
+
+		for k, _ := range data {
+			return "", fmt.Errorf("unknown symbol: " + k)
 		}
 
 	case []interface{}: // Sub sexp
@@ -284,12 +356,17 @@ func plainDataToSexpString(data interface{}) string {
 			if idx != 0 {
 				ret += " "
 			}
-			ret += plainDataToSexpString(val)
+			s, err := plainDataToSexpString(val)
+			if err != nil {
+				return "", err
+			}
+			ret += s
 		}
 		ret += ")"
-		return ret
+		return ret, nil
 	}
-	return "()"
+
+	return "()", nil
 }
 
 func JsonToSexpString(json_str string) (string, error) {
@@ -298,6 +375,17 @@ func JsonToSexpString(json_str string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	data := plainDataToSexpString(f)
-	return data, nil
+
+	return plainDataToSexpString(f)
+}
+
+func CheckJsonString(j string) error {
+	sexp, err := JsonToSexpString(j)
+	if err != nil {
+		return err
+	}
+
+	_, err = EvalDynVal(NewDynValFromSexpStringDefault(sexp), &ClientData{})
+
+	return err
 }

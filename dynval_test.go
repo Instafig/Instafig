@@ -30,7 +30,9 @@ func TestDynValExecute(t *testing.T) {
 		Ip:         "14.32.123.23",
 		Lang:       "",
 	}
-	assert.True(t, EvalDynVal(NewDynValFromSexpStringDefault(code), clientData) == 4)
+	res, err := EvalDynVal(NewDynValFromSexpStringDefault(code), clientData)
+	assert.True(t, err == nil)
+	assert.True(t, res == 4)
 }
 
 func TestCondValuesExecute(t *testing.T) {
@@ -49,7 +51,9 @@ func TestCondValuesExecute(t *testing.T) {
 		Ip:         "14.32.123.23",
 		Lang:       "zh",
 	}
-	assert.True(t, EvalDynVal(NewDynValFromSexpStringDefault(code), clientData) == 2)
+	res, err := EvalDynVal(NewDynValFromSexpStringDefault(code), clientData)
+	assert.True(t, err == nil)
+	assert.True(t, res == 2)
 }
 
 func TestDynValToJson(t *testing.T) {
@@ -71,8 +75,9 @@ func TestDynValToJson(t *testing.T) {
 func TestJsonToSexpString(t *testing.T) {
 	expected_code := `(cond (and (= LANG "zh") (>= APP_VERSION "1.3.1") (< APP_VERSION "1.5")) 1 (and (= LANG "zh") (or (< APP_VERSION "1.3.1") (>= APP_VERSION "1.5"))) 2 (and (not= LANG "zh") (>= APP_VERSION "1.3.1") (< APP_VERSION "1.5")) 3 (and (not= LANG "zh") (or (< APP_VERSION "1.3.1") (>= APP_VERSION "1.5"))) 4 5)`
 	json := `[{"symbol":"cond"},[{"symbol":"and"},[{"symbol":"="},{"symbol":"LANG"},"zh"],[{"symbol":"\u003e="},{"symbol":"APP_VERSION"},"1.3.1"],[{"symbol":"\u003c"},{"symbol":"APP_VERSION"},"1.5"]],1,[{"symbol":"and"},[{"symbol":"="},{"symbol":"LANG"},"zh"],[{"symbol":"or"},[{"symbol":"\u003c"},{"symbol":"APP_VERSION"},"1.3.1"],[{"symbol":"\u003e="},{"symbol":"APP_VERSION"},"1.5"]]],2,[{"symbol":"and"},[{"symbol":"not="},{"symbol":"LANG"},"zh"],[{"symbol":"\u003e="},{"symbol":"APP_VERSION"},"1.3.1"],[{"symbol":"\u003c"},{"symbol":"APP_VERSION"},"1.5"]],3,[{"symbol":"and"},[{"symbol":"not="},{"symbol":"LANG"},"zh"],[{"symbol":"or"},[{"symbol":"\u003c"},{"symbol":"APP_VERSION"},"1.3.1"],[{"symbol":"\u003e="},{"symbol":"APP_VERSION"},"1.5"]]],4,5]`
-	code, _ := JsonToSexpString(json)
-	assert.True(t, code == expected_code)
+	code, err := JsonToSexpString(json)
+	assert.True(t, err != nil)
+	assert.False(t, code == expected_code)
 }
 
 func TestCondValuesToJson(t *testing.T) {
@@ -93,9 +98,12 @@ func TestCondValuesToJson(t *testing.T) {
 }
 
 func TestJsonToCondValues(t *testing.T) {
-	json := `{"cond-values":[{"condition":{"arguments":[{"arguments":[{"symbol":"LANG"},"zh"],"func":"="},{"arguments":[{"symbol":"APP_VERSION"},"1.3.1"],"func":"\u003e="},{"arguments":[{"symbol":"APP_VERSION"},"1.5"],"func":"\u003c"}],"func":"and"},"value":1},{"condition":{"arguments":[{"arguments":[{"symbol":"LANG"},"zh"],"func":"="},{"arguments":[{"arguments":[{"symbol":"APP_VERSION"},"1.3.1"],"func":"\u003c"},{"arguments":[{"symbol":"APP_VERSION"},"1.5"],"func":"\u003e="}],"func":"or"}],"func":"and"},"value":2},{"condition":{"arguments":[{"arguments":[{"symbol":"LANG"},"zh"],"func":"not="},{"arguments":[{"symbol":"APP_VERSION"},"1.3.1"],"func":"\u003e="},{"arguments":[{"symbol":"APP_VERSION"},"1.5"],"func":"\u003c"}],"func":"and"},"value":3},{"condition":{"arguments":[{"arguments":[{"symbol":"LANG"},"zh"],"func":"not="},{"arguments":[{"arguments":[{"symbol":"APP_VERSION"},"1.3.1"],"func":"\u003c"},{"arguments":[{"symbol":"APP_VERSION"},"1.5"],"func":"\u003e="}],"func":"or"}],"func":"and"},"value":4}],"default-value":5}`
-	expected_code := `(cond-values (and (= LANG "zh") (>= APP_VERSION "1.3.1") (< APP_VERSION "1.5")) 1 (and (= LANG "zh") (or (< APP_VERSION "1.3.1") (>= APP_VERSION "1.5"))) 2 (and (not= LANG "zh") (>= APP_VERSION "1.3.1") (< APP_VERSION "1.5")) 3 (and (not= LANG "zh") (or (< APP_VERSION "1.3.1") (>= APP_VERSION "1.5"))) 4 5)`
+	//json := `{"cond-values":[{"condition":{"arguments":[{"arguments":[{"symbol":"LANG"},"zh"],"func":"="},{"arguments":[{"symbol":"APP_VERSION"},"1.3.1"],"func":"\u003e="},{"arguments":[{"symbol":"APP_VERSION"},"1.5"],"func":"\u003c"}],"func":"and"},"value":1},{"condition":{"arguments":[{"arguments":[{"symbol":"LANG"},"zh"],"func":"="},{"arguments":[{"arguments":[{"symbol":"APP_VERSION"},"1.3.1"],"func":"\u003c"},{"arguments":[{"symbol":"APP_VERSION"},"1.5"],"func":"\u003e="}],"func":"or"}],"func":"and"},"value":2},{"condition":{"arguments":[{"arguments":[{"symbol":"LANG"},"zh"],"func":"not="},{"arguments":[{"symbol":"APP_VERSION"},"1.3.1"],"func":"\u003e="},{"arguments":[{"symbol":"APP_VERSION"},"1.5"],"func":"\u003c"}],"func":"and"},"value":3},{"condition":{"arguments":[{"arguments":[{"symbol":"LANG"},"zh"],"func":"not="},{"arguments":[{"arguments":[{"symbol":"APP_VERSION"},"1.3.1"],"func":"\u003c"},{"arguments":[{"symbol":"APP_VERSION"},"1.5"],"func":"\u003e="}],"func":"or"}],"func":"and"},"value":4}],"default-value":5}`
+	//expected_code := `(cond-values (and (= LANG "zh") (>= APP_VERSION "1.3.1") (< APP_VERSION "1.5")) 1 (and (= LANG "zh") (or (< APP_VERSION "1.3.1") (>= APP_VERSION "1.5"))) 2 (and (not= LANG "zh") (>= APP_VERSION "1.3.1") (< APP_VERSION "1.5")) 3 (and (not= LANG "zh") (or (< APP_VERSION "1.3.1") (>= APP_VERSION "1.5"))) 4 5)`
+	json := `{"cond-values":[{"condition":{"arguments":[{"arguments":[{"symbol":"LANG"},"en"],"func":"str!="},{"arguments":[{"symbol":"APP_VERSION"},"1.0"],"func":"ver="},{"arguments":[{"symbol":"OS_VERSION"},"2.4.5"],"func":"ver<"}],"func":"or"},"value":123}],"default-value":456}`
+	expected_code := `(cond-values (or (str!= LANG "en") (ver= APP_VERSION "1.0") (ver< OS_VERSION "2.4.5")) 123 456)`
 
-	data, _ := JsonToSexpString(json)
+	data, err := JsonToSexpString(json)
+	assert.True(t, err == nil)
 	assert.True(t, data == expected_code)
 }

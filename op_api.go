@@ -764,7 +764,7 @@ func verifyNewConfigData(data *newConfigData) error {
 
 	switch data.VType {
 	case models.CONF_V_TYPE_CODE:
-		if _, err := JsonToSexpString(data.V); err != nil {
+		if err := CheckJsonString(data.V); err != nil {
 			return fmt.Errorf("syntax error for code type value: " + err.Error())
 		}
 	case models.CONF_V_TYPE_FLOAT:
@@ -872,7 +872,7 @@ func verifyUpdateConfigData(data *updateConfigData) error {
 
 	switch data.VType {
 	case models.CONF_V_TYPE_CODE:
-		if _, err := JsonToSexpString(data.V); err != nil {
+		if err := CheckJsonString(data.V); err != nil {
 			return fmt.Errorf("syntax error for code type value: " + err.Error())
 		}
 	case models.CONF_V_TYPE_FLOAT:
