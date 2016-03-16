@@ -116,10 +116,10 @@ func initDBEngine(driver, dsn string) {
 	dbEngineDefault.SetMaxIdleConns(50)
 	if conf.DebugMode {
 		dbEngineDefault.Logger().SetLevel(xormcore.LOG_DEBUG)
-		dbEngineDefault.ShowSQL(true)
 	} else {
 		dbEngineDefault.Logger().SetLevel(xormcore.LOG_ERR)
 	}
+	dbEngineDefault.ShowSQL(conf.ShowSql)
 
 	if conf.IsEasyDeployMode() {
 		if err = dbEngineDefault.Sync2(
