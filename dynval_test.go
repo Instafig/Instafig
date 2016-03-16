@@ -159,3 +159,63 @@ func TestVersionCondConfigValue(t *testing.T) {
 	assert.True(t, EvalDynValNoErr(dynval, &ClientData{OSVersion: "1.1"}) == "0")
 	assert.True(t, EvalDynValNoErr(dynval, &ClientData{OSVersion: "10.1.1"}) == "0")
 }
+
+func TestStrCondConfigValue(t *testing.T) {
+	json := `{"cond-values":[{"condition":{"arguments":[{"symbol":"LANG"},"en"],"func":"str="},"value":0}],"default-value":1}`
+	sep, _ := JsonToSexpString(json)
+	dynval := NewDynValFromSexpStringDefault(sep)
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{Lang: "en"}) == 0)
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{Lang: "zh"}) == 1)
+
+	json = `{"cond-values":[{"condition":{"arguments":[{"symbol":"LANG"},"en"],"func":"str!="},"value":0}],"default-value":1}`
+	sep, _ = JsonToSexpString(json)
+	dynval = NewDynValFromSexpStringDefault(sep)
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{Lang: "en"}) == 1)
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{Lang: "zh"}) == 0)
+
+	json = `{"cond-values":[{"condition":{"arguments":[{"symbol":"TIMEZONE"}],"func":"str-empty?"},"value":0}],"default-value":1}`
+	sep, _ = JsonToSexpString(json)
+	dynval = NewDynValFromSexpStringDefault(sep)
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{TimeZone: "beijing"}) == 1)
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{TimeZone: ""}) == 0)
+
+	json = `{"cond-values":[{"condition":{"arguments":[{"symbol":"TIMEZONE"}],"func":"str-not-empty?"},"value":0}],"default-value":1}`
+	sep, _ = JsonToSexpString(json)
+	dynval = NewDynValFromSexpStringDefault(sep)
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{TimeZone: "beijing"}) == 0)
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{TimeZone: ""}) == 1)
+
+	json = `{"cond-values":[{"condition":{"arguments":[{"symbol":"TIMEZONE"}, "beijing"],"func":"str-contains?"},"value":0}],"default-value":1}`
+	sep, _ = JsonToSexpString(json)
+	dynval = NewDynValFromSexpStringDefault(sep)
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{TimeZone: "beijing"}) == 0)
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{TimeZone: "beijing,shanghai"}) == 0)
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{TimeZone: "tianjin,beijing,shanghai"}) == 0)
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{TimeZone: "hokong"}) == 1)
+
+	json = `{"cond-values":[{"condition":{"arguments":[{"symbol":"TIMEZONE"}, "beijing"],"func":"str-not-contains?"},"value":0}],"default-value":1}`
+	sep, _ = JsonToSexpString(json)
+	dynval = NewDynValFromSexpStringDefault(sep)
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{TimeZone: "beijing"}) == 1)
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{TimeZone: "beijing,shanghai"}) == 1)
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{TimeZone: "tianjin,beijing,shanghai"}) == 1)
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{TimeZone: "hokong"}) == 0)
+
+	json = `{"cond-values":[{"condition":{"arguments":[{"symbol":"TIMEZONE"}, "*beijin*"],"func":"str-wcmatch?"},"value":0}],"default-value":1}`
+	sep, _ = JsonToSexpString(json)
+	dynval = NewDynValFromSexpStringDefault(sep)
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{TimeZone: "beijing"}) == 0)
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{TimeZone: "beijing,shanghai"}) == 0)
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{TimeZone: "tianjin,beijing,shanghai"}) == 0)
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{TimeZone: "hokong"}) == 1)
+
+	json = `{"cond-values":[{"condition":{"arguments":[{"symbol":"TIMEZONE"}, "*beijin*"],"func":"str-not-wcmatch?"},"value":0}],"default-value":1}`
+	sep, _ = JsonToSexpString(json)
+	dynval = NewDynValFromSexpStringDefault(sep)
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{TimeZone: "beijing"}) == 1)
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{TimeZone: "beijing,shanghai"}) == 1)
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{TimeZone: "tianjin,beijing,shanghai"}) == 1)
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{TimeZone: "hokong"}) == 0)
+
+	// todo: more wild-card match case
+}

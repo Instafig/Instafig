@@ -90,7 +90,7 @@ func stringWildcardMatchFunction(env *glisp.Glisp, name string,
 
 	switch t := args[0].(type) {
 	case glisp.SexpStr:
-		pattern = string(t)
+		target = string(t)
 	default:
 		//return glisp.SexpNull, errors.New("wildcard parttern must be string")
 		return glisp.SexpNull, nil
@@ -98,7 +98,7 @@ func stringWildcardMatchFunction(env *glisp.Glisp, name string,
 
 	switch t := args[1].(type) {
 	case glisp.SexpStr:
-		target = string(t)
+		pattern = string(t)
 	default:
 		//return glisp.SexpNull, errors.New("arg1 must be string")
 		return glisp.SexpNull, nil

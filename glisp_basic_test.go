@@ -63,14 +63,14 @@ func TestStringWildcardMatchFunctions(t *testing.T) {
 	defer putGLispEnv(env)
 
 	var ret glisp.Sexp
-	ret, _ = env.EvalString(`(str-wcmatch? "a*c" "axyzc")`)
+	ret, _ = env.EvalString(`(str-wcmatch? "axyzc" "a*c")`)
 	assert.True(t, ret == glisp.SexpBool(true))
-	ret, _ = env.EvalString(`(str-wcmatch? "a*c" "_axyzc")`)
+	ret, _ = env.EvalString(`(str-wcmatch? "_axyzc" "a*c")`)
 	assert.True(t, ret == glisp.SexpBool(false))
-	ret, _ = env.EvalString(`(str-wcmatch? "a?c" "abc")`)
+	ret, _ = env.EvalString(`(str-wcmatch? "abc" "a?c")`)
 	assert.True(t, ret == glisp.SexpBool(true))
-	ret, _ = env.EvalString(`(str-not-wcmatch? "a?c" "abbc")`)
+	ret, _ = env.EvalString(`(str-not-wcmatch? "abbc" "a?c")`)
 	assert.True(t, ret == glisp.SexpBool(true))
-	ret, _ = env.EvalString(`(str-not-wcmatch? "a\\dc" "a2c")`)
+	ret, _ = env.EvalString(`(str-not-wcmatch? "a2c" "a\\dc")`)
 	assert.True(t, ret == glisp.SexpBool(true))
 }
