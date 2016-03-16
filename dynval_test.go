@@ -107,3 +107,55 @@ func TestJsonToCondValues(t *testing.T) {
 	assert.True(t, err == nil)
 	assert.True(t, data == expected_code)
 }
+
+func TestVersionCondConfigValue(t *testing.T) {
+	json := `{"cond-values":[{"condition":{"arguments":[{"symbol":"APP_VERSION"},"1.0"],"func":"ver="},"value":"0"}],"default-value":"1"}`
+	sep, _ := JsonToSexpString(json)
+	dynval := NewDynValFromSexpStringDefault(sep)
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{AppVersion: "1.0"}) == "0")
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{AppVersion: "1.1"}) == "1")
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{AppVersion: "10.1"}) == "1")
+
+	json = `{"cond-values":[{"condition":{"arguments":[{"symbol":"APP_VERSION"},"1.0"],"func":"ver>"},"value":"0"}],"default-value":"1"}`
+	sep, _ = JsonToSexpString(json)
+	dynval = NewDynValFromSexpStringDefault(sep)
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{AppVersion: "1.0"}) == "1")
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{AppVersion: "1.1"}) == "0")
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{AppVersion: "10.1"}) == "0")
+
+	json = `{"cond-values":[{"condition":{"arguments":[{"symbol":"APP_VERSION"},"1.0"],"func":"ver>="},"value":"0"}],"default-value":"1"}`
+	sep, _ = JsonToSexpString(json)
+	dynval = NewDynValFromSexpStringDefault(sep)
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{AppVersion: "0.0.1"}) == "1")
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{AppVersion: "0.9.9"}) == "1")
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{AppVersion: "1.0"}) == "0")
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{AppVersion: "1.1"}) == "0")
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{AppVersion: "10.1.1"}) == "0")
+
+	json = `{"cond-values":[{"condition":{"arguments":[{"symbol":"APP_VERSION"},"1.0"],"func":"ver<"},"value":"0"}],"default-value":"1"}`
+	sep, _ = JsonToSexpString(json)
+	dynval = NewDynValFromSexpStringDefault(sep)
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{AppVersion: "0.0.1"}) == "0")
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{AppVersion: "0.9.9"}) == "0")
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{AppVersion: "1.0"}) == "1")
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{AppVersion: "1.1"}) == "1")
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{AppVersion: "10.1.1"}) == "1")
+
+	json = `{"cond-values":[{"condition":{"arguments":[{"symbol":"APP_VERSION"},"1.0"],"func":"ver<="},"value":"0"}],"default-value":"1"}`
+	sep, _ = JsonToSexpString(json)
+	dynval = NewDynValFromSexpStringDefault(sep)
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{AppVersion: "0.0.1"}) == "0")
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{AppVersion: "0.9.9"}) == "0")
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{AppVersion: "1.0"}) == "0")
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{AppVersion: "1.1"}) == "1")
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{AppVersion: "10.1.1"}) == "1")
+
+	json = `{"cond-values":[{"condition":{"arguments":[{"symbol":"OS_VERSION"},"1.0"],"func":"ver!="},"value":"0"}],"default-value":"1"}`
+	sep, _ = JsonToSexpString(json)
+	dynval = NewDynValFromSexpStringDefault(sep)
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{OSVersion: "0.0.1"}) == "0")
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{OSVersion: "0.9.9"}) == "0")
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{OSVersion: "1.0"}) == "1")
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{OSVersion: "1.1"}) == "0")
+	assert.True(t, EvalDynValNoErr(dynval, &ClientData{OSVersion: "10.1.1"}) == "0")
+}

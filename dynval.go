@@ -131,6 +131,11 @@ func EvalDynVal(code *DynVal, cdata *ClientData) (interface{}, error) {
 	}
 }
 
+func EvalDynValNoErr(code *DynVal, cdata *ClientData) interface{} {
+	i, _ := EvalDynVal(code, cdata)
+	return i
+}
+
 // Serialize to JSON
 
 // 1. for normal style
