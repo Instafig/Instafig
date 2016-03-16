@@ -7,16 +7,16 @@ import (
 )
 
 type ClientData struct {
-	AppKey     string `json:"app_key" binding:"required"`
-	OSType     string `json:"os_type" binding:"required"`
-	OSVersion  string `json:"os_version" binding:"required"`
-	AppVersion string `json:"app_version" binding:"required"`
-	Ip         string `json:"ip" binding:"required"`
-	Lang       string `json:"lang" binding:"required"`
+	AppKey     string `json:"app_key"`
+	OSType     string `json:"os_type"`
+	OSVersion  string `json:"os_version"`
+	AppVersion string `json:"app_version"`
+	Ip         string `json:"ip"`
+	Lang       string `json:"lang"`
 	DeviceId   string `json:"device_id"`
 	DataSign   string `json:"data_sign"`
-	TimeZone   string `json:"time_zone"`
-	NetWork    string `json:"net_work"`
+	TimeZone   string `json:"timezone"`
+	NetWork    string `json:"network"`
 }
 
 type Config struct {

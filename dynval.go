@@ -21,7 +21,7 @@ var (
 		"NETWORK":     true,
 	}
 
-	// and service-defined func should added to supportedFunc
+	// all service-defined func must added to supportedFunc
 	supportedFunc = map[string]bool{
 		// glisp built-in func
 		"and": true,

@@ -18,6 +18,8 @@ func ClientConf(c *gin.Context) {
 		Lang:       c.Query("lang"),
 		DeviceId:   c.Query("device_id"),
 		DataSign:   c.Query("data_sign"),
+		TimeZone:   c.Query("timezone"),
+		NetWork:    c.Query("network"),
 	}
 
 	if clientData.AppKey == "" {
