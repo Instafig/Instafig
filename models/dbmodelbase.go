@@ -10,7 +10,6 @@ import (
 	"github.com/appwilldev/Instafig/conf"
 	xormcore "github.com/go-xorm/core"
 	"github.com/go-xorm/xorm"
-	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -80,28 +79,15 @@ func init() {
 	var dsn, driver string
 	var err error
 
-	if conf.IsEasyDeployMode() {
-		if conf.IsMasterNode() {
-			dsn = filepath.Join(conf.SqliteDir, conf.SqliteFileName)
-		} else {
-			dsn, err = getSlaveSqliteFile()
-			if err != nil {
-				log.Panicf("Failed to generate sqlie lite file: %s", err.Error())
-			}
-		}
-		driver = "sqlite3"
+	if conf.IsMasterNode() {
+		dsn = filepath.Join(conf.SqliteDir, conf.SqliteFileName)
 	} else {
-		dsn = fmt.Sprintf(
-			"user=%s dbname=%s host=%s port=%d sslmode=disable",
-			conf.DatabaseConfig.User,
-			conf.DatabaseConfig.DBName,
-			conf.DatabaseConfig.Host,
-			conf.DatabaseConfig.Port)
-		if conf.DatabaseConfig.PassWd != "" {
-			dsn = fmt.Sprintf("%s password=%s", dsn, conf.DatabaseConfig.PassWd)
+		dsn, err = getSlaveSqliteFile()
+		if err != nil {
+			log.Panicf("Failed to generate sqlie lite file: %s", err.Error())
 		}
-		driver = conf.DatabaseConfig.Driver
 	}
+	driver = "sqlite3"
 
 	initDBEngine(driver, dsn)
 }
@@ -121,24 +107,22 @@ func initDBEngine(driver, dsn string) {
 	}
 	dbEngineDefault.ShowSQL(conf.ShowSql)
 
-	if conf.IsEasyDeployMode() {
-		if err = dbEngineDefault.Sync2(
-			&User{}, &App{},
-			&Config{}, &ConfigUpdateHistory{},
-			&Node{}, &DataVersion{}, &WebHook{},
-		); err != nil {
-			log.Panicf("Failed to sync db scheme: %s", err.Error())
-		}
+	if err = dbEngineDefault.Sync2(
+		&User{}, &App{},
+		&Config{}, &ConfigUpdateHistory{},
+		&Node{}, &DataVersion{}, &WebHook{},
+	); err != nil {
+		log.Panicf("Failed to sync db scheme: %s", err.Error())
+	}
 
-		_, err := GetDataVersion(nil)
-		if err != nil {
-			if err != NoDataVerError {
-				log.Panicf("failed to get data version: %s", err.Error())
-			} else {
-				_, err = dbEngineDefault.Exec("INSERT INTO data_version(version, sign, old_sign) VALUES(0,'','')")
-				if err != nil {
-					log.Panicf("failed to init data version: %s", err.Error())
-				}
+	_, err = GetDataVersion(nil)
+	if err != nil {
+		if err != NoDataVerError {
+			log.Panicf("failed to get data version: %s", err.Error())
+		} else {
+			_, err = dbEngineDefault.Exec("INSERT INTO data_version(version, sign, old_sign) VALUES(0,'','')")
+			if err != nil {
+				log.Panicf("failed to init data version: %s", err.Error())
 			}
 		}
 	}

@@ -122,24 +122,17 @@ func main() {
 		opAPIGroup.GET("/stat/node-config-response/:node_url", OpAuth, StatCheck, GetNodeConfigResponseData)
 	}
 
-	if conf.IsEasyDeployMode() {
-		ginInsNode := gin.New()
-		if conf.DebugMode {
-			ginInsNode.Use(gin.Logger())
-		}
-		ginInsNode.Use(gin.Recovery())
-		ginInsNode.POST("/node/req/:req_type", NodeRequestHandler)
+	ginInsNode := gin.New()
+	if conf.DebugMode {
+		ginInsNode.Use(gin.Logger())
+	}
+	ginInsNode.Use(gin.Recovery())
+	ginInsNode.POST("/node/req/:req_type", NodeRequestHandler)
 
-		err = gracehttp.Serve(
-			&http.Server{Addr: fmt.Sprintf(":%d", conf.Port), Handler: ginIns},
-			&http.Server{Addr: conf.NodeAddr, Handler: ginInsNode})
-		if err != nil {
-			log.Printf("fatal error: %s", err.Error())
-		}
-	} else {
-		err = gracehttp.Serve(&http.Server{Addr: fmt.Sprintf(":%d", conf.Port), Handler: ginIns})
-		if err != nil {
-			log.Printf("fatal error: %s", err.Error())
-		}
+	err = gracehttp.Serve(
+		&http.Server{Addr: fmt.Sprintf(":%d", conf.Port), Handler: ginIns},
+		&http.Server{Addr: conf.NodeAddr, Handler: ginInsNode})
+	if err != nil {
+		log.Printf("fatal error: %s", err.Error())
 	}
 }

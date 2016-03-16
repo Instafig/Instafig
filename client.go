@@ -36,58 +36,54 @@ func ClientConf(c *gin.Context) {
 			clientData.Ip = c.Request.RemoteAddr
 		}
 
-		if conf.IsEasyDeployMode() {
-			setClientData(c, clientData)
-		}
+		setClientData(c, clientData)
 
 		c.JSON(http.StatusOK, getAppMatchConf(clientData.AppKey, clientData))
 		return
 	}
 
-	if conf.IsEasyDeployMode() {
-		setClientData(c, clientData)
-		memConfMux.RLock()
-		if !conf.IsMasterNode() && conf.DataExpires > 0 {
-			if memConfNodes[conf.ClientAddr].LastCheckUTC < utils.GetNowSecond()-conf.DataExpires {
-				memConfMux.RUnlock()
-				Error(c, DATA_EXPIRED)
-				return
-			}
+	setClientData(c, clientData)
+	memConfMux.RLock()
+	if !conf.IsMasterNode() && conf.DataExpires > 0 {
+		if memConfNodes[conf.ClientAddr].LastCheckUTC < utils.GetNowSecond()-conf.DataExpires {
+			memConfMux.RUnlock()
+			Error(c, DATA_EXPIRED)
+			return
 		}
-
-		nodes := []string{}
-		if !conf.ProxyDeployed {
-			nodes = make([]string, len(memConfNodes))
-			ix := 0
-			for _, node := range memConfNodes {
-				nodes[ix] = node.URL
-				ix++
-			}
-		}
-
-		// do not support app data_sign in server-side, always return app configs
-		needConf := true || (memConfApps[clientData.AppKey] != nil && clientData.DataSign != memConfApps[clientData.AppKey].DataSign)
-		memConfMux.RUnlock()
-
-		if needConf {
-			var dataSign string
-			configs := getAppMatchConf(clientData.AppKey, clientData)
-			if len(configs) > 0 {
-				memConfMux.RLock()
-				dataSign = memConfApps[clientData.AppKey].DataSign
-				memConfMux.RUnlock()
-			}
-
-			Success(c, map[string]interface{}{
-				"nodes":     nodes,
-				"configs":   configs,
-				"data_sign": dataSign,
-			})
-		} else {
-			Success(c, map[string]interface{}{
-				"nodes": nodes,
-			})
-		}
-		return
 	}
+
+	nodes := []string{}
+	if !conf.ProxyDeployed {
+		nodes = make([]string, len(memConfNodes))
+		ix := 0
+		for _, node := range memConfNodes {
+			nodes[ix] = node.URL
+			ix++
+		}
+	}
+
+	// do not support app data_sign in server-side, always return app configs
+	needConf := true || (memConfApps[clientData.AppKey] != nil && clientData.DataSign != memConfApps[clientData.AppKey].DataSign)
+	memConfMux.RUnlock()
+
+	if needConf {
+		var dataSign string
+		configs := getAppMatchConf(clientData.AppKey, clientData)
+		if len(configs) > 0 {
+			memConfMux.RLock()
+			dataSign = memConfApps[clientData.AppKey].DataSign
+			memConfMux.RUnlock()
+		}
+
+		Success(c, map[string]interface{}{
+			"nodes":     nodes,
+			"configs":   configs,
+			"data_sign": dataSign,
+		})
+	} else {
+		Success(c, map[string]interface{}{
+			"nodes": nodes,
+		})
+	}
+	return
 }

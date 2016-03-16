@@ -29,14 +29,14 @@ func genNewDataVersion(old *models.DataVersion) *models.DataVersion {
 }
 
 func ConfWriteCheck(c *gin.Context) {
-	if conf.IsEasyDeployMode() && !conf.IsMasterNode() {
+	if !conf.IsMasterNode() {
 		Error(c, NOT_PERMITTED, "You can not update config data as you connecting to slave node,")
 		c.Abort()
 	}
 }
 
 func UpdateMasterLastDataUpdateUTC(c *gin.Context) {
-	if !conf.IsEasyDeployMode() || !getServiceStatus(c) ||
+	if !getServiceStatus(c) ||
 		(c.Request.Method != http.MethodPost && c.Request.Method != http.MethodPut && c.Request.Method != http.MethodPatch && c.Request.Method != http.MethodDelete) {
 		return
 	}
@@ -478,7 +478,7 @@ func NewApp(c *gin.Context) {
 		return
 	}
 
-	if conf.IsEasyDeployMode() && memConfAppsByName[data.Name] != nil {
+	if memConfAppsByName[data.Name] != nil {
 		Error(c, BAD_REQUEST, "appname already exists: "+data.Name)
 		return
 	}
@@ -540,7 +540,7 @@ func UpdateApp(c *gin.Context) {
 		return
 	}
 
-	if conf.IsEasyDeployMode() && memConfApps[data.Key].Name != data.Name {
+	if memConfApps[data.Key].Name != data.Name {
 		for _, app := range memConfApps {
 			if app.Name == data.Name {
 				Error(c, BAD_REQUEST, "appname already exists: "+data.Name)

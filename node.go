@@ -58,29 +58,27 @@ type nodeRequestDataT struct {
 
 func init() {
 	var err error
-	if conf.IsEasyDeployMode() {
-		nodeAuthToken := jwt.New(jwt.SigningMethodHS256)
-		if nodeAuthString, err = nodeAuthToken.SignedString([]byte(conf.NodeAuth)); err != nil {
-			log.Panicf("Failed to init node auth token: %s", err.Error())
+	nodeAuthToken := jwt.New(jwt.SigningMethodHS256)
+	if nodeAuthString, err = nodeAuthToken.SignedString([]byte(conf.NodeAuth)); err != nil {
+		log.Panicf("Failed to init node auth token: %s", err.Error())
+	}
+
+	checkNodeValidity()
+	loadAllData()
+	initNodeData()
+
+	if !conf.IsMasterNode() {
+		if err = slaveCheckMaster(); err != nil {
+			log.Printf("slave node failed to check master: %s", err.Error())
+			os.Exit(1)
 		}
 
-		checkNodeValidity()
-		loadAllData()
-		initNodeData()
-
-		if !conf.IsMasterNode() {
-			if err = slaveCheckMaster(); err != nil {
-				log.Printf("slave node failed to check master: %s", err.Error())
-				os.Exit(1)
+		go func() {
+			for {
+				time.Sleep(time.Duration(conf.CheckMasterInerval) * time.Second)
+				go slaveCheckMaster()
 			}
-
-			go func() {
-				for {
-					time.Sleep(time.Duration(conf.CheckMasterInerval) * time.Second)
-					go slaveCheckMaster()
-				}
-			}()
-		}
+		}()
 	}
 }
 
@@ -104,10 +102,6 @@ func checkNodeValidity() {
 }
 
 func getMasterNode() models.Node {
-	if !conf.IsEasyDeployMode() {
-		return models.Node{}
-	}
-
 	memConfMux.RLock()
 	defer memConfMux.RUnlock()
 
@@ -148,10 +142,6 @@ func initNodeData() {
 }
 
 func updateNodeDataVersion(s *models.Session, node *models.Node, ver *models.DataVersion) (err error) {
-	if !conf.IsEasyDeployMode() {
-		return
-	}
-
 	var _s *models.Session
 	var bs []byte
 
@@ -196,10 +186,6 @@ ERROR:
 }
 
 func syncData2SlaveIfNeed(data interface{}, opUserKey string) []map[string]interface{} {
-	if !conf.IsEasyDeployMode() {
-		return nil
-	}
-
 	var failedNodes []map[string]interface{}
 	for _, node := range memConfNodes {
 		if node.Type == models.NODE_TYPE_MASTER {
