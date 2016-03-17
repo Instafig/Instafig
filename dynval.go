@@ -10,42 +10,111 @@ import (
 	"github.com/zhemao/glisp/interpreter"
 )
 
-var (
-	supportedSymbol = map[string]bool{
-		"APP_KEY":     true,
-		"OS_TYPE":     true,
-		"OS_VERSION":  true,
-		"APP_VERSION": true,
-		"LANG":        true,
-		"DEVICE_ID":   true,
-		"TIMEZONE":    true,
-		"NETWORK":     true,
+type glispSymbolValChecker func(val interface{}) error
+type glispSymbolType int
+
+const (
+	GLISP_SYMBOL_TYPE_APP_VERSION glispSymbolType = iota
+	GLISP_SYMBOL_TYPE_OS_VERSION
+	GLISP_SYMBOL_TYPE_LANG
+	GLISP_SYMBOL_TYPE_OS_TYPE
+	GLISP_SYMBOL_TYPE_DEVICE_ID
+	GLISP_SYMBOL_TYPE_TIMEZONE
+	GLISP_SYMBOL_TYPE_NETWORK
+	GLISP_SYMBOL_TYPE_IP
+)
+
+type glispSymbolContext struct {
+	name    string
+	typ     glispSymbolType
+	checker glispSymbolValChecker
+}
+
+var glispSymbolContexts = []glispSymbolContext{
+	{"OS_TYPE", GLISP_SYMBOL_TYPE_OS_TYPE, stringSymbolChecker},
+	{"OS_VERSION", GLISP_SYMBOL_TYPE_OS_VERSION, versionSymbolChecker},
+	{"APP_VERSION", GLISP_SYMBOL_TYPE_APP_VERSION, versionSymbolChecker},
+	{"LANG", GLISP_SYMBOL_TYPE_LANG, stringSymbolChecker},
+	{"DEVICE_ID", GLISP_SYMBOL_TYPE_DEVICE_ID, stringSymbolChecker},
+	{"TIMEZONE", GLISP_SYMBOL_TYPE_TIMEZONE, stringSymbolChecker},
+	{"NETWORK", GLISP_SYMBOL_TYPE_NETWORK, stringSymbolChecker},
+	{"IP", GLISP_SYMBOL_TYPE_IP, stringSymbolChecker},
+}
+
+func stringSymbolChecker(val interface{}) error {
+	switch val.(type) {
+	case string:
+		return nil
+	default:
+		return fmt.Errorf("symbol value shoule be string type")
+	}
+}
+
+func versionSymbolChecker(val interface{}) error {
+	switch data := val.(type) {
+	case string:
+		if _, err := version.NewVersion(data); err != nil {
+			return fmt.Errorf("bad version format: [%s] - %s", data, err.Error())
+		}
+	default:
+		return fmt.Errorf("symbol value shoule be string type")
 	}
 
+	return nil
+}
+
+type glispFuncContext struct {
+	name string
+	// for positive is accurate arg number, for negative is at least arg numer
+	// for example: if argNum is 2, this func needs 2 args; if argNum is -3, this func needs at least 3 args
+	argNum int
+
+	// if len(supportSymbols) == 0, do not check
+	supportSymbols []glispSymbolType
+}
+
+var glispFuncContexts = []glispFuncContext{
+	// glisp built-in func
+	{"and", -2, nil},
+	{"or", -2, nil},
+	{"not", 1, nil},
+
+	// version-cmp func
+	{"version-cmp", 2, []glispSymbolType{GLISP_SYMBOL_TYPE_APP_VERSION, GLISP_SYMBOL_TYPE_OS_VERSION}},
+	{"ver=", 2, []glispSymbolType{GLISP_SYMBOL_TYPE_APP_VERSION, GLISP_SYMBOL_TYPE_OS_VERSION}},
+	{"ver>", 2, []glispSymbolType{GLISP_SYMBOL_TYPE_APP_VERSION, GLISP_SYMBOL_TYPE_OS_VERSION}},
+	{"ver>=", 2, []glispSymbolType{GLISP_SYMBOL_TYPE_APP_VERSION, GLISP_SYMBOL_TYPE_OS_VERSION}},
+	{"ver<", 2, []glispSymbolType{GLISP_SYMBOL_TYPE_APP_VERSION, GLISP_SYMBOL_TYPE_OS_VERSION}},
+	{"ver<=", 2, []glispSymbolType{GLISP_SYMBOL_TYPE_APP_VERSION, GLISP_SYMBOL_TYPE_OS_VERSION}},
+	{"ver!=", 2, []glispSymbolType{GLISP_SYMBOL_TYPE_APP_VERSION, GLISP_SYMBOL_TYPE_OS_VERSION}},
+
+	{"str=", 2, []glispSymbolType{GLISP_SYMBOL_TYPE_IP, GLISP_SYMBOL_TYPE_APP_VERSION, GLISP_SYMBOL_TYPE_LANG, GLISP_SYMBOL_TYPE_DEVICE_ID, GLISP_SYMBOL_TYPE_NETWORK, GLISP_SYMBOL_TYPE_TIMEZONE, GLISP_SYMBOL_TYPE_OS_TYPE}},
+	{"str!=", 2, []glispSymbolType{GLISP_SYMBOL_TYPE_IP, GLISP_SYMBOL_TYPE_APP_VERSION, GLISP_SYMBOL_TYPE_LANG, GLISP_SYMBOL_TYPE_DEVICE_ID, GLISP_SYMBOL_TYPE_NETWORK, GLISP_SYMBOL_TYPE_TIMEZONE, GLISP_SYMBOL_TYPE_OS_TYPE}},
+	{"str-empty?", 1, []glispSymbolType{GLISP_SYMBOL_TYPE_IP, GLISP_SYMBOL_TYPE_APP_VERSION, GLISP_SYMBOL_TYPE_LANG, GLISP_SYMBOL_TYPE_DEVICE_ID, GLISP_SYMBOL_TYPE_NETWORK, GLISP_SYMBOL_TYPE_TIMEZONE, GLISP_SYMBOL_TYPE_OS_TYPE}},
+	{"str-not-empty?", 1, []glispSymbolType{GLISP_SYMBOL_TYPE_IP, GLISP_SYMBOL_TYPE_APP_VERSION, GLISP_SYMBOL_TYPE_LANG, GLISP_SYMBOL_TYPE_DEVICE_ID, GLISP_SYMBOL_TYPE_NETWORK, GLISP_SYMBOL_TYPE_TIMEZONE, GLISP_SYMBOL_TYPE_OS_TYPE}},
+	{"str-wcmatch?", 2, []glispSymbolType{GLISP_SYMBOL_TYPE_IP, GLISP_SYMBOL_TYPE_APP_VERSION, GLISP_SYMBOL_TYPE_LANG, GLISP_SYMBOL_TYPE_DEVICE_ID, GLISP_SYMBOL_TYPE_NETWORK, GLISP_SYMBOL_TYPE_TIMEZONE, GLISP_SYMBOL_TYPE_OS_TYPE}},
+	{"str-not-wcmatch?", 2, []glispSymbolType{GLISP_SYMBOL_TYPE_IP, GLISP_SYMBOL_TYPE_APP_VERSION, GLISP_SYMBOL_TYPE_LANG, GLISP_SYMBOL_TYPE_DEVICE_ID, GLISP_SYMBOL_TYPE_NETWORK, GLISP_SYMBOL_TYPE_TIMEZONE, GLISP_SYMBOL_TYPE_OS_TYPE}},
+	{"str-contains?", 2, []glispSymbolType{GLISP_SYMBOL_TYPE_IP, GLISP_SYMBOL_TYPE_APP_VERSION, GLISP_SYMBOL_TYPE_LANG, GLISP_SYMBOL_TYPE_DEVICE_ID, GLISP_SYMBOL_TYPE_NETWORK, GLISP_SYMBOL_TYPE_TIMEZONE, GLISP_SYMBOL_TYPE_OS_TYPE}},
+	{"str-not-contains?", 2, []glispSymbolType{GLISP_SYMBOL_TYPE_IP, GLISP_SYMBOL_TYPE_APP_VERSION, GLISP_SYMBOL_TYPE_LANG, GLISP_SYMBOL_TYPE_DEVICE_ID, GLISP_SYMBOL_TYPE_NETWORK, GLISP_SYMBOL_TYPE_TIMEZONE, GLISP_SYMBOL_TYPE_OS_TYPE}},
+}
+
+var (
+	supportedSymbolContexts = map[string]*glispSymbolContext{}
+
 	// all service-defined func must added to supportedFunc
-	supportedFunc = map[string]bool{
-		// glisp built-in func
-		"and": true,
-		"or":  true,
-		// version func
-		"version-cmp": true,
-		"ver=":        true,
-		"ver>":        true,
-		"ver>=":       true,
-		"ver<":        true,
-		"ver<=":       true,
-		"ver!=":       true,
-		// str func
-		"str=":              true,
-		"str!=":             true,
-		"str-empty?":        true,
-		"str-wcmatch?":      true,
-		"str-contains?":     true,
-		"str-not-empty?":    true,
-		"str-not-contains?": true,
-		"str-not-wcmatch?":  true,
-	}
+	supportedFuncContexts = map[string]*glispFuncContext{}
 )
+
+func init() {
+	for _, symbolContext := range glispSymbolContexts {
+		s := symbolContext
+		supportedSymbolContexts[symbolContext.name] = &s
+	}
+	for _, funcContext := range glispFuncContexts {
+		s := funcContext
+		supportedFuncContexts[funcContext.name] = &s
+	}
+}
 
 type DynVal struct {
 	Sexp    glisp.Sexp
@@ -285,81 +354,57 @@ func (dval *DynVal) ToJson() (string, error) {
 }
 
 // Unserialize from JSON to Sexp
-type glispSymbolType int
-
-const (
-	GLISP_SYMBOL_TYPE_VERSION glispSymbolType = iota
-	GLISP_SYMBOL_TYPE_STRING
-	GLISP_SYMBOL_TYPE_NULL
-)
-
-// funcName must be supported glisp func, do not check validity here
-func getGLispFuncType(funcName string) glispSymbolType {
-	switch {
-	case strings.HasPrefix(funcName, "ver"):
-		return GLISP_SYMBOL_TYPE_VERSION
-	case strings.HasPrefix(funcName, "str"):
-		return GLISP_SYMBOL_TYPE_STRING
-	default:
-		return GLISP_SYMBOL_TYPE_NULL
-	}
-}
-
-func plainDataToSexpString(data interface{}, symbolType glispSymbolType) (string, error) {
+func plainDataToSexpString(data interface{}, funcContext *glispFuncContext, symbolContext *glispSymbolContext) (string, error) {
 	switch data := data.(type) {
 	case bool:
+		if symbolContext != nil && symbolContext.checker != nil {
+			if err := symbolContext.checker(data); err != nil {
+				return "", err
+			}
+
+		}
 		return strconv.FormatBool(data), nil
 
 	case int:
+		if symbolContext != nil && symbolContext.checker != nil {
+			if err := symbolContext.checker(data); err != nil {
+				return "", err
+			}
+
+		}
 		return string(data), nil
 
 	case float64:
+		if symbolContext != nil && symbolContext.checker != nil {
+			if err := symbolContext.checker(data); err != nil {
+				return "", err
+			}
+
+		}
 		return strconv.FormatFloat(data, 'f', -1, 64), nil
 
 	case string:
-		if symbolType == GLISP_SYMBOL_TYPE_VERSION {
-			if _, err := version.NewVersion(data); err != nil {
-				return "", fmt.Errorf("bad version format: [%s] - %s", data, err.Error())
+		if symbolContext != nil && symbolContext.checker != nil {
+			if err := symbolContext.checker(data); err != nil {
+				return "", err
 			}
+
 		}
 		return `"` + data + `"`, nil // TODO escape double quote
 
 	case map[string]interface{}:
-		if val, ok := data["symbol"]; ok { // Symbol
-			if !supportedSymbol[val.(string)] {
-				return "", fmt.Errorf("unknown symbol: " + val.(string))
-			}
-			return string(val.(string)), nil
-		}
-		if val, ok := data["func"]; ok { // cond-values style function call
-			if !supportedFunc[val.(string)] {
-				return "", fmt.Errorf("unknown func: " + val.(string))
-			}
-			ret := "(" + val.(string)
-			args := data["arguments"].([]interface{})
-			for _, argval := range args {
-				ret += " "
-				s, err := plainDataToSexpString(argval, getGLispFuncType(val.(string)))
-				if err != nil {
-					return "", err
-				}
-				ret += s
-			}
-			ret += ")"
-			return ret, nil
-		}
 		if val, ok := data["cond-values"]; ok { // cond-values exp
 			ret := "(cond-values"
 			conds := val.([]interface{})
 			for _, cond := range conds {
 				ret += " "
-				s, err := plainDataToSexpString(cond.(map[string]interface{})["condition"], symbolType)
+				s, err := plainDataToSexpString(cond.(map[string]interface{})["condition"], nil, nil)
 				if err != nil {
 					return "", err
 				}
 				ret += s
 				ret += " "
-				s, err = plainDataToSexpString(cond.(map[string]interface{})["value"], symbolType)
+				s, err = plainDataToSexpString(cond.(map[string]interface{})["value"], nil, nil)
 				if err != nil {
 					return "", err
 				}
@@ -367,7 +412,7 @@ func plainDataToSexpString(data interface{}, symbolType glispSymbolType) (string
 			}
 			if dft, ok := data["default-value"]; ok {
 				ret += " "
-				s, err := plainDataToSexpString(dft, symbolType)
+				s, err := plainDataToSexpString(dft, nil, nil)
 				if err != nil {
 					return "", nil
 				}
@@ -375,6 +420,65 @@ func plainDataToSexpString(data interface{}, symbolType glispSymbolType) (string
 			}
 			ret += ")"
 			return ret, nil
+		}
+
+		if val, ok := data["func"]; ok { // cond-values style function call
+			funcContext = supportedFuncContexts[val.(string)]
+			if funcContext == nil {
+				return "", fmt.Errorf("unknown func: " + val.(string))
+			}
+
+			ret := "(" + val.(string)
+			args := data["arguments"].([]interface{})
+
+			// we are in arg list of a func
+			// 1. check arg number
+			switch {
+			case len(args) == 0:
+				return "", fmt.Errorf("must have a symbol in func <%s> arg list", funcContext.name)
+			case funcContext.argNum >= 0 && len(args) != funcContext.argNum:
+				return "", fmt.Errorf("func <%s> must have %d args", funcContext.name, funcContext.argNum)
+			case funcContext.argNum < 0 && len(args) < funcContext.argNum:
+				return "", fmt.Errorf("func <%s> must have at least %d args", funcContext.name, funcContext.argNum)
+			}
+
+			// 2. check symbol validity
+			var symbol map[string]interface{}
+			var ok bool
+			if symbol, ok = args[0].(map[string]interface{}); !ok {
+				return "", fmt.Errorf("1st element of func <%s> arg list must be symbol", funcContext.name)
+			}
+			symbolContext = supportedSymbolContexts[symbol["symbol"].(string)]
+			if symbolContext == nil {
+				return "", fmt.Errorf("unsupported symbol: %s", symbol["symbol"].(string))
+			}
+			if len(funcContext.supportSymbols) > 0 {
+				ok = false
+				for _, _symbolContext := range funcContext.supportSymbols {
+					if symbolContext.typ == _symbolContext {
+						ok = true
+						break
+					}
+				}
+				if !ok {
+					return "", fmt.Errorf("symbol <%s> is not supported in func <%s>", symbolContext.name, funcContext.name)
+				}
+			}
+
+			for _, argval := range args {
+				ret += " "
+				s, err := plainDataToSexpString(argval, funcContext, symbolContext)
+				if err != nil {
+					return "", err
+				}
+				ret += s
+			}
+			ret += ")"
+			return ret, nil
+		}
+
+		if val, ok := data["symbol"]; ok { // Symbol
+			return string(val.(string)), nil
 		}
 
 		for k, _ := range data {
@@ -387,7 +491,7 @@ func plainDataToSexpString(data interface{}, symbolType glispSymbolType) (string
 			if idx != 0 {
 				ret += " "
 			}
-			s, err := plainDataToSexpString(val, symbolType)
+			s, err := plainDataToSexpString(val, funcContext, symbolContext)
 			if err != nil {
 				return "", err
 			}
@@ -407,7 +511,7 @@ func JsonToSexpString(json_str string) (string, error) {
 		return "", err
 	}
 
-	return plainDataToSexpString(f, GLISP_SYMBOL_TYPE_NULL)
+	return plainDataToSexpString(f, nil, nil)
 }
 
 func CheckJsonString(j string) error {

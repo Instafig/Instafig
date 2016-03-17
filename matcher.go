@@ -45,7 +45,10 @@ func transConfig(m *models.Config) *Config {
 	case models.CONF_V_TYPE_STRING:
 		config.V = m.V
 	case models.CONF_V_TYPE_CODE:
-		sexp, _ := JsonToSexpString(m.V)
+		sexp, err := JsonToSexpString(m.V)
+		if err != nil {
+			return config
+		}
 		config.V = NewDynValFromSexpStringDefault(sexp)
 	case models.CONF_V_TYPE_TEMPLATE:
 		config.V = m.V
