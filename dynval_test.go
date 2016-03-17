@@ -191,8 +191,6 @@ func TestVersionCondConfigValue(t *testing.T) {
 	assert.True(t, EvalDynValNoErr(dynval, &ClientData{OSVersion: "0.0.1"}) == "0")
 	assert.True(t, EvalDynValNoErr(dynval, &ClientData{OSVersion: "0.9.9"}) == "0")
 	assert.True(t, EvalDynValNoErr(dynval, &ClientData{OSVersion: "1.0"}) == "1")
-
-	git 
 	assert.True(t, EvalDynValNoErr(dynval, &ClientData{OSVersion: "1.1"}) == "0")
 	assert.True(t, EvalDynValNoErr(dynval, &ClientData{OSVersion: "10.1.1"}) == "0")
 }
