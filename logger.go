@@ -28,7 +28,12 @@ const (
 )
 
 func init() {
-	logger = newLogger(conf.LogDir, "log", LOG_LEVEL_DEBUG)
+	if conf.DebugMode {
+		logger = newLogger(conf.LogDir, "log", LOG_LEVEL_DEBUG)
+	} else {
+		logger = newLogger(conf.LogDir, "log", LOG_LEVEL_INFO)
+	}
+
 	requestLogger = newLogger(conf.LogDir, "request", LOG_LEVEL_INFO)
 }
 
