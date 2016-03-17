@@ -209,6 +209,12 @@ func TestStrCondConfigValue(t *testing.T) {
 	json = `{"cond-values":[{"condition":{"arguments":[{"symbol":"IP"}],"func":"str="},"value":0}],"default-value":1}`
 	assert.True(t, CheckJsonString(json) != nil)
 
+	json = `{"cond-values":[{"condition":{"arguments":[{"symbol":"IP"}, "adsfa"],"func":"str-not-empty?"},"value":0}],"default-value":1}`
+	assert.True(t, CheckJsonString(json) != nil)
+
+	json = `{"cond-values":[{"condition":{"arguments":[{"symbol":"IP"}, "adsfa"],"func":"str-empty?"},"value":0}],"default-value":1}`
+	assert.True(t, CheckJsonString(json) != nil)
+
 	// good json
 	json = `{"cond-values":[{"condition":{"arguments":[{"symbol":"LANG"},"en"],"func":"str="},"value":0}],"default-value":1}`
 	sep, _ := JsonToSexpString(json)
