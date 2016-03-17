@@ -76,8 +76,8 @@ func TestJsonToSexpString(t *testing.T) {
 	expected_code := `(cond (and (= LANG "zh") (>= APP_VERSION "1.3.1") (< APP_VERSION "1.5")) 1 (and (= LANG "zh") (or (< APP_VERSION "1.3.1") (>= APP_VERSION "1.5"))) 2 (and (not= LANG "zh") (>= APP_VERSION "1.3.1") (< APP_VERSION "1.5")) 3 (and (not= LANG "zh") (or (< APP_VERSION "1.3.1") (>= APP_VERSION "1.5"))) 4 5)`
 	json := `[{"symbol":"cond"},[{"symbol":"and"},[{"symbol":"="},{"symbol":"LANG"},"zh"],[{"symbol":"\u003e="},{"symbol":"APP_VERSION"},"1.3.1"],[{"symbol":"\u003c"},{"symbol":"APP_VERSION"},"1.5"]],1,[{"symbol":"and"},[{"symbol":"="},{"symbol":"LANG"},"zh"],[{"symbol":"or"},[{"symbol":"\u003c"},{"symbol":"APP_VERSION"},"1.3.1"],[{"symbol":"\u003e="},{"symbol":"APP_VERSION"},"1.5"]]],2,[{"symbol":"and"},[{"symbol":"not="},{"symbol":"LANG"},"zh"],[{"symbol":"\u003e="},{"symbol":"APP_VERSION"},"1.3.1"],[{"symbol":"\u003c"},{"symbol":"APP_VERSION"},"1.5"]],3,[{"symbol":"and"},[{"symbol":"not="},{"symbol":"LANG"},"zh"],[{"symbol":"or"},[{"symbol":"\u003c"},{"symbol":"APP_VERSION"},"1.3.1"],[{"symbol":"\u003e="},{"symbol":"APP_VERSION"},"1.5"]]],4,5]`
 	code, err := JsonToSexpString(json)
-	assert.True(t, err != nil)
-	assert.False(t, code == expected_code)
+	assert.True(t, err == nil)
+	assert.True(t, code == expected_code)
 }
 
 func TestCondValuesToJson(t *testing.T) {
