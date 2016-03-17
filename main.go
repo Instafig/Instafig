@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Instafig/Instafig/conf"
 	"github.com/facebookgo/grace/gracehttp"
@@ -18,6 +19,10 @@ func main() {
 	wd, _ := os.Getwd()
 	pidFile, err := os.OpenFile(filepath.Join(wd, "instafig.pid"), os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
+		logger.Fatal(map[string]interface{}{
+			"type":  "start_error",
+			"error": fmt.Sprintf("failed to create pid file: %s", err.Error()),
+		})
 		log.Printf("failed to create pid file: %s", err.Error())
 		os.Exit(1)
 	}
@@ -34,6 +39,10 @@ func main() {
 	ginIns.Use(gin.Recovery())
 	if conf.DebugMode {
 		ginIns.Use(gin.Logger())
+	}
+
+	if conf.RequestLogEnable {
+		ginIns.Use(requestLoggerHandler())
 	}
 
 	if conf.WebDebugMode {
@@ -133,6 +142,36 @@ func main() {
 		&http.Server{Addr: fmt.Sprintf(":%d", conf.Port), Handler: ginIns},
 		&http.Server{Addr: conf.NodeAddr, Handler: ginInsNode})
 	if err != nil {
+		logger.Fatal(map[string]interface{}{
+			"type":  "start_error",
+			"error": err.Error(),
+		})
 		log.Printf("fatal error: %s", err.Error())
+	}
+}
+
+func requestLoggerHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		start := time.Now()
+		c.Next()
+
+		dur := time.Since(start) / time.Millisecond
+
+		requestLogData := getRequestLogDataFromContext(c)
+		logInfo := map[string]interface{}{
+			"code":   c.Writer.Status(),
+			"dur":    dur,
+			"remote": c.ClientIP(),
+			"url":    c.Request.URL.Path,
+			"query":  c.Request.URL.RawQuery,
+			"method": c.Request.Method,
+			"data":   requestLogData,
+		}
+
+		if c.Writer.Status() >= 400 {
+			requestLogger.Error(logInfo)
+		} else {
+			requestLogger.Info(logInfo)
+		}
 	}
 }

@@ -40,6 +40,12 @@ var (
 	}
 )
 
+type RequestLogData struct {
+	Status bool   `json:"status"`
+	Error  string `json:"err"`
+	Msg    string `json:"msg"`
+}
+
 func Success(c *gin.Context, data interface{}) {
 	res := gin.H{"status": true}
 	if data != nil {
@@ -47,6 +53,7 @@ func Success(c *gin.Context, data interface{}) {
 	}
 
 	setServiceStatus(c, true)
+	setRequestLogData(c, &RequestLogData{Status: true})
 	c.JSON(http.StatusOK, res)
 }
 
@@ -62,6 +69,7 @@ func Error(c *gin.Context, errorCode int, data ...interface{}) {
 		}
 	}
 
+	setRequestLogData(c, &RequestLogData{Status: false, Error: errCodeStr, Msg: errMsg})
 	setServiceStatus(c, false)
 	setServiceErrorCode(c, errCodeStr)
 	c.JSON(http.StatusOK, gin.H{"status": false, "code": errCodeStr, "msg": errMsg})
@@ -123,6 +131,23 @@ func getClientData(c *gin.Context) *ClientData {
 	}
 
 	data := i.(*ClientData)
+
+	return data
+}
+
+func setRequestLogData(c *gin.Context, data *RequestLogData) {
+	if conf.RequestLogEnable {
+		c.Set("_request_log_", data)
+	}
+}
+
+func getRequestLogDataFromContext(c *gin.Context) *RequestLogData {
+	i, exists := c.Get("_request_log_")
+	if !exists || i == nil {
+		return nil
+	}
+
+	data := i.(*RequestLogData)
 
 	return data
 }

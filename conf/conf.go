@@ -29,9 +29,11 @@ var (
 
 	UserPassCodeEncryptKey string
 
-	WebDebugMode bool
-	DebugMode    bool
-	ShowSql      bool
+	WebDebugMode     bool
+	DebugMode        bool
+	ShowSql          bool
+	RequestLogEnable bool
+	LogDir           string
 
 	StatisticEnable        bool
 	InfluxURL              string
@@ -120,6 +122,20 @@ func init() {
 	}
 	if Port, err = strconv.Atoi(port); err != nil {
 		log.Printf("No correct port(%s): %s", port, err.Error())
+		os.Exit(1)
+	}
+
+	if requestLogEnable, _ := config.GetValue("", "request_log_enable"); requestLogEnable == "yes" {
+		RequestLogEnable = true
+	}
+
+	LogDir, _ = config.GetValue("", "log_dir")
+	if LogDir, err = filepath.Abs(LogDir); err != nil {
+		log.Printf("Bad log_dir value: %s - %s", LogDir, err.Error())
+		os.Exit(1)
+	}
+	if exec.Command("mkdir", "-p", LogDir).Run() != nil {
+		log.Printf("Failed to create log_dir value: %s - %s", LogDir, err.Error())
 		os.Exit(1)
 	}
 

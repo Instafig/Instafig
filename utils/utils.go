@@ -15,3 +15,11 @@ func GenerateKey() string {
 func GetNowSecond() int {
 	return int(time.Now().Unix())
 }
+
+func GetNowMillisecond() int64 {
+	return time.Now().UnixNano() / int64(time.Millisecond/time.Nanosecond)
+}
+
+func GetNowStringYMD() string {
+	return time.Now().Format("2006-01-02")
+}
