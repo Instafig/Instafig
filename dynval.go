@@ -25,9 +25,9 @@ const (
 )
 
 type glispSymbolContext struct {
-	name    string
-	typ     glispSymbolType
-	checker glispSymbolValChecker
+	name      string
+	typ       glispSymbolType
+	checkFunc glispSymbolValChecker
 }
 
 var glispSymbolContexts = []glispSymbolContext{
@@ -420,8 +420,8 @@ func (dval *DynVal) ToJson() (string, error) {
 func plainDataToSexpString(data interface{}, funcContext *glispFuncContext, symbolContext *glispSymbolContext) (string, error) {
 	switch data := data.(type) {
 	case bool:
-		if symbolContext != nil && symbolContext.checker != nil {
-			if err := symbolContext.checker(data); err != nil {
+		if symbolContext != nil && symbolContext.checkFunc != nil {
+			if err := symbolContext.checkFunc(data); err != nil {
 				return "", err
 			}
 
@@ -429,8 +429,8 @@ func plainDataToSexpString(data interface{}, funcContext *glispFuncContext, symb
 		return strconv.FormatBool(data), nil
 
 	case int:
-		if symbolContext != nil && symbolContext.checker != nil {
-			if err := symbolContext.checker(data); err != nil {
+		if symbolContext != nil && symbolContext.checkFunc != nil {
+			if err := symbolContext.checkFunc(data); err != nil {
 				return "", err
 			}
 
@@ -438,8 +438,8 @@ func plainDataToSexpString(data interface{}, funcContext *glispFuncContext, symb
 		return string(data), nil
 
 	case float64:
-		if symbolContext != nil && symbolContext.checker != nil {
-			if err := symbolContext.checker(data); err != nil {
+		if symbolContext != nil && symbolContext.checkFunc != nil {
+			if err := symbolContext.checkFunc(data); err != nil {
 				return "", err
 			}
 
@@ -447,8 +447,8 @@ func plainDataToSexpString(data interface{}, funcContext *glispFuncContext, symb
 		return strconv.FormatFloat(data, 'f', -1, 64), nil
 
 	case string:
-		if symbolContext != nil && symbolContext.checker != nil {
-			if err := symbolContext.checker(data); err != nil {
+		if symbolContext != nil && symbolContext.checkFunc != nil {
+			if err := symbolContext.checkFunc(data); err != nil {
 				return "", err
 			}
 
@@ -503,7 +503,7 @@ func plainDataToSexpString(data interface{}, funcContext *glispFuncContext, symb
 				return "", fmt.Errorf("must have a symbol in func <%s> arg list", funcContext.name)
 			case funcContext.argNum >= 0 && len(args) != funcContext.argNum:
 				return "", fmt.Errorf("func <%s> must have %d args", funcContext.name, funcContext.argNum)
-			case funcContext.argNum < 0 && len(args) < funcContext.argNum:
+			case funcContext.argNum < 0 && len(args) < -funcContext.argNum:
 				return "", fmt.Errorf("func <%s> must have at least %d args", funcContext.name, funcContext.argNum)
 			}
 
