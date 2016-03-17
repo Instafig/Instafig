@@ -109,18 +109,41 @@ func TestJsonToCondValues(t *testing.T) {
 }
 
 func TestVersionCondConfigValue(t *testing.T) {
+	// bad json
 	json := `{"cond-values":[{"condition":{"arguments":[{"symbol":"APP_VERSION"},"1.0"],"func":"ver="},"value":"0"}],"default-value":"1"}`
-	_, err := JsonToSexpString(json)
-	assert.True(t, err == nil)
+	assert.True(t, CheckJsonString(json) == nil)
 
 	json = `{"cond-values":[{"condition":{"arguments":[{"symbol":"APP_VERSION"},"1.1.1"],"func":"ver="},"value":"0"}],"default-value":"1"}`
-	_, err = JsonToSexpString(json)
-	assert.True(t, err == nil)
+	assert.True(t, CheckJsonString(json)  == nil)
+
+	json = `{"cond-values":[{"condition":{"arguments":[{"symbol":"APP_VERSION"}],"func":"ver="},"value":"0"}],"default-value":"1"}`
+	assert.True(t, CheckJsonString(json)  != nil)
+
+	json = `{"cond-values":[{"condition":{"arguments":[{"symbol":"APP_VERSION", "1.0", "1.2"}],"func":"ver="},"value":"0"}],"default-value":"1"}`
+	assert.True(t, CheckJsonString(json)  != nil)
 
 	json = `{"cond-values":[{"condition":{"arguments":[{"symbol":"APP_VERSION"},"1.1.1.2.3.4"],"func":"ver="},"value":"0"}],"default-value":"1"}`
-	_, err = JsonToSexpString(json)
-	assert.True(t, err != nil)
+	assert.True(t, CheckJsonString(json)  != nil)
 
+	json = `{"cond-values":[{"condition":{"arguments":[{"symbol":"LANG"},"1.1"],"func":"ver="},"value":"0"}],"default-value":"1"}`
+	assert.True(t, CheckJsonString(json)  != nil)
+
+	json = `{"cond-values":[{"condition":{"arguments":[{"symbol":"IP"},"1.1"],"func":"ver="},"value":"0"}],"default-value":"1"}`
+	assert.True(t, CheckJsonString(json)  != nil)
+
+	json = `{"cond-values":[{"condition":{"arguments":[{"symbol":"OS_TYPE"},"1.1"],"func":"ver="},"value":"0"}],"default-value":"1"}`
+	assert.True(t, CheckJsonString(json)  != nil)
+
+	json = `{"cond-values":[{"condition":{"arguments":[{"symbol":"DEVICE_ID"},"1.1"],"func":"ver="},"value":"0"}],"default-value":"1"}`
+	assert.True(t, CheckJsonString(json)  != nil)
+
+	json = `{"cond-values":[{"condition":{"arguments":[{"symbol":"TIMEZONE"},"1.1"],"func":"ver="},"value":"0"}],"default-value":"1"}`
+	assert.True(t, CheckJsonString(json)  != nil)
+
+	json = `{"cond-values":[{"condition":{"arguments":[{"symbol":"NETWORK"},"1.1"],"func":"ver="},"value":"0"}],"default-value":"1"}`
+	assert.True(t, CheckJsonString(json)  != nil)
+
+	// good json
 	json = `{"cond-values":[{"condition":{"arguments":[{"symbol":"APP_VERSION"},"1.0"],"func":"ver="},"value":"0"}],"default-value":"1"}`
 	sep, _ := JsonToSexpString(json)
 	dynval := NewDynValFromSexpStringDefault(sep)
