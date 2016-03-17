@@ -10,7 +10,7 @@ import (
 	"github.com/zhemao/glisp/interpreter"
 )
 
-type glispSymbolValChecker func(val interface{}) error
+type glispFuncCheckFunc func(val interface{}) error
 type glispSymbolType int
 
 const (
@@ -25,23 +25,22 @@ const (
 )
 
 type glispSymbolContext struct {
-	name      string
-	typ       glispSymbolType
-	checkFunc glispSymbolValChecker
+	name string
+	typ  glispSymbolType
 }
 
 var glispSymbolContexts = []glispSymbolContext{
-	{"OS_TYPE", GLISP_SYMBOL_TYPE_OS_TYPE, stringSymbolChecker},
-	{"OS_VERSION", GLISP_SYMBOL_TYPE_OS_VERSION, versionSymbolChecker},
-	{"APP_VERSION", GLISP_SYMBOL_TYPE_APP_VERSION, versionSymbolChecker},
-	{"LANG", GLISP_SYMBOL_TYPE_LANG, stringSymbolChecker},
-	{"DEVICE_ID", GLISP_SYMBOL_TYPE_DEVICE_ID, stringSymbolChecker},
-	{"TIMEZONE", GLISP_SYMBOL_TYPE_TIMEZONE, stringSymbolChecker},
-	{"NETWORK", GLISP_SYMBOL_TYPE_NETWORK, stringSymbolChecker},
-	{"IP", GLISP_SYMBOL_TYPE_IP, stringSymbolChecker},
+	{"OS_TYPE", GLISP_SYMBOL_TYPE_OS_TYPE},
+	{"OS_VERSION", GLISP_SYMBOL_TYPE_OS_VERSION},
+	{"APP_VERSION", GLISP_SYMBOL_TYPE_APP_VERSION},
+	{"LANG", GLISP_SYMBOL_TYPE_LANG},
+	{"DEVICE_ID", GLISP_SYMBOL_TYPE_DEVICE_ID},
+	{"TIMEZONE", GLISP_SYMBOL_TYPE_TIMEZONE},
+	{"NETWORK", GLISP_SYMBOL_TYPE_NETWORK},
+	{"IP", GLISP_SYMBOL_TYPE_IP},
 }
 
-func stringSymbolChecker(val interface{}) error {
+func stringFuncCheckFunc(val interface{}) error {
 	switch val.(type) {
 	case string:
 		return nil
@@ -50,7 +49,7 @@ func stringSymbolChecker(val interface{}) error {
 	}
 }
 
-func versionSymbolChecker(val interface{}) error {
+func versionFuncCheckFunc(val interface{}) error {
 	switch data := val.(type) {
 	case string:
 		if _, err := version.NewVersion(data); err != nil {
@@ -73,49 +72,58 @@ type glispFuncContext struct {
 	supportSymbols []glispSymbolType
 
 	multiArgumentsSymbol bool
+
+	checkFunc glispFuncCheckFunc
 }
 
 var glispFuncContexts = []glispFuncContext{
 	// glisp built-in func
-	{"and", -2, nil, true},
-	{"or", -2, nil, true},
-	{"not", 1, nil, true},
+	{"and", -2, nil, true, nil},
+	{"or", -2, nil, true, nil},
+	{"not", 1, nil, true, nil},
 
 	// version-cmp func
 	{"version-cmp",
 		2,
 		[]glispSymbolType{GLISP_SYMBOL_TYPE_APP_VERSION, GLISP_SYMBOL_TYPE_OS_VERSION},
 		false,
+		versionFuncCheckFunc,
 	},
 	{"ver=",
 		2,
 		[]glispSymbolType{GLISP_SYMBOL_TYPE_APP_VERSION, GLISP_SYMBOL_TYPE_OS_VERSION},
 		false,
+		versionFuncCheckFunc,
 	},
 	{"ver>",
 		2,
 		[]glispSymbolType{GLISP_SYMBOL_TYPE_APP_VERSION, GLISP_SYMBOL_TYPE_OS_VERSION},
 		false,
+		versionFuncCheckFunc,
 	},
 	{"ver>=",
 		2,
 		[]glispSymbolType{GLISP_SYMBOL_TYPE_APP_VERSION, GLISP_SYMBOL_TYPE_OS_VERSION},
 		false,
+		versionFuncCheckFunc,
 	},
 	{"ver<",
 		2,
 		[]glispSymbolType{GLISP_SYMBOL_TYPE_APP_VERSION, GLISP_SYMBOL_TYPE_OS_VERSION},
 		false,
+		versionFuncCheckFunc,
 	},
 	{"ver<=",
 		2,
 		[]glispSymbolType{GLISP_SYMBOL_TYPE_APP_VERSION, GLISP_SYMBOL_TYPE_OS_VERSION},
 		false,
+		versionFuncCheckFunc,
 	},
 	{"ver!=",
 		2,
 		[]glispSymbolType{GLISP_SYMBOL_TYPE_APP_VERSION, GLISP_SYMBOL_TYPE_OS_VERSION},
 		false,
+		versionFuncCheckFunc,
 	},
 
 	// str func
@@ -123,41 +131,49 @@ var glispFuncContexts = []glispFuncContext{
 		2,
 		[]glispSymbolType{GLISP_SYMBOL_TYPE_IP, GLISP_SYMBOL_TYPE_LANG, GLISP_SYMBOL_TYPE_DEVICE_ID, GLISP_SYMBOL_TYPE_NETWORK, GLISP_SYMBOL_TYPE_TIMEZONE, GLISP_SYMBOL_TYPE_OS_TYPE},
 		false,
+		stringFuncCheckFunc,
 	},
 	{"str!=",
 		2,
 		[]glispSymbolType{GLISP_SYMBOL_TYPE_IP, GLISP_SYMBOL_TYPE_LANG, GLISP_SYMBOL_TYPE_DEVICE_ID, GLISP_SYMBOL_TYPE_NETWORK, GLISP_SYMBOL_TYPE_TIMEZONE, GLISP_SYMBOL_TYPE_OS_TYPE},
 		false,
+		stringFuncCheckFunc,
 	},
 	{"str-empty?",
 		1,
 		[]glispSymbolType{GLISP_SYMBOL_TYPE_IP, GLISP_SYMBOL_TYPE_LANG, GLISP_SYMBOL_TYPE_DEVICE_ID, GLISP_SYMBOL_TYPE_NETWORK, GLISP_SYMBOL_TYPE_TIMEZONE, GLISP_SYMBOL_TYPE_OS_TYPE},
 		false,
+		stringFuncCheckFunc,
 	},
 	{"str-not-empty?",
 		1,
 		[]glispSymbolType{GLISP_SYMBOL_TYPE_IP, GLISP_SYMBOL_TYPE_LANG, GLISP_SYMBOL_TYPE_DEVICE_ID, GLISP_SYMBOL_TYPE_NETWORK, GLISP_SYMBOL_TYPE_TIMEZONE, GLISP_SYMBOL_TYPE_OS_TYPE},
 		false,
+		stringFuncCheckFunc,
 	},
 	{"str-wcmatch?",
 		2,
 		[]glispSymbolType{GLISP_SYMBOL_TYPE_IP, GLISP_SYMBOL_TYPE_LANG, GLISP_SYMBOL_TYPE_DEVICE_ID, GLISP_SYMBOL_TYPE_NETWORK, GLISP_SYMBOL_TYPE_TIMEZONE, GLISP_SYMBOL_TYPE_OS_TYPE},
 		false,
+		stringFuncCheckFunc,
 	},
 	{"str-not-wcmatch?",
 		2,
 		[]glispSymbolType{GLISP_SYMBOL_TYPE_IP, GLISP_SYMBOL_TYPE_LANG, GLISP_SYMBOL_TYPE_DEVICE_ID, GLISP_SYMBOL_TYPE_NETWORK, GLISP_SYMBOL_TYPE_TIMEZONE, GLISP_SYMBOL_TYPE_OS_TYPE},
 		false,
+		stringFuncCheckFunc,
 	},
 	{"str-contains?",
 		2,
 		[]glispSymbolType{GLISP_SYMBOL_TYPE_IP, GLISP_SYMBOL_TYPE_LANG, GLISP_SYMBOL_TYPE_DEVICE_ID, GLISP_SYMBOL_TYPE_NETWORK, GLISP_SYMBOL_TYPE_TIMEZONE, GLISP_SYMBOL_TYPE_OS_TYPE},
 		false,
+		stringFuncCheckFunc,
 	},
 	{"str-not-contains?",
 		2,
 		[]glispSymbolType{GLISP_SYMBOL_TYPE_IP, GLISP_SYMBOL_TYPE_LANG, GLISP_SYMBOL_TYPE_DEVICE_ID, GLISP_SYMBOL_TYPE_NETWORK, GLISP_SYMBOL_TYPE_TIMEZONE, GLISP_SYMBOL_TYPE_OS_TYPE},
 		false,
+		stringFuncCheckFunc,
 	},
 }
 
@@ -417,11 +433,11 @@ func (dval *DynVal) ToJson() (string, error) {
 }
 
 // Unserialize from JSON to Sexp
-func plainDataToSexpString(data interface{}, funcContext *glispFuncContext, symbolContext *glispSymbolContext) (string, error) {
+func plainDataToSexpString(data interface{}, funcContext *glispFuncContext) (string, error) {
 	switch data := data.(type) {
 	case bool:
-		if symbolContext != nil && symbolContext.checkFunc != nil {
-			if err := symbolContext.checkFunc(data); err != nil {
+		if funcContext != nil && funcContext.checkFunc != nil {
+			if err := funcContext.checkFunc(data); err != nil {
 				return "", err
 			}
 
@@ -429,8 +445,8 @@ func plainDataToSexpString(data interface{}, funcContext *glispFuncContext, symb
 		return strconv.FormatBool(data), nil
 
 	case int:
-		if symbolContext != nil && symbolContext.checkFunc != nil {
-			if err := symbolContext.checkFunc(data); err != nil {
+		if funcContext != nil && funcContext.checkFunc != nil {
+			if err := funcContext.checkFunc(data); err != nil {
 				return "", err
 			}
 
@@ -438,8 +454,8 @@ func plainDataToSexpString(data interface{}, funcContext *glispFuncContext, symb
 		return string(data), nil
 
 	case float64:
-		if symbolContext != nil && symbolContext.checkFunc != nil {
-			if err := symbolContext.checkFunc(data); err != nil {
+		if funcContext != nil && funcContext.checkFunc != nil {
+			if err := funcContext.checkFunc(data); err != nil {
 				return "", err
 			}
 
@@ -447,8 +463,8 @@ func plainDataToSexpString(data interface{}, funcContext *glispFuncContext, symb
 		return strconv.FormatFloat(data, 'f', -1, 64), nil
 
 	case string:
-		if symbolContext != nil && symbolContext.checkFunc != nil {
-			if err := symbolContext.checkFunc(data); err != nil {
+		if funcContext != nil && funcContext.checkFunc != nil {
+			if err := funcContext.checkFunc(data); err != nil {
 				return "", err
 			}
 
@@ -461,13 +477,13 @@ func plainDataToSexpString(data interface{}, funcContext *glispFuncContext, symb
 			conds := val.([]interface{})
 			for _, cond := range conds {
 				ret += " "
-				s, err := plainDataToSexpString(cond.(map[string]interface{})["condition"], nil, nil)
+				s, err := plainDataToSexpString(cond.(map[string]interface{})["condition"], nil)
 				if err != nil {
 					return "", err
 				}
 				ret += s
 				ret += " "
-				s, err = plainDataToSexpString(cond.(map[string]interface{})["value"], nil, nil)
+				s, err = plainDataToSexpString(cond.(map[string]interface{})["value"], nil)
 				if err != nil {
 					return "", err
 				}
@@ -475,7 +491,7 @@ func plainDataToSexpString(data interface{}, funcContext *glispFuncContext, symb
 			}
 			if dft, ok := data["default-value"]; ok {
 				ret += " "
-				s, err := plainDataToSexpString(dft, nil, nil)
+				s, err := plainDataToSexpString(dft, nil)
 				if err != nil {
 					return "", nil
 				}
@@ -487,7 +503,6 @@ func plainDataToSexpString(data interface{}, funcContext *glispFuncContext, symb
 
 		if val, ok := data["func"]; ok { // cond-values style function call
 			// shadow super symbolContext
-			symbolContext = nil
 			funcContext = supportedFuncContexts[val.(string)]
 			if funcContext == nil {
 				return "", fmt.Errorf("unknown func: " + val.(string))
@@ -504,7 +519,7 @@ func plainDataToSexpString(data interface{}, funcContext *glispFuncContext, symb
 			case funcContext.argNum >= 0 && len(args) != funcContext.argNum:
 				return "", fmt.Errorf("func <%s> must have %d args", funcContext.name, funcContext.argNum)
 			case funcContext.argNum < 0 && len(args) < -funcContext.argNum:
-				return "", fmt.Errorf("func <%s> must have at least %d args", funcContext.name, funcContext.argNum)
+				return "", fmt.Errorf("func <%s> must have at least %d args", funcContext.name, -funcContext.argNum)
 			}
 
 			if !funcContext.multiArgumentsSymbol {
@@ -514,7 +529,7 @@ func plainDataToSexpString(data interface{}, funcContext *glispFuncContext, symb
 				if symbol, ok = args[0].(map[string]interface{}); !ok {
 					return "", fmt.Errorf("1st element of func <%s> arg list must be symbol", funcContext.name)
 				}
-				symbolContext = supportedSymbolContexts[symbol["symbol"].(string)]
+				symbolContext := supportedSymbolContexts[symbol["symbol"].(string)]
 				if symbolContext == nil {
 					return "", fmt.Errorf("unsupported symbol: %s", symbol["symbol"].(string))
 				}
@@ -534,7 +549,7 @@ func plainDataToSexpString(data interface{}, funcContext *glispFuncContext, symb
 
 			for _, argval := range args {
 				ret += " "
-				s, err := plainDataToSexpString(argval, funcContext, symbolContext)
+				s, err := plainDataToSexpString(argval, funcContext)
 				if err != nil {
 					return "", err
 				}
@@ -558,7 +573,7 @@ func plainDataToSexpString(data interface{}, funcContext *glispFuncContext, symb
 			if idx != 0 {
 				ret += " "
 			}
-			s, err := plainDataToSexpString(val, funcContext, symbolContext)
+			s, err := plainDataToSexpString(val, funcContext)
 			if err != nil {
 				return "", err
 			}
@@ -578,7 +593,7 @@ func JsonToSexpString(json_str string) (string, error) {
 		return "", err
 	}
 
-	return plainDataToSexpString(f, nil, nil)
+	return plainDataToSexpString(f, nil)
 }
 
 func CheckJsonString(j string) error {
