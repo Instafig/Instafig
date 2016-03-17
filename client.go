@@ -53,13 +53,11 @@ func ClientConf(c *gin.Context) {
 	}
 
 	nodes := []string{}
-	if !conf.ProxyDeployed {
-		nodes = make([]string, len(memConfNodes))
-		ix := 0
-		for _, node := range memConfNodes {
-			nodes[ix] = node.URL
-			ix++
-		}
+	nodes = make([]string, len(memConfNodes))
+	ix := 0
+	for _, node := range memConfNodes {
+		nodes[ix] = node.URL
+		ix++
 	}
 
 	// do not support app data_sign in server-side, always return app configs

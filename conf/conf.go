@@ -25,7 +25,6 @@ var (
 	MasterAddr         string
 	CheckMasterInerval int
 	DataExpires        int
-	ProxyDeployed      bool
 
 	UserPassCodeEncryptKey string
 
@@ -137,11 +136,6 @@ func init() {
 	if exec.Command("mkdir", "-p", LogDir).Run() != nil {
 		log.Printf("Failed to create log_dir value: %s - %s", LogDir, err.Error())
 		os.Exit(1)
-	}
-
-	proxyDeployed, _ := config.GetValue("", "proxy_deployed")
-	if proxyDeployed == "yes" {
-		ProxyDeployed = true
 	}
 
 	UserPassCodeEncryptKey, _ = config.GetValue("", "user_passcode_encrypt_key")
