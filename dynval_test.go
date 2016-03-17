@@ -191,16 +191,18 @@ func TestVersionCondConfigValue(t *testing.T) {
 	assert.True(t, EvalDynValNoErr(dynval, &ClientData{OSVersion: "0.0.1"}) == "0")
 	assert.True(t, EvalDynValNoErr(dynval, &ClientData{OSVersion: "0.9.9"}) == "0")
 	assert.True(t, EvalDynValNoErr(dynval, &ClientData{OSVersion: "1.0"}) == "1")
+
+	git 
 	assert.True(t, EvalDynValNoErr(dynval, &ClientData{OSVersion: "1.1"}) == "0")
 	assert.True(t, EvalDynValNoErr(dynval, &ClientData{OSVersion: "10.1.1"}) == "0")
 }
 
 func TestStrCondConfigValue(t *testing.T) {
 	//bad json
-	json := `{"cond-values":[{"condition":{"arguments":[{"symbol":"OS_VERSION"},"en"],"func":"str="},"value":0}],"default-value":1}`
+	json := `{"cond-values":[{"condition":{"arguments":[{"symbol":"OS_VERSION"},"1.0"],"func":"str="},"value":0}],"default-value":1}`
 	assert.True(t, CheckJsonString(json) != nil)
 
-	json = `{"cond-values":[{"condition":{"arguments":[{"symbol":"APP_VERSION"},"en"],"func":"str="},"value":0}],"default-value":1}`
+	json = `{"cond-values":[{"condition":{"arguments":[{"symbol":"APP_VERSION"},"1.0"],"func":"str="},"value":0}],"default-value":1}`
 	assert.True(t, CheckJsonString(json) != nil)
 
 	json = `{"cond-values":[{"condition":{"arguments":[{"symbol":"LANG"},"en", "da"],"func":"str="},"value":0}],"default-value":1}`
