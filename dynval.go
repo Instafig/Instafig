@@ -457,40 +457,38 @@ func plainDataToSexpString(data interface{}, funcContext *glispFuncContext, symb
 			ret := "(" + val.(string)
 			args := data["arguments"].([]interface{})
 
-			if funcContext != nil {
-				// we are in arg list of a func
-				// 1. check arg number
-				switch {
-				case len(args) == 0:
-					return "", fmt.Errorf("must have a symbol in func <%s> arg list", funcContext.name)
-				case funcContext.argNum >= 0 && len(args) != funcContext.argNum:
-					return "", fmt.Errorf("func <%s> must have %d args", funcContext.name, funcContext.argNum)
-				case funcContext.argNum < 0 && len(args) < funcContext.argNum:
-					return "", fmt.Errorf("func <%s> must have at least %d args", funcContext.name, funcContext.argNum)
-				}
+			// we are in arg list of a func
+			// 1. check arg number
+			switch {
+			case len(args) == 0:
+				return "", fmt.Errorf("must have a symbol in func <%s> arg list", funcContext.name)
+			case funcContext.argNum >= 0 && len(args) != funcContext.argNum:
+				return "", fmt.Errorf("func <%s> must have %d args", funcContext.name, funcContext.argNum)
+			case funcContext.argNum < 0 && len(args) < funcContext.argNum:
+				return "", fmt.Errorf("func <%s> must have at least %d args", funcContext.name, funcContext.argNum)
+			}
 
-				if !funcContext.multiArgumentsSymbol {
-					// 2. check symbol validity
-					var symbol map[string]interface{}
-					var ok bool
-					if symbol, ok = args[0].(map[string]interface{}); !ok {
-						return "", fmt.Errorf("1st element of func <%s> arg list must be symbol", funcContext.name)
-					}
-					symbolContext = supportedSymbolContexts[symbol["symbol"].(string)]
-					if symbolContext == nil {
-						return "", fmt.Errorf("unsupported symbol: %s", symbol["symbol"].(string))
-					}
-					if len(funcContext.supportSymbols) > 0 {
-						ok = false
-						for _, _symbolContext := range funcContext.supportSymbols {
-							if symbolContext.typ == _symbolContext {
-								ok = true
-								break
-							}
+			if !funcContext.multiArgumentsSymbol {
+				// 2. check symbol validity
+				var symbol map[string]interface{}
+				var ok bool
+				if symbol, ok = args[0].(map[string]interface{}); !ok {
+					return "", fmt.Errorf("1st element of func <%s> arg list must be symbol", funcContext.name)
+				}
+				symbolContext = supportedSymbolContexts[symbol["symbol"].(string)]
+				if symbolContext == nil {
+					return "", fmt.Errorf("unsupported symbol: %s", symbol["symbol"].(string))
+				}
+				if len(funcContext.supportSymbols) > 0 {
+					ok = false
+					for _, _symbolContext := range funcContext.supportSymbols {
+						if symbolContext.typ == _symbolContext {
+							ok = true
+							break
 						}
-						if !ok {
-							return "", fmt.Errorf("symbol <%s> is not supported in func <%s>", symbolContext.name, funcContext.name)
-						}
+					}
+					if !ok {
+						return "", fmt.Errorf("symbol <%s> is not supported in func <%s>", symbolContext.name, funcContext.name)
 					}
 				}
 			}
