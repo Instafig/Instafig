@@ -110,6 +110,18 @@ func TestJsonToCondValues(t *testing.T) {
 
 func TestVersionCondConfigValue(t *testing.T) {
 	json := `{"cond-values":[{"condition":{"arguments":[{"symbol":"APP_VERSION"},"1.0"],"func":"ver="},"value":"0"}],"default-value":"1"}`
+	_, err := JsonToSexpString(json)
+	assert.True(t, err == nil)
+
+	json = `{"cond-values":[{"condition":{"arguments":[{"symbol":"APP_VERSION"},"1.1.1"],"func":"ver="},"value":"0"}],"default-value":"1"}`
+	_, err = JsonToSexpString(json)
+	assert.True(t, err == nil)
+
+	json = `{"cond-values":[{"condition":{"arguments":[{"symbol":"APP_VERSION"},"1.1.1.2.3.4"],"func":"ver="},"value":"0"}],"default-value":"1"}`
+	_, err = JsonToSexpString(json)
+	assert.True(t, err != nil)
+
+	json = `{"cond-values":[{"condition":{"arguments":[{"symbol":"APP_VERSION"},"1.0"],"func":"ver="},"value":"0"}],"default-value":"1"}`
 	sep, _ := JsonToSexpString(json)
 	dynval := NewDynValFromSexpStringDefault(sep)
 	assert.True(t, EvalDynValNoErr(dynval, &ClientData{AppVersion: "1.0"}) == "0")

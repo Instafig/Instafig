@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/go-version"
 	"github.com/zhemao/glisp/interpreter"
 )
 
@@ -284,7 +285,27 @@ func (dval *DynVal) ToJson() (string, error) {
 }
 
 // Unserialize from JSON to Sexp
-func plainDataToSexpString(data interface{}) (string, error) {
+type glispSymbolType int
+
+const (
+	GLISP_SYMBOL_TYPE_VERSION glispSymbolType = iota
+	GLISP_SYMBOL_TYPE_STRING
+	GLISP_SYMBOL_TYPE_NULL
+)
+
+// funcName must be supported glisp func, do not check validity here
+func getGLispFuncType(funcName string) glispSymbolType {
+	switch {
+	case strings.HasPrefix(funcName, "ver"):
+		return GLISP_SYMBOL_TYPE_VERSION
+	case strings.HasPrefix(funcName, "str"):
+		return GLISP_SYMBOL_TYPE_STRING
+	default:
+		return GLISP_SYMBOL_TYPE_NULL
+	}
+}
+
+func plainDataToSexpString(data interface{}, symbolType glispSymbolType) (string, error) {
 	switch data := data.(type) {
 	case bool:
 		return strconv.FormatBool(data), nil
@@ -296,6 +317,11 @@ func plainDataToSexpString(data interface{}) (string, error) {
 		return strconv.FormatFloat(data, 'f', -1, 64), nil
 
 	case string:
+		if symbolType == GLISP_SYMBOL_TYPE_VERSION {
+			if _, err := version.NewVersion(data); err != nil {
+				return "", fmt.Errorf("bad version format: [%s] - %s", data, err.Error())
+			}
+		}
 		return `"` + data + `"`, nil // TODO escape double quote
 
 	case map[string]interface{}:
@@ -313,7 +339,7 @@ func plainDataToSexpString(data interface{}) (string, error) {
 			args := data["arguments"].([]interface{})
 			for _, argval := range args {
 				ret += " "
-				s, err := plainDataToSexpString(argval)
+				s, err := plainDataToSexpString(argval, getGLispFuncType(val.(string)))
 				if err != nil {
 					return "", err
 				}
@@ -327,13 +353,13 @@ func plainDataToSexpString(data interface{}) (string, error) {
 			conds := val.([]interface{})
 			for _, cond := range conds {
 				ret += " "
-				s, err := plainDataToSexpString(cond.(map[string]interface{})["condition"])
+				s, err := plainDataToSexpString(cond.(map[string]interface{})["condition"], symbolType)
 				if err != nil {
 					return "", err
 				}
 				ret += s
 				ret += " "
-				s, err = plainDataToSexpString(cond.(map[string]interface{})["value"])
+				s, err = plainDataToSexpString(cond.(map[string]interface{})["value"], symbolType)
 				if err != nil {
 					return "", err
 				}
@@ -341,7 +367,7 @@ func plainDataToSexpString(data interface{}) (string, error) {
 			}
 			if dft, ok := data["default-value"]; ok {
 				ret += " "
-				s, err := plainDataToSexpString(dft)
+				s, err := plainDataToSexpString(dft, symbolType)
 				if err != nil {
 					return "", nil
 				}
@@ -361,7 +387,7 @@ func plainDataToSexpString(data interface{}) (string, error) {
 			if idx != 0 {
 				ret += " "
 			}
-			s, err := plainDataToSexpString(val)
+			s, err := plainDataToSexpString(val, symbolType)
 			if err != nil {
 				return "", err
 			}
@@ -381,7 +407,7 @@ func JsonToSexpString(json_str string) (string, error) {
 		return "", err
 	}
 
-	return plainDataToSexpString(f)
+	return plainDataToSexpString(f, GLISP_SYMBOL_TYPE_NULL)
 }
 
 func CheckJsonString(j string) error {

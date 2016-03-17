@@ -32,11 +32,10 @@ func versionCompareFunction(env *glisp.Glisp, name string,
 		return glisp.SexpNull, glisp.WrongNargs
 	}
 
-	var vleft, vright string
-
+	var clientVersion, targetVersion string
 	switch t := args[0].(type) {
 	case glisp.SexpStr:
-		vleft = string(t)
+		clientVersion = string(t)
 	default:
 		//return glisp.SexpNull, errors.New("version argument must be string")
 		return glisp.SexpNull, nil
@@ -44,18 +43,18 @@ func versionCompareFunction(env *glisp.Glisp, name string,
 
 	switch t := args[1].(type) {
 	case glisp.SexpStr:
-		vright = string(t)
+		targetVersion = string(t)
 	default:
 		//return glisp.SexpNull, errors.New("version argument must be string")
 		return glisp.SexpNull, nil
 	}
 
-	v1, err := version.NewVersion(vleft)
+	v1, err := version.NewVersion(clientVersion)
 	if err != nil {
 		return glisp.SexpNull, nil
 		//return glisp.SexpNull, errors.New("version format error")
 	}
-	v2, err := version.NewVersion(vright)
+	v2, err := version.NewVersion(targetVersion)
 	if err != nil {
 		return glisp.SexpNull, nil
 		//return glisp.SexpNull, errors.New("version format error")
