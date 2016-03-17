@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/appwilldev/Instafig/models"
+	"github.com/Instafig/Instafig/models"
 	"github.com/stretchr/testify/assert"
 )
 

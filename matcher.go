@@ -3,7 +3,7 @@ package main
 import (
 	"strconv"
 
-	"github.com/appwilldev/Instafig/models"
+	"github.com/Instafig/Instafig/models"
 )
 
 type ClientData struct {

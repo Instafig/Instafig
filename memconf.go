@@ -5,7 +5,7 @@ import (
 	"log"
 	"sync"
 
-	"github.com/appwilldev/Instafig/models"
+	"github.com/Instafig/Instafig/models"
 )
 
 var (

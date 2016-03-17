@@ -11,9 +11,9 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/appwilldev/Instafig/conf"
-	"github.com/appwilldev/Instafig/models"
-	"github.com/appwilldev/Instafig/utils"
+	"github.com/Instafig/Instafig/conf"
+	"github.com/Instafig/Instafig/models"
+	"github.com/Instafig/Instafig/utils"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 )

@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/appwilldev/Instafig/conf"
+	"github.com/Instafig/Instafig/conf"
 	xormcore "github.com/go-xorm/core"
 	"github.com/go-xorm/xorm"
 	_ "github.com/mattn/go-sqlite3"

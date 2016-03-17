@@ -3,8 +3,8 @@ package main
 import (
 	"net/http"
 
-	"github.com/appwilldev/Instafig/conf"
-	"github.com/appwilldev/Instafig/utils"
+	"github.com/Instafig/Instafig/conf"
+	"github.com/Instafig/Instafig/utils"
 	"github.com/gin-gonic/gin"
 )
 

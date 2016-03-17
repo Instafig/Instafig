@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/appwilldev/Instafig/conf"
+	"github.com/Instafig/Instafig/conf"
 	"github.com/facebookgo/grace/gracehttp"
 	"github.com/gin-gonic/gin"
 )
