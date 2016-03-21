@@ -111,7 +111,7 @@ func recordClientQueryParam() {
 				err := models.InsertRow(
 					nil,
 					&models.ClientReqeustData{AppKey: "", Symbol: GLISP_SYMBOL_TYPE_LANG, Value: cdata.Lang})
-				if err != nil {
+				if err == nil {
 					memConfClientMux.Lock()
 					memConfClientLang[cdata.Lang] = true
 					memConfClientMux.Unlock()
@@ -122,7 +122,7 @@ func recordClientQueryParam() {
 				err := models.InsertRow(
 					nil,
 					&models.ClientReqeustData{AppKey: "", Symbol: GLISP_SYMBOL_TYPE_OS_TYPE, Value: cdata.OSType})
-				if err != nil {
+				if err == nil {
 					memConfClientMux.Lock()
 					memConfClientOSType[cdata.OSType] = true
 					memConfClientMux.Unlock()
@@ -133,7 +133,7 @@ func recordClientQueryParam() {
 				err := models.InsertRow(
 					nil,
 					&models.ClientReqeustData{AppKey: "", Symbol: GLISP_SYMBOL_TYPE_OS_VERSION, Value: cdata.OSVersion})
-				if err != nil {
+				if err == nil {
 					memConfClientMux.Lock()
 					memConfClientOSV[cdata.OSVersion] = true
 					memConfClientMux.Unlock()
@@ -144,7 +144,7 @@ func recordClientQueryParam() {
 				err := models.InsertRow(
 					nil,
 					&models.ClientReqeustData{AppKey: "", Symbol: GLISP_SYMBOL_TYPE_TIMEZONE, Value: cdata.TimeZone})
-				if err != nil {
+				if err == nil {
 					memConfClientMux.Lock()
 					memConfClientTimezone[cdata.TimeZone] = true
 					memConfClientMux.Unlock()
@@ -155,7 +155,7 @@ func recordClientQueryParam() {
 				err := models.InsertRow(
 					nil,
 					&models.ClientReqeustData{AppKey: "", Symbol: GLISP_SYMBOL_TYPE_NETWORK, Value: cdata.NetWork})
-				if err != nil {
+				if err == nil {
 					memConfClientMux.Lock()
 					memConfClientNetwork[cdata.NetWork] = true
 					memConfClientMux.Unlock()
@@ -171,7 +171,7 @@ func recordClientQueryParam() {
 				err := models.InsertRow(
 					nil,
 					&models.ClientReqeustData{AppKey: cdata.AppKey, Symbol: GLISP_SYMBOL_TYPE_APP_VERSION, Value: cdata.AppVersion})
-				if err != nil {
+				if err == nil {
 					memConfClientMux.Lock()
 					memConfClientAppVersion[cdata.AppKey][cdata.AppVersion] = true
 					memConfClientMux.Unlock()
