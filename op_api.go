@@ -1211,9 +1211,16 @@ func GetConfigUpdateHistoryOfUser(c *gin.Context) {
 	userName := memConfUsers[c.Param("user_key")].Name
 	for _, history := range histories {
 		history.UserName = userName
-		app := memConfApps[memConfRawConfigs[history.ConfigKey].AppKey]
-		app.UserName = memConfUsers[app.UserKey].Name
-		history.App = app
+		if isSysConfType(memConfRawConfigs[history.ConfigKey].AppKey) {
+			history.App = &models.App{
+				Key:  memConfRawConfigs[history.ConfigKey].AppKey,
+				Name: memConfRawConfigs[history.ConfigKey].AppKey,
+			}
+		} else {
+			app := memConfApps[memConfRawConfigs[history.ConfigKey].AppKey]
+			app.UserName = memConfUsers[app.UserKey].Name
+			history.App = app
+		}
 	}
 	memConfMux.RUnlock()
 
