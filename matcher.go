@@ -67,10 +67,10 @@ func transConfig(m *models.Config) *Config {
 	return config
 }
 
-func getMatchConf(matchData *ClientData, configs []*Config, key string) map[string]interface{} {
+func getMatchConf(matchData *ClientData, configs []*Config) map[string]interface{} {
 	res := make(map[string]interface{}, 0)
 	for _, config := range configs {
-		if config.Status != models.CONF_STATUS_ACTIVE || (key != "" && config.K != key) {
+		if config.Status != models.CONF_STATUS_ACTIVE {
 			continue
 		}
 		switch config.VType {
@@ -86,13 +86,35 @@ func getMatchConf(matchData *ClientData, configs []*Config, key string) map[stri
 	return res
 }
 
+func getMatchConfWithKey(matchData *ClientData, configs []*Config, key string) map[string]interface{} {
+	res := make(map[string]interface{}, 0)
+	for _, config := range configs {
+		if config.Status != models.CONF_STATUS_ACTIVE || config.K != key {
+			continue
+		}
+		switch config.VType {
+		case models.CONF_V_TYPE_CODE:
+			res[config.K], _ = EvalDynVal(config.V.(*DynVal), matchData)
+		case models.CONF_V_TYPE_TEMPLATE:
+			res[config.K] = getAppMatchConfWithKey(config.V.(string), matchData, key)
+		default:
+			res[config.K] = config.V
+		}
+
+		// key is unique, so quit here
+		return res
+	}
+
+	return res
+}
+
 func getAppMatchConf(appKey string, clientData *ClientData) map[string]interface{} {
 	appConfigs := getAppMemConfig(appKey)
 	if appConfigs == nil {
 		return map[string]interface{}{}
 	}
 
-	return getMatchConf(clientData, appConfigs, "")
+	return getMatchConf(clientData, appConfigs)
 }
 
 func getAppMatchConfWithKey(appKey string, clientData *ClientData, key string) map[string]interface{} {
@@ -101,5 +123,5 @@ func getAppMatchConfWithKey(appKey string, clientData *ClientData, key string) m
 		return map[string]interface{}{}
 	}
 
-	return getMatchConf(clientData, appConfigs, key)
+	return getMatchConfWithKey(clientData, appConfigs, key)
 }

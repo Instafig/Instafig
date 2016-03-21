@@ -22,7 +22,6 @@ func isSysConfType(appKey string) bool {
 		appKey == SYS_CONF_DEVICE_ID ||
 		appKey == SYS_CONF_APP_KEY ||
 		appKey == SYS_CONF_OS_VERSION
-
 }
 
 func uniformClientParams(cdata *ClientData) *ClientData {
