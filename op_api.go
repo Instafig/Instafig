@@ -762,20 +762,35 @@ func verifyNewConfigData(data *newConfigData) error {
 		return fmt.Errorf("unknown conf type: " + data.VType)
 	}
 
+	isSysConf := isSysConfType(data.AppKey)
+
+	if !isSysConf && memConfApps[data.AppKey] == nil {
+		return fmt.Errorf("app key not exists: " + data.AppKey)
+	}
+
 	switch data.VType {
 	case models.CONF_V_TYPE_CODE:
 		if err := CheckJsonString(data.V); err != nil {
 			return fmt.Errorf("syntax error for code type value: " + err.Error())
 		}
 	case models.CONF_V_TYPE_FLOAT:
+		if isSysConf {
+			return fmt.Errorf("sys conf must be string value")
+		}
 		if _, err := strconv.ParseFloat(data.V, 64); err != nil {
 			return fmt.Errorf("config Value not float")
 		}
 	case models.CONF_V_TYPE_INT:
+		if isSysConf {
+			return fmt.Errorf("sys conf must be string value")
+		}
 		if _, err := strconv.ParseInt(data.V, 10, 64); err != nil {
 			return fmt.Errorf("config Value not int")
 		}
 	case models.APP_TYPE_TEMPLATE:
+		if isSysConf {
+			return fmt.Errorf("sys conf must be string value")
+		}
 		app := memConfApps[data.V]
 		if app == nil {
 			return fmt.Errorf("template not found for: " + data.V)
@@ -787,10 +802,6 @@ func verifyNewConfigData(data *newConfigData) error {
 	// no need check
 	default:
 		return fmt.Errorf("unknown config value type: " + data.VType)
-	}
-
-	if memConfApps[data.AppKey] == nil {
-		return fmt.Errorf("app key not exists: " + data.AppKey)
 	}
 
 	for _, config := range memConfAppConfigs[data.AppKey] {
@@ -870,20 +881,36 @@ func verifyUpdateConfigData(data *updateConfigData) error {
 		return fmt.Errorf("unknown conf status: " + strconv.Itoa(data.Status))
 	}
 
+	oldConfig := memConfRawConfigs[data.Key]
+	if oldConfig == nil {
+		return fmt.Errorf("config key not exists: " + data.Key)
+	}
+
+	isSysConf := isSysConfType(oldConfig.AppKey)
+
 	switch data.VType {
 	case models.CONF_V_TYPE_CODE:
 		if err := CheckJsonString(data.V); err != nil {
 			return fmt.Errorf("syntax error for code type value: " + err.Error())
 		}
 	case models.CONF_V_TYPE_FLOAT:
+		if isSysConf {
+			return fmt.Errorf("sys conf must be string value")
+		}
 		if _, err := strconv.ParseFloat(data.V, 64); err != nil {
 			return fmt.Errorf("config Value not float")
 		}
 	case models.CONF_V_TYPE_INT:
+		if isSysConf {
+			return fmt.Errorf("sys conf must be string value")
+		}
 		if _, err := strconv.ParseInt(data.V, 10, 64); err != nil {
 			return fmt.Errorf("config Value not int")
 		}
 	case models.APP_TYPE_TEMPLATE:
+		if isSysConf {
+			return fmt.Errorf("sys conf must be string value")
+		}
 		app := memConfApps[data.V]
 		if app == nil {
 			return fmt.Errorf("template not found for: " + data.V)
@@ -897,10 +924,6 @@ func verifyUpdateConfigData(data *updateConfigData) error {
 		return fmt.Errorf("unknown config value type: " + data.VType)
 	}
 
-	oldConfig := memConfRawConfigs[data.Key]
-	if oldConfig == nil {
-		return fmt.Errorf("config key not exists: " + data.Key)
-	}
 	if oldConfig.K != data.K {
 		for _, config := range memConfAppConfigs[oldConfig.AppKey] {
 			if config.K == data.K {
@@ -931,6 +954,8 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 		return nil, err
 	}
 
+	isSysConf := isSysConfType(config.AppKey)
+
 	node := *memConfNodes[conf.ClientAddr]
 	oldConfig := memConfRawConfigs[config.Key]
 	app := memConfApps[config.AppKey]
@@ -944,7 +969,10 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 	}
 
 	var configHistory *models.ConfigUpdateHistory
-	tempApp := *app
+	var tempApp models.App
+	if !isSysConf {
+		tempApp = *app
+	}
 
 	if oldConfig == nil {
 		configHistory = &models.ConfigUpdateHistory{
@@ -970,10 +998,13 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 			return nil, err
 		}
 
-		tempApp.KeyCount++
-		tempApp.LastUpdateUTC = configHistory.CreatedUTC
-		tempApp.LastUpdateId = configHistory.Id
-		tempApp.UpdateTimes++
+		if !isSysConf {
+			tempApp.KeyCount++
+			tempApp.LastUpdateUTC = configHistory.CreatedUTC
+			tempApp.LastUpdateId = configHistory.Id
+			tempApp.UpdateTimes++
+		}
+
 	} else {
 		kind := models.CONFIG_UPDATE_KIND_UPDATE
 		if config.Status != oldConfig.Status {
@@ -1007,47 +1038,49 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 			s.Rollback()
 			return nil, err
 		}
-
-		tempApp.LastUpdateUTC = configHistory.CreatedUTC
-		tempApp.LastUpdateId = configHistory.Id
-		tempApp.UpdateTimes++
-	}
-
-	if err := models.UpdateDBModel(s, &tempApp); err != nil {
-		s.Rollback()
-		return nil, err
+		if !isSysConf {
+			tempApp.LastUpdateUTC = configHistory.CreatedUTC
+			tempApp.LastUpdateId = configHistory.Id
+			tempApp.UpdateTimes++
+		}
 	}
 
 	var toUpdateApps []*models.App
-	if app.Type == models.APP_TYPE_REAL {
-		toUpdateApps = append(toUpdateApps, app)
-	} else {
-		for _, app := range memConfApps {
-			if app.Key == config.AppKey {
-				toUpdateApps = append(toUpdateApps, app)
-				continue
-			}
-			for _, _config := range memConfAppConfigs[app.Key] {
-				if _config.VType == models.CONF_V_TYPE_TEMPLATE && _config.V == config.AppKey {
-					// this app has a config refer to this template app
+	if !isSysConf {
+		if err := models.UpdateDBModel(s, &tempApp); err != nil {
+			s.Rollback()
+			return nil, err
+		}
+		if app.Type == models.APP_TYPE_REAL {
+			toUpdateApps = append(toUpdateApps, app)
+		} else {
+			for _, app := range memConfApps {
+				if app.Key == config.AppKey {
 					toUpdateApps = append(toUpdateApps, app)
-					break
+					continue
+				}
+				for _, _config := range memConfAppConfigs[app.Key] {
+					if _config.VType == models.CONF_V_TYPE_TEMPLATE && _config.V == config.AppKey {
+						// this app has a config refer to this template app
+						toUpdateApps = append(toUpdateApps, app)
+						break
+					}
 				}
 			}
 		}
-	}
 
-	newDataSign := utils.GenerateKey()
-	for _, app := range toUpdateApps {
-		_app := *app
-		if app.Key == tempApp.Key {
-			_app = tempApp
-			tempApp.DataSign = newDataSign
-		}
-		_app.DataSign = newDataSign
-		if err := models.UpdateDBModel(s, &_app); err != nil {
-			s.Rollback()
-			return nil, err
+		newDataSign := utils.GenerateKey()
+		for _, app := range toUpdateApps {
+			_app := *app
+			if app.Key == tempApp.Key {
+				_app = tempApp
+				tempApp.DataSign = newDataSign
+			}
+			_app.DataSign = newDataSign
+			if err := models.UpdateDBModel(s, &_app); err != nil {
+				s.Rollback()
+				return nil, err
+			}
 		}
 	}
 
@@ -1056,7 +1089,11 @@ func updateConfig(config *models.Config, userKey string, newDataVersion *models.
 		return nil, err
 	}
 
-	go TriggerWebHooks(configHistory, app)
+	if !isSysConf {
+		go TriggerWebHooks(configHistory, app)
+	} else {
+		go TriggerWebHooks(configHistory, &models.App{Key: config.Key, Name: config.Key})
+	}
 
 	updateMemConf(config, newDataVersion, &node, toUpdateApps)
 

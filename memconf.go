@@ -182,18 +182,20 @@ func updateMemConf(i interface{}, newDataVersion *models.DataVersion, node *mode
 		memConfAppsByName[m.Name] = m
 
 	case *models.Config:
-		toUpdateApps := auxData[0].([]*models.App)
-		oldConfig := memConfRawConfigs[m.Key]
-		app, err := models.GetAppByKey(nil, m.AppKey)
-		if err != nil {
-			panic("Failed to load app info from db")
-		}
-		memConfApps[m.AppKey] = app
-		memConfRawConfigs[m.Key] = m
-		for _, _app := range toUpdateApps {
-			_app.DataSign = app.DataSign
+		isSysConf := isSysConfType(m.AppKey)
+		if !isSysConf {
+			toUpdateApps := auxData[0].([]*models.App)
+			app, err := models.GetAppByKey(nil, m.AppKey)
+			if err != nil {
+				panic("Failed to load app info from db")
+			}
+			memConfApps[m.AppKey] = app
+			for _, _app := range toUpdateApps {
+				_app.DataSign = app.DataSign
+			}
 		}
 
+		oldConfig := memConfRawConfigs[m.Key]
 		if oldConfig == nil {
 			memConfAppConfigs[m.AppKey] = append(memConfAppConfigs[m.AppKey], transConfig(m))
 		} else {
@@ -204,6 +206,8 @@ func updateMemConf(i interface{}, newDataVersion *models.DataVersion, node *mode
 				}
 			}
 		}
+
+		memConfRawConfigs[m.Key] = m
 
 	case *models.WebHook:
 		oldHookIdx := auxData[0].(int)

@@ -47,6 +47,7 @@ func ClientConf(c *gin.Context) {
 			clientData.Ip = c.Request.RemoteAddr
 		}
 
+		clientData = uniformClientParams(clientData)
 		sendChanAsync(clientQueryParamCh, clientData)
 		setClientData(c, clientData)
 
@@ -54,6 +55,7 @@ func ClientConf(c *gin.Context) {
 		return
 	}
 
+	clientData = uniformClientParams(clientData)
 	sendChanAsync(clientQueryParamCh, clientData)
 	setClientData(c, clientData)
 

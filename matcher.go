@@ -67,10 +67,10 @@ func transConfig(m *models.Config) *Config {
 	return config
 }
 
-func getMatchConf(matchData *ClientData, configs []*Config) map[string]interface{} {
+func getMatchConf(matchData *ClientData, configs []*Config, key string) map[string]interface{} {
 	res := make(map[string]interface{}, 0)
 	for _, config := range configs {
-		if config.Status != models.CONF_STATUS_ACTIVE {
+		if config.Status != models.CONF_STATUS_ACTIVE || (key != "" && config.K != key) {
 			continue
 		}
 		switch config.VType {
@@ -92,5 +92,14 @@ func getAppMatchConf(appKey string, clientData *ClientData) map[string]interface
 		return map[string]interface{}{}
 	}
 
-	return getMatchConf(clientData, appConfigs)
+	return getMatchConf(clientData, appConfigs, "")
+}
+
+func getAppMatchConfWithKey(appKey string, clientData *ClientData, key string) map[string]interface{} {
+	appConfigs := getAppMemConfig(appKey)
+	if appConfigs == nil {
+		return map[string]interface{}{}
+	}
+
+	return getMatchConf(clientData, appConfigs, key)
 }
