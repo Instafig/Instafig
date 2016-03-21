@@ -20,7 +20,15 @@ var (
 	memConfNodes          map[string]*models.Node
 	memConfDataVersion    *models.DataVersion
 
-	memConfMux = sync.RWMutex{}
+	memConfClientLang       map[string]bool
+	memConfClientOSV        map[string]bool
+	memConfClientOSType     map[string]bool
+	memConfClientAppVersion map[string]map[string]bool
+	memConfClientTimezone   map[string]bool
+	memConfClientNetwork    map[string]bool
+
+	memConfMux       = sync.RWMutex{}
+	memConfClientMux = sync.RWMutex{}
 )
 
 func loadAllData() {
@@ -54,7 +62,13 @@ func loadAllData() {
 		log.Panicf("Failed to load data version info: %s", err.Error())
 	}
 
+	clientParams, err := models.GetAllClientRequestData(nil)
+	if err != nil {
+		log.Panicf("Failed to load client request info: %s", err.Error())
+	}
+
 	fillMemConfData(users, apps, webHooks, configs, nodes, dataVersion)
+	fillMemClientRequestData(clientParams)
 }
 
 func fillMemConfData(
@@ -103,6 +117,38 @@ func fillMemConfData(
 		memConfNodes[node.URL] = node
 		node.DataVersion = &models.DataVersion{}
 		json.Unmarshal([]byte(node.DataVersionStr), node.DataVersion)
+	}
+}
+
+func fillMemClientRequestData(clientParams []*models.ClientReqeustData) {
+	memConfClientMux.Lock()
+	defer memConfClientMux.Unlock()
+
+	memConfClientAppVersion = map[string]map[string]bool{}
+	memConfClientLang = map[string]bool{}
+	memConfClientNetwork = map[string]bool{}
+	memConfClientOSType = map[string]bool{}
+	memConfClientOSV = map[string]bool{}
+	memConfClientTimezone = map[string]bool{}
+
+	for _, param := range clientParams {
+		switch param.Symbol {
+		case GLISP_SYMBOL_TYPE_OS_TYPE:
+			memConfClientOSType[param.Value] = true
+		case GLISP_SYMBOL_TYPE_OS_VERSION:
+			memConfClientOSV[param.Value] = true
+		case GLISP_SYMBOL_TYPE_APP_VERSION:
+			if _, ok := memConfClientAppVersion[param.AppKey]; !ok {
+				memConfClientAppVersion[param.AppKey] = map[string]bool{}
+			}
+			memConfClientAppVersion[param.AppKey][param.Value] = true
+		case GLISP_SYMBOL_TYPE_LANG:
+			memConfClientLang[param.Value] = true
+		case GLISP_SYMBOL_TYPE_TIMEZONE:
+			memConfClientTimezone[param.Value] = true
+		case GLISP_SYMBOL_TYPE_NETWORK:
+			memConfClientNetwork[param.Value] = true
+		}
 	}
 }
 

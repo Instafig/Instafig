@@ -537,3 +537,26 @@ func GetWebHooksByAppKey(s *Session, appKey string) ([]*WebHook, error) {
 
 	return res, nil
 }
+
+type ClientReqeustData struct {
+	AppKey string `xorm:"app_key TEXT UNIQUE(uix_client_request_data)" json:"app_key"`
+	Symbol string `xorm:"symbol TEXT UNIQUE(uix_client_request_data)" json:"symbol"`
+	Value  string `xorm:"value TEXT UNIQUE(uix_client_request_data)" json:"value"`
+}
+
+func (*ClientReqeustData) TableName() string {
+	return "client_request_data"
+}
+
+func GetAllClientRequestData(s *Session) ([]*ClientReqeustData, error) {
+	if s == nil {
+		s = newAutoCloseModelsSession()
+	}
+
+	var res []*ClientReqeustData
+	if err := s.Find(&res); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}

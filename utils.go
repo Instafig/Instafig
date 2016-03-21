@@ -157,3 +157,24 @@ func getRequestLogDataFromContext(c *gin.Context) *RequestLogData {
 func VersionHandler(c *gin.Context) {
 	c.String(200, conf.VersionString())
 }
+
+func sendChanAsync(ch chan interface{}, i interface{}) {
+	select {
+	case ch <- i: //
+	default: //
+	}
+}
+
+func doEverTask(f func()) {
+	exitCh := make(chan struct{})
+
+	go func() {
+		for {
+			go func() {
+				defer func() { exitCh <- struct{}{} }()
+				f()
+			}()
+			<-exitCh
+		}
+	}()
+}

@@ -125,6 +125,8 @@ func main() {
 
 		opAPIGroup.GET("/nodes", OpAuth, GetNodes)
 
+		opAPIGroup.GET("/client/params/:symbol", OpAuth, GetClientSymbols)
+
 		// for statistics
 		opAPIGroup.GET("/stat/latest-config-device-count/:app_key", OpAuth, StatCheck, GetDeviceCountOfAppLatestConfig)
 		opAPIGroup.GET("/stat/app-config-response/:app_key", OpAuth, StatCheck, GetAppConfigResponseData)

@@ -110,7 +110,7 @@ func initDBEngine(driver, dsn string) {
 	if err = dbEngineDefault.Sync2(
 		&User{}, &App{},
 		&Config{}, &ConfigUpdateHistory{},
-		&Node{}, &DataVersion{}, &WebHook{},
+		&Node{}, &DataVersion{}, &WebHook{}, &ClientReqeustData{},
 	); err != nil {
 		log.Panicf("Failed to sync db scheme: %s", err.Error())
 	}
