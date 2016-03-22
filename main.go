@@ -143,7 +143,7 @@ func main() {
 
 	warpper, err := acmewrapper.New(acmewrapper.Config{
 		Domains: []string{"beijing5.appdao.com", "www.beijing5.appdao.com"},
-		Address: strconv.Itoa(conf.Port),
+		Address: fmt.Sprintf(":%d", conf.Port),
 
 		TLSCertFile: "cert.pem",
 		TLSKeyFile:  "key.pem",
