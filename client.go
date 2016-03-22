@@ -109,7 +109,7 @@ func recordClientQueryParam() {
 			i := <-clientQueryParamCh
 			cdata := i.(*ClientData)
 
-			if !memConfClientLang[cdata.Lang] {
+			if cdata.Lang != "" && !memConfClientLang[cdata.Lang] {
 				err := models.InsertRow(
 					nil,
 					&models.ClientReqeustData{AppKey: "", Symbol: GLISP_SYMBOL_TYPE_LANG, Value: cdata.Lang})
@@ -120,7 +120,7 @@ func recordClientQueryParam() {
 				}
 			}
 
-			if !memConfClientOSType[cdata.OSType] {
+			if cdata.OSType != "" && !memConfClientOSType[cdata.OSType] {
 				err := models.InsertRow(
 					nil,
 					&models.ClientReqeustData{AppKey: "", Symbol: GLISP_SYMBOL_TYPE_OS_TYPE, Value: cdata.OSType})
@@ -131,7 +131,7 @@ func recordClientQueryParam() {
 				}
 			}
 
-			if !memConfClientOSV[cdata.OSVersion] {
+			if cdata.OSVersion != "" && !memConfClientOSV[cdata.OSVersion] {
 				err := models.InsertRow(
 					nil,
 					&models.ClientReqeustData{AppKey: "", Symbol: GLISP_SYMBOL_TYPE_OS_VERSION, Value: cdata.OSVersion})
@@ -142,7 +142,7 @@ func recordClientQueryParam() {
 				}
 			}
 
-			if !memConfClientTimezone[cdata.TimeZone] {
+			if cdata.TimeZone != "" && !memConfClientTimezone[cdata.TimeZone] {
 				err := models.InsertRow(
 					nil,
 					&models.ClientReqeustData{AppKey: "", Symbol: GLISP_SYMBOL_TYPE_TIMEZONE, Value: cdata.TimeZone})
@@ -153,7 +153,7 @@ func recordClientQueryParam() {
 				}
 			}
 
-			if !memConfClientNetwork[cdata.NetWork] {
+			if cdata.NetWork != "" && !memConfClientNetwork[cdata.NetWork] {
 				err := models.InsertRow(
 					nil,
 					&models.ClientReqeustData{AppKey: "", Symbol: GLISP_SYMBOL_TYPE_NETWORK, Value: cdata.NetWork})
@@ -169,7 +169,7 @@ func recordClientQueryParam() {
 				memConfClientAppVersion[cdata.AppKey] = map[string]bool{}
 				memConfClientMux.Unlock()
 			}
-			if !memConfClientAppVersion[cdata.AppKey][cdata.AppVersion] {
+			if cdata.AppVersion != "" && !memConfClientAppVersion[cdata.AppKey][cdata.AppVersion] {
 				err := models.InsertRow(
 					nil,
 					&models.ClientReqeustData{AppKey: cdata.AppKey, Symbol: GLISP_SYMBOL_TYPE_APP_VERSION, Value: cdata.AppVersion})
