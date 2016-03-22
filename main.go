@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/Instafig/Instafig/conf"
+	"github.com/dkumor/acmewrapper"
 	"github.com/facebookgo/grace/gracehttp"
 	"github.com/gin-gonic/gin"
 )
@@ -140,8 +141,30 @@ func main() {
 	ginInsNode.Use(gin.Recovery())
 	ginInsNode.POST("/node/req/:req_type", NodeRequestHandler)
 
+	warpper, err := acmewrapper.New(acmewrapper.Config{
+		Domains: []string{"beijing5.appdao.com", "www.beijing5.appdao.com"},
+		Address: strconv.Itoa(conf.Port),
+
+		TLSCertFile: "cert.pem",
+		TLSKeyFile:  "key.pem",
+
+		// Let's Encrypt stuff
+		RegistrationFile: "user.reg",
+		PrivateKeyFile:   "user.pem",
+
+		TOSCallback: acmewrapper.TOSAgree,
+	})
+	if err != nil {
+		log.Println("fatal error: " + err.Error())
+		logger.Fatal(map[string]interface{}{
+			"type":  "start_error",
+			"error": err.Error(),
+		})
+		os.Exit(1)
+	}
+
 	err = gracehttp.Serve(
-		&http.Server{Addr: fmt.Sprintf(":%d", conf.Port), Handler: ginIns},
+		&http.Server{Addr: fmt.Sprintf(":%d", conf.Port), Handler: ginIns, TLSConfig: warpper.TLSConfig()},
 		&http.Server{Addr: conf.NodeAddr, Handler: ginInsNode})
 	if err != nil {
 		logger.Fatal(map[string]interface{}{
