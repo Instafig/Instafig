@@ -56,6 +56,10 @@ func StatCheck(c *gin.Context) {
 }
 
 func StatisticHandler(c *gin.Context) {
+	if !conf.StatisticEnable {
+		return
+	}
+
 	now := time.Now()
 	c.Next()
 	clientData := getClientData(c)
