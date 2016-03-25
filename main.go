@@ -109,6 +109,7 @@ func main() {
 		}
 		opAPIGroup.POST("/app", OpAuth, ConfWriteCheck, NewApp, UpdateMasterLastDataUpdateUTC)
 		opAPIGroup.PUT("/app", OpAuth, ConfWriteCheck, UpdateApp, UpdateMasterLastDataUpdateUTC)
+		opAPIGroup.POST("/app/clone", OpAuth, ConfWriteCheck, CloneAppConfigs, UpdateMasterLastDataUpdateUTC)
 
 		opAPIGroup.GET("/webhooks/global", OpAuth, GetGlobalWebHooks)
 		opAPIGroup.GET("/webhooks/app/:app_key", OpAuth, GetAppWebHooks)

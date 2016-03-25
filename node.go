@@ -28,6 +28,7 @@ const (
 	NODE_REQUEST_SYNC_TYPE_WEBHOOK = "WEBHOOK"
 	NODE_REQUEST_SYNC_TYPE_CONFIG  = "CONFIG"
 	NODE_REQUEST_SYNC_TYPE_NODE    = "NODE"
+	NODE_REQUEST_SYNC_TYPE_CLONE   = "CLONE"
 )
 
 var (
@@ -54,6 +55,11 @@ type syncAllDataT struct {
 type nodeRequestDataT struct {
 	Auth string `json:"auth"`
 	Data string `json:"data"` // json string to bind go struct
+}
+
+type cloneData struct {
+	App     *models.App      `json:"app"`
+	Configs []*models.Config `json:"configs"`
 }
 
 func init() {
@@ -219,6 +225,8 @@ func syncData2Slave(node *models.Node, data interface{}, dataVer *models.DataVer
 		kind = NODE_REQUEST_SYNC_TYPE_CONFIG
 	case *models.Node:
 		kind = NODE_REQUEST_SYNC_TYPE_NODE
+	case *cloneData:
+		kind = NODE_REQUEST_SYNC_TYPE_CLONE
 	default:
 		log.Panicln("unknown node data sync type: ", reflect.TypeOf(data))
 	}
@@ -536,7 +544,7 @@ func handleSlaveSyncUpdateData(c *gin.Context, data string) {
 			Error(c, BAD_REQUEST, "bad data format for app model")
 			return
 		}
-		if _, err = updateApp(app, syncData.DataVersion); err != nil {
+		if _, err = updateApp(app, syncData.DataVersion, nil); err != nil {
 			Error(c, SERVER_ERROR, err.Error())
 			return
 		}
@@ -558,7 +566,7 @@ func handleSlaveSyncUpdateData(c *gin.Context, data string) {
 			Error(c, BAD_REQUEST, "bad data format for user model")
 			return
 		}
-		if _, err = updateConfig(config, syncData.OpUserKey, syncData.DataVersion); err != nil {
+		if _, err = updateConfig(config, nil, syncData.OpUserKey, syncData.DataVersion, nil); err != nil {
 			Error(c, SERVER_ERROR, err.Error())
 			return
 		}
@@ -588,6 +596,18 @@ func handleSlaveSyncUpdateData(c *gin.Context, data string) {
 
 		Success(c, nil)
 		return
+
+	case NODE_REQUEST_SYNC_TYPE_CLONE:
+		data := &cloneData{}
+		if err := json.Unmarshal([]byte(syncData.Data), data); err != nil {
+			Error(c, BAD_REQUEST, "bad data format for clone app")
+			return
+		}
+
+		if err := cloneConfigs(data.App, data.Configs, syncData.OpUserKey); err != nil {
+			Error(c, SERVER_ERROR, err.Error())
+			return
+		}
 
 	default:
 		Error(c, BAD_REQUEST, "unknown node data sync type: "+syncData.Kind)

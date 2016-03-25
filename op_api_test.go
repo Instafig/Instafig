@@ -124,7 +124,7 @@ func TestNewApp(t *testing.T) {
 		Key:     utils.GenerateKey(),
 		UserKey: user.Key,
 		Name:    "iconfreecn",
-		Type:    models.APP_TYPE_REAL}, nil)
+		Type:    models.APP_TYPE_REAL}, nil, nil)
 	assert.True(t, err == nil, "must correctly add new app")
 	assert.True(t, len(memConfApps) == 1, "must only one app")
 	assert.True(t, app.Key == memConfAppsByName["iconfreecn"].Key, "must the same app")
@@ -133,7 +133,7 @@ func TestNewApp(t *testing.T) {
 		Key:     utils.GenerateKey(),
 		UserKey: user.Key,
 		Name:    "hdfreecn",
-		Type:    models.APP_TYPE_REAL}, nil)
+		Type:    models.APP_TYPE_REAL}, nil, nil)
 	assert.True(t, err == nil, "must correctly add new app")
 	assert.True(t, len(memConfApps) == 2, "must two apps")
 
@@ -156,14 +156,14 @@ func TestUpdateApp(t *testing.T) {
 		Key:     utils.GenerateKey(),
 		UserKey: user.Key,
 		Name:    "iconfreecn",
-		Type:    models.APP_TYPE_REAL}, nil)
+		Type:    models.APP_TYPE_REAL}, nil, nil)
 
 	app, err = updateApp(&models.App{
 		Key:     app.Key,
 		UserKey: user.Key,
 		Name:    "hdfreecn",
 		Type:    models.APP_TYPE_REAL,
-		AuxInfo: "guaji"}, nil)
+		AuxInfo: "guaji"}, nil, nil)
 	assert.True(t, err == nil, "must correctly add new app")
 	assert.True(t, len(memConfApps) == 1, "must only one app")
 	assert.True(t, memConfAppsByName["iconfreecn"] == nil, "old-name app must not exist")
@@ -181,28 +181,28 @@ func TestSearchApps(t *testing.T) {
 		Key:     utils.GenerateKey(),
 		UserKey: user.Key,
 		Name:    "iconfreecn",
-		Type:    models.APP_TYPE_REAL}, nil)
+		Type:    models.APP_TYPE_REAL}, nil, nil)
 	assert.True(t, err == nil, "must correctly add new app")
 
 	_, err = updateApp(&models.App{
 		Key:     utils.GenerateKey(),
 		UserKey: user.Key,
 		Name:    "xianyouvideo",
-		Type:    models.APP_TYPE_REAL}, nil)
+		Type:    models.APP_TYPE_REAL}, nil, nil)
 	assert.True(t, err == nil, "must correctly add new app")
 
 	_, err = updateApp(&models.App{
 		Key:     utils.GenerateKey(),
 		UserKey: user.Key,
 		Name:    "hdfreecn",
-		Type:    models.APP_TYPE_REAL}, nil)
+		Type:    models.APP_TYPE_REAL}, nil, nil)
 	assert.True(t, err == nil, "must correctly add new app")
 
 	_, err = updateApp(&models.App{
 		Key:     utils.GenerateKey(),
 		UserKey: user.Key,
 		Name:    "phoneplay",
-		Type:    models.APP_TYPE_REAL}, nil)
+		Type:    models.APP_TYPE_REAL}, nil, nil)
 	assert.True(t, err == nil, "must correctly add new app")
 
 	apps, err := searchApps("free", 0)
@@ -234,7 +234,7 @@ func initOneConfig(userName, appName, appType, configK, configV, configVType str
 		Key:     utils.GenerateKey(),
 		UserKey: user.Key,
 		Name:    appName,
-		Type:    appType}, nil)
+		Type:    appType}, nil, nil)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -245,7 +245,7 @@ func initOneConfig(userName, appName, appType, configK, configV, configVType str
 		K:      configK,
 		V:      configV,
 		VType:  configVType,
-		Status: models.CONF_STATUS_ACTIVE}, "", nil)
+		Status: models.CONF_STATUS_ACTIVE}, nil, "", nil, nil)
 
 	return user, app, config, err
 }
@@ -279,6 +279,61 @@ func TestNewConfig(t *testing.T) {
 	assert.True(t, err == nil, "must correctly add new config")
 	assert.True(t, len(memConfAppConfigs[app.Key]) == 2, "must two configs for app")
 	assert.True(t, oldAppDataSign != memConfApps[app.Key].DataSign, "app's data_sign must update when update app config")
+
+	_clearModelData()
+}
+
+func TestCloneAppConfig(t *testing.T) {
+	err := _clearModelData()
+	assert.True(t, err == nil, "must correctly clear data")
+	loadAllData()
+	initNodeData()
+
+	user, app, _, _ := initOneConfig("rahuahua", "iconfreecn", models.APP_TYPE_REAL, "config1", "1", models.CONF_V_TYPE_INT)
+	newData := &newConfigData{
+		K:      "config2",
+		V:      "1",
+		VType:  models.CONF_V_TYPE_STRING,
+		AppKey: app.Key,
+	}
+	err = verifyNewConfigData(newData)
+	assert.True(t, err == nil)
+	_, err = newConfigWithNewConfigData(newData, user.Key)
+	assert.True(t, err == nil)
+
+	newData = &newConfigData{
+		K:      "config3",
+		V:      "1.2",
+		VType:  models.CONF_V_TYPE_FLOAT,
+		AppKey: app.Key,
+	}
+	err = verifyNewConfigData(newData)
+	assert.True(t, err == nil)
+	_, err = newConfigWithNewConfigData(newData, user.Key)
+	assert.True(t, err == nil)
+
+	oldDataVersion := *memConfDataVersion
+	app = memConfApps[app.Key]
+	newApp, configs, err := cloneConfigsFromApp("iconfreecn", "hdfreecn", user.Key)
+	assert.True(t, err == nil)
+	assert.True(t, memConfDataVersion.Sign != oldDataVersion.Sign)
+	assert.True(t, memConfDataVersion.OldSign == oldDataVersion.Sign)
+	assert.True(t, newApp.Key != app.Key)
+	assert.True(t, newApp.UserKey == app.UserKey)
+	assert.True(t, newApp.KeyCount == app.KeyCount)
+	assert.True(t, newApp.Type == app.Type)
+	assert.True(t, newApp.Name == "hdfreecn")
+
+	for _, config := range configs {
+		switch config.K {
+		case "config1":
+			assert.True(t, config.V == "1" && config.VType == models.CONF_V_TYPE_INT && config.AppKey == newApp.Key)
+		case "config2":
+			assert.True(t, config.V == "1" && config.VType == models.CONF_V_TYPE_STRING && config.AppKey == newApp.Key)
+		case "config3":
+			assert.True(t, config.V == "1.2" && config.VType == models.CONF_V_TYPE_FLOAT && config.AppKey == newApp.Key)
+		}
+	}
 
 	_clearModelData()
 }
@@ -480,7 +535,7 @@ func TestDataVersion(t *testing.T) {
 		Key:     utils.GenerateKey(),
 		UserKey: user.Key,
 		Name:    "iconfreecn",
-		Type:    models.APP_TYPE_REAL}, nil)
+		Type:    models.APP_TYPE_REAL}, nil, nil)
 	assert.True(t, memConfDataVersion.Version == 2, "data version must be 2")
 	assert.True(t, memConfDataVersion.OldSign == oldVersion.Sign)
 	assert.True(t, memConfDataVersion.Sign != oldVersion.Sign)
@@ -492,7 +547,7 @@ func TestDataVersion(t *testing.T) {
 		K:      "int_conf",
 		V:      "1",
 		VType:  models.CONF_V_TYPE_INT,
-		Status: models.CONF_STATUS_ACTIVE}, "", nil)
+		Status: models.CONF_STATUS_ACTIVE}, nil, "", nil, nil)
 	assert.True(t, memConfDataVersion.Version == 3, "data version must be 3")
 	assert.True(t, memConfDataVersion.OldSign == oldVersion.Sign)
 	assert.True(t, memConfDataVersion.Sign != oldVersion.Sign)
@@ -514,20 +569,20 @@ func TestTemplateApp(t *testing.T) {
 		Key:     utils.GenerateKey(),
 		UserKey: user.Key,
 		Name:    "template_app",
-		Type:    models.APP_TYPE_TEMPLATE}, nil)
+		Type:    models.APP_TYPE_TEMPLATE}, nil, nil)
 	templateConfig, _ := updateConfig(&models.Config{
 		Key:    utils.GenerateKey(),
 		AppKey: templateApp.Key,
 		K:      "template_int_conf",
 		V:      "233",
 		VType:  models.CONF_V_TYPE_INT,
-		Status: models.CONF_STATUS_ACTIVE}, "", nil)
+		Status: models.CONF_STATUS_ACTIVE}, nil, "", nil, nil)
 
 	app, _ := updateApp(&models.App{
 		Key:     utils.GenerateKey(),
 		UserKey: user.Key,
 		Name:    "iconfreecn",
-		Type:    models.APP_TYPE_REAL}, nil)
+		Type:    models.APP_TYPE_REAL}, nil, nil)
 
 	updateConfig(&models.Config{
 		Key:    utils.GenerateKey(),
@@ -535,7 +590,7 @@ func TestTemplateApp(t *testing.T) {
 		K:      "int_conf",
 		V:      "1",
 		VType:  models.CONF_V_TYPE_INT,
-		Status: models.CONF_STATUS_ACTIVE}, "", nil)
+		Status: models.CONF_STATUS_ACTIVE}, nil, "", nil, nil)
 
 	_, err = updateConfig(&models.Config{
 		Key:    utils.GenerateKey(),
@@ -543,14 +598,14 @@ func TestTemplateApp(t *testing.T) {
 		K:      "template_conf",
 		V:      templateApp.Key,
 		VType:  models.CONF_V_TYPE_TEMPLATE,
-		Status: models.CONF_STATUS_ACTIVE}, "", nil)
+		Status: models.CONF_STATUS_ACTIVE}, nil, "", nil, nil)
 	assert.True(t, err == nil, "must correctly add template conf")
 	appConfig := getAppMatchConf(app.Key, &ClientData{AppKey: app.Key})
 	assert.True(t, reflect.TypeOf(appConfig["template_conf"]).Kind() == reflect.Map)
 
 	appOldDataSign := memConfApps[app.Key].DataSign
 	oldTemplateDataSign := memConfApps[templateApp.Key].DataSign
-	updateConfig(templateConfig, "", nil)
+	updateConfig(templateConfig, nil, "", nil, nil)
 	assert.True(t, appOldDataSign != memConfApps[app.Key].DataSign, "app's data_sign must update after update config")
 	assert.True(t, oldTemplateDataSign != memConfApps[templateApp.Key].DataSign, "app's data_sign must update after update config")
 

@@ -183,7 +183,7 @@ func updateMemConf(i interface{}, newDataVersion *models.DataVersion, node *mode
 
 	case *models.Config:
 		isSysConf := isSysConfType(m.AppKey)
-		if !isSysConf {
+		if !isSysConf && len(auxData) > 0 {
 			toUpdateApps := auxData[0].([]*models.App)
 			app, err := models.GetAppByKey(nil, m.AppKey)
 			if err != nil {
