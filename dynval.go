@@ -471,9 +471,8 @@ func plainDataToSexpString(data interface{}, funcContext *glispFuncContext) (str
 			}
 
 		}
-
 		// escape double quote
-		data = strings.Replace(data, "\"", "\\\"", -1)
+		data = strings.Replace(data, `"`, `\"`, -1)
 		return `"` + data + `"`, nil
 
 	case map[string]interface{}:
