@@ -471,7 +471,10 @@ func plainDataToSexpString(data interface{}, funcContext *glispFuncContext) (str
 			}
 
 		}
-		return `"` + data + `"`, nil // TODO escape double quote
+
+		// escape double quote
+		data = strings.Replace(data, "\"", "\\\"", -1)
+		return `"` + data + `"`, nil
 
 	case map[string]interface{}:
 		if val, ok := data["cond-values"]; ok { // cond-values exp
