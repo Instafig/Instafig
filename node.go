@@ -566,7 +566,7 @@ func handleSlaveSyncUpdateData(c *gin.Context, data string) {
 			Error(c, BAD_REQUEST, "bad data format for user model")
 			return
 		}
-		if _, err = updateConfig(config, nil, syncData.OpUserKey, syncData.DataVersion, nil); err != nil {
+		if _, err = updateConfig(config, syncData.OpUserKey, syncData.DataVersion, nil); err != nil {
 			Error(c, SERVER_ERROR, err.Error())
 			return
 		}

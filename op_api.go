@@ -839,7 +839,7 @@ func newConfigWithNewConfigData(data *newConfigData, userKey string) (*models.Co
 		Status:     models.CONF_STATUS_ACTIVE,
 	}
 
-	return updateConfig(config, nil, userKey, nil, nil)
+	return updateConfig(config, userKey, nil, nil)
 }
 
 type updateConfigData struct {
@@ -956,10 +956,10 @@ func updateConfigWithUpdateData(data *updateConfigData, userKey string) (*models
 	config.Des = data.Des
 	config.Status = data.Status
 
-	return updateConfig(&config, nil, userKey, nil, nil)
+	return updateConfig(&config, userKey, nil, nil)
 }
 
-func updateConfig(config *models.Config, tempApp *models.App, userKey string, newDataVersion *models.DataVersion, ms *models.Session) (*models.Config, error) {
+func updateConfig(config *models.Config, userKey string, newDataVersion *models.DataVersion, ms *models.Session) (*models.Config, error) {
 	var s *models.Session
 
 	if ms != nil {
@@ -978,13 +978,9 @@ func updateConfig(config *models.Config, tempApp *models.App, userKey string, ne
 	node := *memConfNodes[conf.ClientAddr]
 	oldConfig := memConfRawConfigs[config.Key]
 
-	app := tempApp
-	if app == nil {
-		var err error
-		app, err = models.GetAppByKey(nil, config.AppKey)
-		if err != nil {
-			return nil, err
-		}
+	app, err := models.GetAppByKey(s, config.AppKey)
+	if err != nil {
+		return nil, err
 	}
 
 	if newDataVersion == nil {
@@ -1080,7 +1076,7 @@ func updateConfig(config *models.Config, tempApp *models.App, userKey string, ne
 	}
 
 	var toUpdateApps []*models.App
-	if !isSysConf && tempApp == nil {
+	if !isSysConf {
 		newDataSign := utils.GenerateKey()
 		app.DataSign = newDataSign
 		if err := models.UpdateDBModel(s, app); err != nil {
@@ -1471,16 +1467,24 @@ func cloneConfigs(app *models.App, configs []*models.Config, userKey string) (er
 	}
 
 	for _, config := range configs {
-		if _, err = updateConfig(config, app, userKey, newDataVersion, s); err != nil {
+		if _, err = updateConfig(config, userKey, newDataVersion, s); err != nil {
 			s.Rollback()
 			return
 		}
+	}
+
+	_app, err := models.GetAppByKey(s, app.Key)
+	if err != nil {
+		s.Rollback()
+		return err
 	}
 
 	if err = s.Commit(); err != nil {
 		s.Rollback()
 		return
 	}
+
+	*app = *_app
 
 	updateMemConf(app, newDataVersion, memConfNodes[conf.ClientAddr])
 	for _, config := range configs {

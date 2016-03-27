@@ -245,7 +245,7 @@ func initOneConfig(userName, appName, appType, configK, configV, configVType str
 		K:      configK,
 		V:      configV,
 		VType:  configVType,
-		Status: models.CONF_STATUS_ACTIVE}, nil, "", nil, nil)
+		Status: models.CONF_STATUS_ACTIVE}, "", nil, nil)
 
 	return user, app, config, err
 }
@@ -318,6 +318,7 @@ func TestCloneAppConfig(t *testing.T) {
 	assert.True(t, err == nil)
 	assert.True(t, memConfDataVersion.Sign != oldDataVersion.Sign)
 	assert.True(t, memConfDataVersion.OldSign == oldDataVersion.Sign)
+	assert.True(t, newApp.DataSign != "" && newApp.DataSign != app.DataSign)
 	assert.True(t, newApp.Key != app.Key)
 	assert.True(t, newApp.UserKey == app.UserKey)
 	assert.True(t, newApp.KeyCount == app.KeyCount)
@@ -547,7 +548,7 @@ func TestDataVersion(t *testing.T) {
 		K:      "int_conf",
 		V:      "1",
 		VType:  models.CONF_V_TYPE_INT,
-		Status: models.CONF_STATUS_ACTIVE}, nil, "", nil, nil)
+		Status: models.CONF_STATUS_ACTIVE}, "", nil, nil)
 	assert.True(t, memConfDataVersion.Version == 3, "data version must be 3")
 	assert.True(t, memConfDataVersion.OldSign == oldVersion.Sign)
 	assert.True(t, memConfDataVersion.Sign != oldVersion.Sign)
@@ -576,7 +577,7 @@ func TestTemplateApp(t *testing.T) {
 		K:      "template_int_conf",
 		V:      "233",
 		VType:  models.CONF_V_TYPE_INT,
-		Status: models.CONF_STATUS_ACTIVE}, nil, "", nil, nil)
+		Status: models.CONF_STATUS_ACTIVE}, "", nil, nil)
 
 	app, _ := updateApp(&models.App{
 		Key:     utils.GenerateKey(),
@@ -590,7 +591,7 @@ func TestTemplateApp(t *testing.T) {
 		K:      "int_conf",
 		V:      "1",
 		VType:  models.CONF_V_TYPE_INT,
-		Status: models.CONF_STATUS_ACTIVE}, nil, "", nil, nil)
+		Status: models.CONF_STATUS_ACTIVE}, "", nil, nil)
 
 	_, err = updateConfig(&models.Config{
 		Key:    utils.GenerateKey(),
@@ -598,14 +599,14 @@ func TestTemplateApp(t *testing.T) {
 		K:      "template_conf",
 		V:      templateApp.Key,
 		VType:  models.CONF_V_TYPE_TEMPLATE,
-		Status: models.CONF_STATUS_ACTIVE}, nil, "", nil, nil)
+		Status: models.CONF_STATUS_ACTIVE}, "", nil, nil)
 	assert.True(t, err == nil, "must correctly add template conf")
 	appConfig := getAppMatchConf(app.Key, &ClientData{AppKey: app.Key})
 	assert.True(t, reflect.TypeOf(appConfig["template_conf"]).Kind() == reflect.Map)
 
 	appOldDataSign := memConfApps[app.Key].DataSign
 	oldTemplateDataSign := memConfApps[templateApp.Key].DataSign
-	updateConfig(templateConfig, nil, "", nil, nil)
+	updateConfig(templateConfig, "", nil, nil)
 	assert.True(t, appOldDataSign != memConfApps[app.Key].DataSign, "app's data_sign must update after update config")
 	assert.True(t, oldTemplateDataSign != memConfApps[templateApp.Key].DataSign, "app's data_sign must update after update config")
 
