@@ -1380,8 +1380,9 @@ func GetLoginUserInfo(c *gin.Context) {
 }
 
 type cloneAppConfigsData struct {
-	From string `json:"from" binding:"required"`
-	To   string `json:"to" binding:"required"`
+	From    string `json:"from" binding:"required"`
+	To      string `json:"to" binding:"required"`
+	AuxInfo string `json:"aux_info"`
 }
 
 func CloneAppConfigs(c *gin.Context) {
@@ -1408,7 +1409,7 @@ func CloneAppConfigs(c *gin.Context) {
 		return
 	}
 
-	app, configs, err := cloneConfigsFromApp(data.From, data.To, getOpUserKey(c))
+	app, configs, err := cloneConfigsFromApp(data.From, data.To, data.AuxInfo, getOpUserKey(c))
 	if err != nil {
 		Error(c, SERVER_ERROR, err.Error())
 		return
@@ -1422,7 +1423,7 @@ func CloneAppConfigs(c *gin.Context) {
 	}
 }
 
-func cloneConfigsFromApp(from, to, userKey string) (*models.App, []*models.Config, error) {
+func cloneConfigsFromApp(from, to, aux_info, userKey string) (*models.App, []*models.Config, error) {
 	memConfMux.RLock()
 	fromApp := memConfAppsByName[from]
 	memConfMux.RUnlock()
@@ -1436,6 +1437,7 @@ func cloneConfigsFromApp(from, to, userKey string) (*models.App, []*models.Confi
 		Key:        utils.GenerateKey(),
 		Name:       to,
 		UserKey:    userKey,
+		AuxInfo:    aux_info,
 		CreatedUTC: utils.GetNowSecond(),
 		Type:       fromApp.Type,
 	}

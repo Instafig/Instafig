@@ -314,7 +314,7 @@ func TestCloneAppConfig(t *testing.T) {
 
 	oldDataVersion := *memConfDataVersion
 	app = memConfApps[app.Key]
-	newApp, configs, err := cloneConfigsFromApp("iconfreecn", "hdfreecn", user.Key)
+	newApp, configs, err := cloneConfigsFromApp("iconfreecn", "hdfreecn", "blabla", user.Key)
 	assert.True(t, err == nil)
 	assert.True(t, memConfDataVersion.Sign != oldDataVersion.Sign)
 	assert.True(t, memConfDataVersion.OldSign == oldDataVersion.Sign)
@@ -324,6 +324,7 @@ func TestCloneAppConfig(t *testing.T) {
 	assert.True(t, newApp.KeyCount == app.KeyCount)
 	assert.True(t, newApp.Type == app.Type)
 	assert.True(t, newApp.Name == "hdfreecn")
+	assert.True(t, newApp.AuxInfo == "blabla")
 
 	for _, config := range configs {
 		switch config.K {
