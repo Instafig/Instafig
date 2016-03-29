@@ -70,12 +70,18 @@ func TestUpdateUser(t *testing.T) {
 	confWriteMux.Lock()
 	defer confWriteMux.Unlock()
 
+	node1 := memConfNodes[conf.ClientAddr]
 	userData := &newUserData{
 		Name:     "rahuahua",
 		PassCode: "huahua",
 	}
 	user, err := newUserWithNewUserData(userData, "1234567", "1234567")
 	assert.True(t, err == nil, "must correctly add new user")
+
+	node2 := memConfNodes[conf.ClientAddr]
+	assert.True(t, node2.DataVersion.Sign != node1.DataVersion.Sign)
+	assert.True(t, node2.DataVersion.OldSign == node1.DataVersion.Sign)
+	assert.True(t, node2.DataVersion.Version == node1.DataVersion.Version+1)
 
 	userData = &newUserData{
 		Name:     "rahuahua2",
@@ -84,6 +90,12 @@ func TestUpdateUser(t *testing.T) {
 	newUser, err := newUserWithNewUserData(userData, utils.GenerateKey(), user.Key)
 	assert.True(t, err == nil, "must correctly add new user")
 	assert.True(t, newUser.CreatorKey == user.Key && newUser.CreatedUTC >= user.CreatedUTC)
+
+	node3 := memConfNodes[conf.ClientAddr]
+	assert.True(t, node3.DataVersion.Sign != node2.DataVersion.Sign)
+	assert.True(t, node3.DataVersion.OldSign == node2.DataVersion.Sign)
+	assert.True(t, node3.DataVersion.Version == node2.DataVersion.Version+1)
+	assert.True(t, node3.DataVersion.Version == node1.DataVersion.Version+2)
 
 	updateData := &updateUserData{
 		Name:    "rahuahua333",
@@ -121,6 +133,8 @@ func TestNewApp(t *testing.T) {
 		Name: "rahuahua",
 		Key:  utils.GenerateKey()}, nil)
 
+	node1 := memConfNodes[conf.ClientAddr]
+
 	app, err := updateApp(&models.App{
 		Key:     utils.GenerateKey(),
 		UserKey: user.Key,
@@ -130,6 +144,11 @@ func TestNewApp(t *testing.T) {
 	assert.True(t, len(memConfApps) == 1, "must only one app")
 	assert.True(t, app.Key == memConfAppsByName["iconfreecn"].Key, "must the same app")
 
+	node2 := memConfNodes[conf.ClientAddr]
+	assert.True(t, node2.DataVersion.Sign != node1.DataVersion.Sign)
+	assert.True(t, node2.DataVersion.OldSign == node1.DataVersion.Sign)
+	assert.True(t, node2.DataVersion.Version == node1.DataVersion.Version+1)
+
 	_, err = updateApp(&models.App{
 		Key:     utils.GenerateKey(),
 		UserKey: user.Key,
@@ -137,6 +156,12 @@ func TestNewApp(t *testing.T) {
 		Type:    models.APP_TYPE_REAL}, nil, nil)
 	assert.True(t, err == nil, "must correctly add new app")
 	assert.True(t, len(memConfApps) == 2, "must two apps")
+
+	node3 := memConfNodes[conf.ClientAddr]
+	assert.True(t, node3.DataVersion.Sign != node2.DataVersion.Sign)
+	assert.True(t, node3.DataVersion.OldSign == node2.DataVersion.Sign)
+	assert.True(t, node3.DataVersion.Version == node2.DataVersion.Version+1)
+	assert.True(t, node3.DataVersion.Version == node1.DataVersion.Version+2)
 
 	_clearModelData()
 }
@@ -265,7 +290,6 @@ func TestNewConfig(t *testing.T) {
 	assert.True(t, memConfAppConfigs[app.Key][0].Key == config.Key, "must the same config")
 	assert.True(t, len(memConfAppConfigs[app.Key]) == 1, "must one config for app")
 
-	oldAppDataSign := memConfApps[app.Key].DataSign
 	newData := &newConfigData{
 		K:      "float_conf",
 		V:      "1.2",
@@ -276,10 +300,15 @@ func TestNewConfig(t *testing.T) {
 	err = verifyNewConfigData(newData)
 	assert.True(t, err == nil)
 
+	node1 := memConfNodes[conf.ClientAddr]
 	config, err = newConfigWithNewConfigData(newData, user.Key)
 	assert.True(t, err == nil, "must correctly add new config")
 	assert.True(t, len(memConfAppConfigs[app.Key]) == 2, "must two configs for app")
-	assert.True(t, oldAppDataSign != memConfApps[app.Key].DataSign, "app's data_sign must update when update app config")
+
+	node2 := memConfNodes[conf.ClientAddr]
+	assert.True(t, node2.DataVersion.Sign != node1.DataVersion.Sign)
+	assert.True(t, node2.DataVersion.OldSign == node1.DataVersion.Sign)
+	assert.True(t, node2.DataVersion.Version == node1.DataVersion.Version+1)
 
 	_clearModelData()
 }
@@ -341,6 +370,7 @@ func TestCloneAppConfig(t *testing.T) {
 
 	newNode := *memConfNodes[conf.ClientAddr]
 	assert.True(t, newNode.DataVersion.Sign != oldNode.DataVersion.Sign)
+	assert.True(t, newNode.DataVersion.OldSign == oldNode.DataVersion.Sign)
 	assert.True(t, newNode.DataVersion.Version == oldNode.DataVersion.Version+1)
 
 	_clearModelData()
