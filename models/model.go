@@ -298,6 +298,19 @@ func GetAllNode(s *Session) ([]*Node, error) {
 	return res, nil
 }
 
+func GetNodeByURL(s *Session, url string) (*Node, error) {
+	if s == nil {
+		s = newAutoCloseModelsSession()
+	}
+
+	res := &Node{}
+	if has, err := s.Where("url=?", url).Get(res); !has || err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
 func IsValidNodeType(typ string) bool {
 	return typ == NODE_TYPE_MASTER || typ == NODE_TYPE_SLAVE
 }

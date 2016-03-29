@@ -5,6 +5,7 @@ import (
 
 	"reflect"
 
+	"github.com/Instafig/Instafig/conf"
 	"github.com/Instafig/Instafig/models"
 	"github.com/Instafig/Instafig/utils"
 	"github.com/stretchr/testify/assert"
@@ -312,6 +313,7 @@ func TestCloneAppConfig(t *testing.T) {
 	_, err = newConfigWithNewConfigData(newData, user.Key)
 	assert.True(t, err == nil)
 
+	oldNode := *memConfNodes[conf.ClientAddr]
 	oldDataVersion := *memConfDataVersion
 	app = memConfApps[app.Key]
 	newApp, configs, err := cloneConfigsFromApp("iconfreecn", "hdfreecn", "blabla", user.Key)
@@ -336,6 +338,10 @@ func TestCloneAppConfig(t *testing.T) {
 			assert.True(t, config.V == "1.2" && config.VType == models.CONF_V_TYPE_FLOAT && config.AppKey == newApp.Key)
 		}
 	}
+
+	newNode := *memConfNodes[conf.ClientAddr]
+	assert.True(t, newNode.DataVersion.Sign != oldNode.DataVersion.Sign)
+	assert.True(t, newNode.DataVersion.Version == oldNode.DataVersion.Version+1)
 
 	_clearModelData()
 }

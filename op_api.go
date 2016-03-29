@@ -1458,6 +1458,7 @@ func cloneConfigsFromApp(from, to, aux_info, userKey string) (*models.App, []*mo
 
 func cloneConfigs(app *models.App, configs []*models.Config, userKey string) (err error) {
 	newDataVersion := genNewDataVersion(memConfDataVersion)
+
 	s := models.NewSession()
 	defer s.Close()
 	if err = s.Begin(); err != nil {
@@ -1481,6 +1482,12 @@ func cloneConfigs(app *models.App, configs []*models.Config, userKey string) (er
 		return err
 	}
 
+	node, err := models.GetNodeByURL(s, conf.ClientAddr)
+	if err != nil {
+		s.Rollback()
+		return err
+	}
+
 	if err = s.Commit(); err != nil {
 		s.Rollback()
 		return
@@ -1488,9 +1495,9 @@ func cloneConfigs(app *models.App, configs []*models.Config, userKey string) (er
 
 	*app = *_app
 
-	updateMemConf(app, newDataVersion, memConfNodes[conf.ClientAddr])
+	updateMemConf(app, newDataVersion, node)
 	for _, config := range configs {
-		updateMemConf(config, newDataVersion, memConfNodes[conf.ClientAddr])
+		updateMemConf(config, newDataVersion, node)
 	}
 
 	return
