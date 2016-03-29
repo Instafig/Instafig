@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"sync"
 
@@ -115,8 +114,6 @@ func fillMemConfData(
 
 	for _, node := range nodes {
 		memConfNodes[node.URL] = node
-		node.DataVersion = &models.DataVersion{}
-		json.Unmarshal([]byte(node.DataVersionStr), node.DataVersion)
 	}
 }
 
@@ -230,7 +227,5 @@ func updateMemConf(i interface{}, newDataVersion *models.DataVersion, node *mode
 	memConfDataVersion = newDataVersion
 	if node != nil {
 		memConfNodes[node.URL] = node
-		node.DataVersion = &models.DataVersion{}
-		json.Unmarshal([]byte(node.DataVersionStr), node.DataVersion)
 	}
 }

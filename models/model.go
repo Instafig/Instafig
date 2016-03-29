@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -295,6 +296,11 @@ func GetAllNode(s *Session) ([]*Node, error) {
 		return nil, err
 	}
 
+	for _, node := range res {
+		node.DataVersion = &DataVersion{}
+		json.Unmarshal([]byte(node.DataVersionStr), node.DataVersion)
+	}
+
 	return res, nil
 }
 
@@ -307,6 +313,9 @@ func GetNodeByURL(s *Session, url string) (*Node, error) {
 	if has, err := s.Where("url=?", url).Get(res); !has || err != nil {
 		return nil, err
 	}
+
+	res.DataVersion = &DataVersion{}
+	json.Unmarshal([]byte(res.DataVersionStr), res.DataVersion)
 
 	return res, nil
 }
