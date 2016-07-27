@@ -1323,8 +1323,14 @@ func OpAuth(c *gin.Context) {
 		c.Abort()
 		return
 	}
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		Error(c, NOT_LOGIN, "cookie token invalid")
+		c.Abort()
+		return
+	}
 
-	userKey := token.Claims["uky"].(string)
+	userKey := claims["uky"].(string)
 	memConfMux.RLock()
 	defer memConfMux.RUnlock()
 
@@ -1335,12 +1341,12 @@ func OpAuth(c *gin.Context) {
 		c.Abort()
 		return
 	}
-	if token.Claims["upc"] == nil {
+	if claims["upc"] == nil {
 		Error(c, NOT_LOGIN, "pass_code not correct")
 		c.Abort()
 		return
 	}
-	passCode := token.Claims["upc"].(string)
+	passCode := claims["upc"].(string)
 	if user.PassCode != passCode {
 		Error(c, NOT_LOGIN, "pass_code not correct")
 		c.Abort()
@@ -1510,9 +1516,10 @@ func encryptUserPassCode(code string) string {
 }
 
 func setUserKeyCookie(c *gin.Context, userKey, passCode string) {
-	jwtIns := jwt.New(jwt.SigningMethodHS256)
-	jwtIns.Claims["uky"] = userKey
-	jwtIns.Claims["upc"] = passCode
+	jwtIns := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"uky": userKey,
+		"upc": passCode,
+	})
 
 	encStr, _ := jwtIns.SignedString([]byte(conf.NodeAuth))
 	cookie := new(http.Cookie)
